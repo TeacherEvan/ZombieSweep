@@ -91,14 +91,38 @@ export class GameOverScene extends Phaser.Scene {
       }
 
       // Stats
-      const dayRow = createDataRow(this, cx, y, "DAY REACHED", `${this.gameState.day}`);
+      const dayRow = createDataRow(
+        this,
+        cx,
+        y,
+        "DAY REACHED",
+        `${this.gameState.day}`,
+      );
       dayRow.container.setAlpha(0);
-      this.tweens.add({ targets: dayRow.container, alpha: 1, duration: 350, delay: 500, ease: "Quart.easeOut" });
+      this.tweens.add({
+        targets: dayRow.container,
+        alpha: 1,
+        duration: 350,
+        delay: 500,
+        ease: "Quart.easeOut",
+      });
       y += 34;
 
-      const subRow = createDataRow(this, cx, y, "SUBSCRIBERS", `${this.gameState.subscribers}`);
+      const subRow = createDataRow(
+        this,
+        cx,
+        y,
+        "SUBSCRIBERS",
+        `${this.gameState.subscribers}`,
+      );
       subRow.container.setAlpha(0);
-      this.tweens.add({ targets: subRow.container, alpha: 1, duration: 350, delay: 600, ease: "Quart.easeOut" });
+      this.tweens.add({
+        targets: subRow.container,
+        alpha: 1,
+        duration: 350,
+        delay: 600,
+        ease: "Quart.easeOut",
+      });
       y += 44;
 
       // Final score label
@@ -152,7 +176,11 @@ export class GameOverScene extends Phaser.Scene {
       this.cameras.main.flash(200, 200, 200, 200);
 
       // Red alert banner
-      const alertBanner = createAlertBanner(this, y + 10, "SIGNAL LOST — COURIER DOWN");
+      const alertBanner = createAlertBanner(
+        this,
+        y + 10,
+        "SIGNAL LOST — COURIER DOWN",
+      );
       alertBanner.setAlpha(0);
       this.tweens.add({
         targets: alertBanner,
@@ -200,14 +228,40 @@ export class GameOverScene extends Phaser.Scene {
       }
 
       // Stats (subdued)
-      const dayRow = createDataRow(this, cx, y, "DAY REACHED", `${this.gameState.day}`, { valueColor: BC.TEXT_DIM });
+      const dayRow = createDataRow(
+        this,
+        cx,
+        y,
+        "DAY REACHED",
+        `${this.gameState.day}`,
+        { valueColor: BC.TEXT_DIM },
+      );
       dayRow.container.setAlpha(0);
-      this.tweens.add({ targets: dayRow.container, alpha: 1, duration: 350, delay: 600, ease: "Quart.easeOut" });
+      this.tweens.add({
+        targets: dayRow.container,
+        alpha: 1,
+        duration: 350,
+        delay: 600,
+        ease: "Quart.easeOut",
+      });
       y += 34;
 
-      const subRow = createDataRow(this, cx, y, "SUBSCRIBERS", `${this.gameState.subscribers}`, { valueColor: BC.TEXT_DIM });
+      const subRow = createDataRow(
+        this,
+        cx,
+        y,
+        "SUBSCRIBERS",
+        `${this.gameState.subscribers}`,
+        { valueColor: BC.TEXT_DIM },
+      );
       subRow.container.setAlpha(0);
-      this.tweens.add({ targets: subRow.container, alpha: 1, duration: 350, delay: 700, ease: "Quart.easeOut" });
+      this.tweens.add({
+        targets: subRow.container,
+        alpha: 1,
+        duration: 350,
+        delay: 700,
+        ease: "Quart.easeOut",
+      });
       y += 44;
 
       // Final score
@@ -298,7 +352,10 @@ export class GameOverScene extends Phaser.Scene {
       this.updateButtonSelection();
     });
     this.input.keyboard?.on("keydown-DOWN", () => {
-      this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
+      this.selectedIndex = Math.min(
+        buttonDefs.length - 1,
+        this.selectedIndex + 1,
+      );
       this.updateButtonSelection();
     });
     this.input.keyboard?.on("keydown-W", () => {
@@ -306,7 +363,10 @@ export class GameOverScene extends Phaser.Scene {
       this.updateButtonSelection();
     });
     this.input.keyboard?.on("keydown-S", () => {
-      this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
+      this.selectedIndex = Math.min(
+        buttonDefs.length - 1,
+        this.selectedIndex + 1,
+      );
       this.updateButtonSelection();
     });
     this.input.keyboard?.on("keydown-ENTER", () => {
