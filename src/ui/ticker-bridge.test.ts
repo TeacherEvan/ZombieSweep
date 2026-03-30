@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  pushHeadline,
   headlineDelivery,
-  headlineZombieKill,
+  headlineGameOver,
+  headlineGameStart,
   headlineLifeLost,
   headlinePerfectDay,
-  headlineGameStart,
-  headlineGameOver,
   headlineVictory,
+  headlineZombieKill,
+  pushHeadline,
 } from "./ticker-bridge";
 
 describe("ticker-bridge", () => {
