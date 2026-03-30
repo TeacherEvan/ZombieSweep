@@ -57,6 +57,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    const overlay = document.getElementById("loading-overlay");
+    if (overlay) {
+      overlay.classList.add("hiding");
+      overlay.addEventListener("animationend", () => overlay.remove());
+    }
     this.scene.start("WelcomeScene");
   }
 

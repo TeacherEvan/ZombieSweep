@@ -3,32 +3,670 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ZombieSweep</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ZombieSweep — WZMB 13 LIVE</title>
+    <meta name="description"
+        content="Deliver papers. Kill zombies. Survive the week. A Paperboy-inspired arcade game." />
+    <meta name="theme-color" content="#070a10" />
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23cc1100'/><text x='16' y='22' font-size='16' font-weight='bold' text-anchor='middle' fill='white' font-family='sans-serif'>Z</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,600&display=swap"
+        rel="stylesheet" />
     <style>
-        * {
+        /* ═══════════════════════════════════════════════
+           WZMB 13 NEWS — Broadcast Wrapper
+           ═══════════════════════════════════════════════ */
+
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
+        :root {
+            --bc-bg: #070a10;
+            --bc-chrome: #0e1118;
+            --bc-chrome-lit: #161a24;
+            --bc-chrome-edge: #1e222e;
+            --bc-red: #cc1100;
+            --bc-red-glow: #ff2a10;
+            --bc-red-dim: #6b0a00;
+            --bc-gold: #d4a828;
+            --bc-gold-dim: #7a6218;
+            --bc-text: #d8d0c4;
+            --bc-text-dim: #6a645c;
+            --bc-text-muted: #3a3630;
+            --bc-font: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+        }
+
+        html,
         body {
-            background: #000;
+            height: 100%;
             overflow: hidden;
+            background: var(--bc-bg);
+            font-family: var(--bc-font);
+            -webkit-font-smoothing: antialiased;
         }
 
-        #app {
-            width: 100vw;
+        /* ── Page Layout ── */
+        .broadcast {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
             height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            position: relative;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 30%, #0f131f 0%, transparent 70%),
+                var(--bc-bg);
+        }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            height: 44px;
+            background: var(--bc-chrome);
+            border-bottom: 1px solid #1a1e2a;
+            position: relative;
+            z-index: 10;
+            user-select: none;
+        }
+
+        .station-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 16px;
+            height: 100%;
+            background: var(--bc-red);
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
+            padding-right: 26px;
+        }
+
+        .station-call {
+            font-weight: 800;
+            font-size: 20px;
+            letter-spacing: 0.06em;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .station-num {
+            font-weight: 800;
+            font-size: 26px;
+            color: rgba(255, 255, 255, 0.35);
+            line-height: 1;
+            margin-left: -4px;
+        }
+
+        .station-label {
+            font-weight: 700;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1;
+        }
+
+        .breaking-block {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 20px 0 24px;
+            background: linear-gradient(90deg, var(--bc-red-dim) 0%, transparent 100%);
+        }
+
+        .breaking-text {
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 0.22em;
+            color: var(--bc-red);
+            text-transform: uppercase;
+            animation: break-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes break-pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .top-spacer {
+            flex: 1;
+        }
+
+        .top-datetime {
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.08em;
+            color: var(--bc-text-dim);
+            padding: 0 16px;
+            white-space: nowrap;
+        }
+
+        .live-block {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            height: 100%;
+            padding: 0 16px;
+            border-left: 1px solid #1a1e2a;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--bc-red);
+            box-shadow: 0 0 6px var(--bc-red-glow), 0 0 14px rgba(204, 17, 0, 0.3);
+            animation: live-blink 1.8s ease-in-out infinite;
+        }
+
+        @keyframes live-blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            45% {
+                opacity: 0.2;
+            }
+        }
+
+        .live-text {
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 0.16em;
+            color: var(--bc-red);
+        }
+
+        .fs-btn {
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 44px;
+            height: 100%;
+            border: none;
+            border-left: 1px solid #1a1e2a;
+            background: transparent;
+            cursor: pointer;
+            color: var(--bc-text-dim);
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .fs-btn:hover {
+            color: var(--bc-text);
+            background: var(--bc-chrome-lit);
+        }
+
+        .fs-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ── Screen Area ── */
+        .screen-area {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #050709;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* CRT scanline overlay */
+        .screen-area::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(to bottom,
+                    transparent 0px,
+                    transparent 3px,
+                    rgba(0, 0, 0, 0.04) 3px,
+                    rgba(0, 0, 0, 0.04) 4px);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Vignette on the screen edges */
+        .screen-vignette {
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.5), inset 0 0 200px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        /* ── Bottom Ticker ── */
+        .ticker-bar {
+            display: flex;
+            align-items: stretch;
+            height: 36px;
+            background: var(--bc-chrome);
+            border-top: 1px solid #1a1e2a;
+            position: relative;
+            z-index: 10;
+            user-select: none;
+        }
+
+        .ticker-label {
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            background: var(--bc-red);
+            font-weight: 800;
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            color: #fff;
+            white-space: nowrap;
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+            padding-right: 22px;
+        }
+
+        .ticker-track {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding-left: 12px;
+            mask-image: linear-gradient(90deg, transparent 0%, #000 3%, #000 95%, transparent 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 3%, #000 95%, transparent 100%);
+        }
+
+        .ticker-scroll {
+            display: flex;
+            white-space: nowrap;
+            animation: ticker-move 100s linear infinite;
+        }
+
+        .ticker-scroll span {
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.04em;
+            color: var(--bc-text-dim);
+            padding-right: 3em;
+        }
+
+        .ticker-scroll .sep {
+            color: var(--bc-red-dim);
+            padding: 0 0.6em;
+        }
+
+        @keyframes ticker-move {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ── Loading Overlay ── */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: var(--bc-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            transition: none;
+        }
+
+        #loading-overlay.hiding {
+            animation: channel-off 0.5s ease-out forwards;
+        }
+
+        @keyframes channel-off {
+            0% {
+                opacity: 1;
+                filter: brightness(1);
+            }
+
+            20% {
+                opacity: 1;
+                filter: brightness(2.5);
+            }
+
+            40% {
+                opacity: 0.9;
+                filter: brightness(1);
+            }
+
+            100% {
+                opacity: 0;
+                filter: brightness(0.5);
+                pointer-events: none;
+            }
+        }
+
+        .load-station {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .load-station .call {
+            font-weight: 800;
+            font-size: 48px;
+            letter-spacing: 0.04em;
+            color: var(--bc-text);
+            line-height: 1;
+        }
+
+        .load-station .num {
+            font-weight: 800;
+            font-size: 64px;
+            color: var(--bc-red);
+            line-height: 1;
+            margin-left: -2px;
+        }
+
+        .load-subtitle {
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--bc-text-dim);
+        }
+
+        .load-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            color: var(--bc-text-muted);
+        }
+
+        .load-status .blink-dots::after {
+            content: '';
+            animation: dot-cycle 1.5s steps(4) infinite;
+        }
+
+        @keyframes dot-cycle {
+            0% {
+                content: '';
+            }
+
+            25% {
+                content: '.';
+            }
+
+            50% {
+                content: '..';
+            }
+
+            75% {
+                content: '...';
+            }
+        }
+
+        .load-bar-track {
+            width: 200px;
+            height: 2px;
+            background: var(--bc-chrome-edge);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .load-bar-fill {
+            width: 40%;
+            height: 100%;
+            background: var(--bc-red);
+            border-radius: 1px;
+            animation: load-sweep 2s ease-in-out infinite;
+        }
+
+        @keyframes load-sweep {
+            0% {
+                width: 10%;
+                transform: translateX(0);
+            }
+
+            50% {
+                width: 60%;
+                transform: translateX(100px);
+            }
+
+            100% {
+                width: 10%;
+                transform: translateX(200px);
+            }
+        }
+
+        .load-disclaimer {
+            position: absolute;
+            bottom: 32px;
+            font-weight: 600;
+            font-style: italic;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            color: var(--bc-text-muted);
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        /* ── Responsive ── */
+        @media (max-height: 520px) {
+            .top-bar {
+                height: 32px;
+            }
+
+            .station-call {
+                font-size: 16px;
+            }
+
+            .station-num {
+                font-size: 20px;
+            }
+
+            .station-label {
+                display: none;
+            }
+
+            .breaking-block {
+                padding: 0 12px 0 16px;
+            }
+
+            .breaking-text {
+                font-size: 11px;
+            }
+
+            .ticker-bar {
+                height: 28px;
+            }
+
+            .ticker-label {
+                font-size: 10px;
+                padding: 0 10px;
+                padding-right: 18px;
+            }
+
+            .ticker-scroll span {
+                font-size: 11px;
+            }
+
+            .top-datetime {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .breaking-block {
+                display: none;
+            }
+
+            .top-datetime {
+                display: none;
+            }
+
+            .station-label {
+                display: none;
+            }
+
+            .station-block {
+                padding: 0 10px;
+                padding-right: 20px;
+            }
+        }
+
+        /* ── Reduced motion ── */
+        @media (prefers-reduced-motion: reduce) {
+
+            .ticker-scroll,
+            .live-dot,
+            .breaking-text,
+            .load-bar-fill {
+                animation: none;
+            }
+
+            #loading-overlay.hiding {
+                animation: none;
+                opacity: 0;
+                pointer-events: none;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div id="app"></div>
+    <!-- ═══ Loading Overlay ═══ -->
+    <div id="loading-overlay" role="status" aria-live="polite">
+        <div class="load-station">
+            <span class="call">WZMB</span>
+            <span class="num">13</span>
+        </div>
+        <div class="load-subtitle">TRI-COUNTY EMERGENCY BROADCAST NETWORK</div>
+        <div class="load-status">
+            ACQUIRING SATELLITE FEED<span class="blink-dots"></span>
+        </div>
+        <div class="load-bar-track">
+            <div class="load-bar-fill"></div>
+        </div>
+        <div class="load-disclaimer">
+            The following broadcast contains scenes of zombie violence<br />
+            and extreme newspaper delivery. Viewer discretion is advised.
+        </div>
+    </div>
+
+    <!-- ═══ Broadcast Frame ═══ -->
+    <div class="broadcast">
+
+        <!-- Top Chrome -->
+        <div class="top-bar">
+            <div class="station-block">
+                <span class="station-call">WZMB</span>
+                <span class="station-num">13</span>
+                <span class="station-label">NEWS</span>
+            </div>
+            <div class="breaking-block">
+                <span class="breaking-text">BREAKING NEWS</span>
+            </div>
+            <div class="top-spacer"></div>
+            <div class="top-datetime" id="broadcast-time"></div>
+            <div class="live-block">
+                <div class="live-dot"></div>
+                <span class="live-text">LIVE</span>
+            </div>
+            <button class="fs-btn" id="fs-btn" aria-label="Toggle fullscreen" title="Fullscreen">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M1 5.5V1.5h4M11 1.5h4v4M15 10.5v4h-4M5 15.5H1v-4" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="screen-area">
+            <div id="app"></div>
+            <div class="screen-vignette"></div>
+        </div>
+
+        <!-- Bottom Ticker -->
+        <div class="ticker-bar">
+            <div class="ticker-label">ALERT</div>
+            <div class="ticker-track" aria-hidden="true">
+                <div class="ticker-scroll" id="ticker-scroll"></div>
+            </div>
+        </div>
+
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
+    <script>
+        /* ── Broadcast clock ── */
+        (function updateClock() {
+            const el = document.getElementById('broadcast-time');
+            if (!el) return;
+            const now = new Date();
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const pad = n => String(n).padStart(2, '0');
+            el.textContent = `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()}` +
+                ` \u2022 ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            setTimeout(updateClock, 1000);
+        })();
+
+        /* ── News ticker ── */
+        (function initTicker() {
+            const headlines = [
+                'ZOMBIE SIGHTINGS SURGE IN MAPLE GROVE \u2014 RESIDENTS URGED TO BARRICADE HOMES AFTER DUSK',
+                'NATIONAL GUARD ESTABLISHES PERIMETER AROUND DOWNTOWN DEADWOOD \u2014 SUPPLY DROPS SCHEDULED TUESDAY',
+                'CDC ADVISORY: BASEBALL BATS AND MACHETES RATED "HIGHLY EFFECTIVE" AGAINST UNDEAD THREATS',
+                'LOCAL NEWSPAPER CARRIERS HAILED AS HEROES \u2014 "THE PAPERS MUST GO THROUGH" SAYS ROUTE SUPERVISOR',
+                'RUST CREEK BRIDGE COLLAPSE TRAPS SURVIVORS \u2014 RESCUE OPERATIONS UNDERWAY',
+                'SUNDAY EDITION NOW 3X NORMAL WEIGHT \u2014 CARRIERS REPORT INCREASED ZOMBIE DETERRENT EFFECTIVENESS',
+                'TRI-COUNTY AMATEUR RADIO NETWORK BROADCASTS SAFE ZONE COORDINATES \u2014 TUNE TO 145.230 MHZ',
+                'SKATEBOARD MILITIA CLEARS ROUTE 7 CORRIDOR \u2014 MACHETE SALES UP 400% AT REMAINING HARDWARE STORES',
+            ];
+            const sep = ' <span class="sep">\u25C6</span> ';
+            const block = headlines.join(sep) + sep;
+            const container = document.getElementById('ticker-scroll');
+            if (container) {
+                container.innerHTML = `<span>${block}</span><span>${block}</span>`;
+            }
+        })();
+
+        /* ── Fullscreen toggle ── */
+        document.getElementById('fs-btn')?.addEventListener('click', function () {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => { });
+            } else {
+                document.exitFullscreen().catch(() => { });
+            }
+        });
+    </script>
 </body>
 
 </html>
