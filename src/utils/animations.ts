@@ -1,9 +1,20 @@
 import Phaser from "phaser";
+import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
 
 // ── Easing constants ──
 // Natural deceleration curves — never bounce or elastic
 const EASE_OUT_QUART = "Quart.easeOut";
 const EASE_OUT_EXPO = "Expo.easeOut";
+
+// ── Station Break Transition Config ──
+// Timing and layout constants for the broadcast "Station Break" wipe.
+export const STATION_BREAK = {
+  WIPE_IN_MS: 250,
+  HOLD_MS: 200,
+  DEPTH: 999,
+  BAR_HEIGHT: 6,
+  STATION_ID: "WZMB 13",
+} as const;
 
 // ── Screen Shake ──
 // Camera shake on damage, impact, etc.
@@ -157,21 +168,76 @@ export function pulse(
   });
 }
 
-// ── Fade Scene Transition ──
-// Fade camera out, call onMidpoint (to start next scene), with configurable duration
+// ── Station Break Transition ──
+// Broadcast-branded wipe: red accent bar slides in, WZMB 13 station ID holds,
+// then scene.start() fires and the new scene's fadeIn() reveals content.
 export function fadeToScene(
   scene: Phaser.Scene,
   targetScene: string,
   data?: object,
-  duration = 400,
+  _duration = 400,
 ): void {
-  scene.cameras.main.fadeOut(duration, 0, 0, 0);
-  scene.cameras.main.once(
-    Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
-    () => {
-      scene.scene.start(targetScene, data);
-    },
-  );
+  // Accessibility: instant cut when user prefers reduced motion
+  if (prefersReducedMotion()) {
+    scene.scene.start(targetScene, data);
+    return;
+  }
+
+  const { width: cw, height: ch } = scene.cameras.main;
+  const { WIPE_IN_MS, HOLD_MS, DEPTH, BAR_HEIGHT, STATION_ID } = STATION_BREAK;
+
+  // ── Chrome background — full screen, fades in ──
+  const bg = scene.add.graphics().setDepth(DEPTH).setAlpha(0);
+  bg.fillStyle(BC.CHROME, 1);
+  bg.fillRect(0, 0, cw, ch);
+
+  // ── Red accent bar — full width, starts offscreen left ──
+  const bar = scene.add.graphics().setDepth(DEPTH + 1);
+  bar.fillStyle(BC.RED, 1);
+  bar.fillRect(0, 0, cw, BAR_HEIGHT);
+  bar.setPosition(-cw, ch / 2 - BAR_HEIGHT / 2);
+
+  // ── Station ID text — centered below bar, starts hidden ──
+  const stationText = scene.add
+    .text(cw / 2, ch / 2 + 20, STATION_ID, {
+      fontFamily: BROADCAST_FONT,
+      fontSize: "28px",
+      fontStyle: "800",
+      color: BC.TEXT,
+      letterSpacing: 4,
+    })
+    .setOrigin(0.5)
+    .setDepth(DEPTH + 2)
+    .setAlpha(0);
+
+  // Phase 1: Wipe in — chrome bg fades, bar slides, text appears
+  scene.tweens.add({
+    targets: bg,
+    alpha: 1,
+    duration: WIPE_IN_MS,
+    ease: EASE_OUT_QUART,
+  });
+
+  scene.tweens.add({
+    targets: bar,
+    x: 0,
+    duration: WIPE_IN_MS,
+    ease: EASE_OUT_QUART,
+  });
+
+  scene.tweens.add({
+    targets: stationText,
+    alpha: 1,
+    duration: WIPE_IN_MS,
+    ease: EASE_OUT_QUART,
+  });
+
+  // Phase 2: Hold, then switch scene.
+  // Phaser's scene.start() destroys the old scene and all its objects,
+  // so the overlay auto-cleans. The new scene's fadeIn() provides the reveal.
+  scene.time.delayedCall(WIPE_IN_MS + HOLD_MS, () => {
+    scene.scene.start(targetScene, data);
+  });
 }
 
 // ── Fade In on Scene Start ──
