@@ -69,71 +69,78 @@ export class BootScene extends Phaser.Scene {
   }
 
   private createPlaceholderTextures(): void {
+    // Reuse a single Graphics object for all texture generation
+    // to avoid 20+ create/destroy cycles.
+    const g = this.add.graphics();
+
     // Player vehicles — distinctive shapes with outlines
-    this.generateVehicle("player-bicycle", 32, 48, 0x22bb44, 0x115522);
-    this.generateVehicle("player-rollerblades", 24, 48, 0x2299dd, 0x114466);
-    this.generateVehicle("player-skateboard", 28, 44, 0xddaa22, 0x665511);
+    this.generateVehicle(g, "player-bicycle", 32, 48, 0x22bb44, 0x115522);
+    this.generateVehicle(g, "player-rollerblades", 24, 48, 0x2299dd, 0x114466);
+    this.generateVehicle(g, "player-skateboard", 28, 44, 0xddaa22, 0x665511);
 
     // Zombies — dark greens and reds with menacing look
-    this.generateZombie("zombie-shambler", 32, 40, 0x4a6a3a, 0x2a3a1a);
-    this.generateZombie("zombie-runner", 28, 44, 0x8b2222, 0x551111);
-    this.generateZombie("zombie-spitter", 32, 40, 0x6b8e33, 0x3a5511);
+    this.generateZombie(g, "zombie-shambler", 32, 40, 0x4a6a3a, 0x2a3a1a);
+    this.generateZombie(g, "zombie-runner", 28, 44, 0x8b2222, 0x551111);
+    this.generateZombie(g, "zombie-spitter", 32, 40, 0x6b8e33, 0x3a5511);
 
     // Citizens
-    this.generateRect("citizen-friendly", 24, 40, 0x4169e1);
-    this.generateRect("citizen-panicked", 24, 40, 0xdd8833);
-    this.generateRect("citizen-armed", 28, 44, 0x808080);
+    this.generateRect(g, "citizen-friendly", 24, 40, 0x4169e1);
+    this.generateRect(g, "citizen-panicked", 24, 40, 0xdd8833);
+    this.generateRect(g, "citizen-armed", 28, 44, 0x808080);
 
     // Houses — subscriber vs non-subscriber with distinct styles
-    this.generateHouse("house-ranch-sub", 80, 60, 0x44aa44, true);
-    this.generateHouse("house-ranch-nonsub", 80, 60, 0x4a4a4a, false);
-    this.generateHouse("house-colonial-sub", 70, 80, 0x4682b4, true);
-    this.generateHouse("house-colonial-nonsub", 70, 80, 0x4a4a4a, false);
-    this.generateHouse("house-victorian-sub", 75, 90, 0x8866aa, true);
-    this.generateHouse("house-victorian-nonsub", 75, 90, 0x4a4a4a, false);
+    this.generateHouse(g, "house-ranch-sub", 80, 60, 0x44aa44, true);
+    this.generateHouse(g, "house-ranch-nonsub", 80, 60, 0x4a4a4a, false);
+    this.generateHouse(g, "house-colonial-sub", 70, 80, 0x4682b4, true);
+    this.generateHouse(g, "house-colonial-nonsub", 70, 80, 0x4a4a4a, false);
+    this.generateHouse(g, "house-victorian-sub", 75, 90, 0x8866aa, true);
+    this.generateHouse(g, "house-victorian-nonsub", 75, 90, 0x4a4a4a, false);
 
     // Hazards — clear danger markers
-    this.generateHazard("hazard-hole", 64, 64, 0x1a1a1a, 0x333300);
-    this.generateHazard("hazard-log", 192, 32, 0x6b4423, 0x4a3015);
-    this.generateHazard("hazard-ice", 96, 96, 0x88bbdd, 0x6699bb);
+    this.generateHazard(g, "hazard-hole", 64, 64, 0x1a1a1a, 0x333300);
+    this.generateHazard(g, "hazard-log", 192, 32, 0x6b4423, 0x4a3015);
+    this.generateHazard(g, "hazard-ice", 96, 96, 0x88bbdd, 0x6699bb);
 
     // Pickups — bright and noticeable
-    this.generatePickup("pickup-newspaper", 20, 20, 0xf5f0d0, "📰");
-    this.generatePickup("pickup-ammo", 20, 20, 0xff5500, "🔶");
-    this.generatePickup("pickup-health", 20, 20, 0xff3366, "➕");
+    this.generatePickup(g, "pickup-newspaper", 20, 20, 0xf5f0d0);
+    this.generatePickup(g, "pickup-ammo", 20, 20, 0xff5500);
+    this.generatePickup(g, "pickup-health", 20, 20, 0xff3366);
 
     // Newspaper projectile
-    this.generateRect("newspaper", 12, 8, 0xf5f0c0);
+    this.generateRect(g, "newspaper", 12, 8, 0xf5f0c0);
 
     // Training elements
-    this.generateTarget("target", 40, 40);
-    this.generateRect("ramp", 50, 20, 0xcc8844);
+    this.generateTarget(g, "target", 40, 40);
+    this.generateRect(g, "ramp", 50, 20, 0xcc8844);
 
     // UI
-    this.generateRect("button", 200, 50, 0x1a1a1a);
+    this.generateRect(g, "button", 200, 50, 0x1a1a1a);
+
+    g.destroy();
   }
 
   private generateRect(
+    g: Phaser.GameObjects.Graphics,
     key: string,
     width: number,
     height: number,
     color: number,
   ): void {
-    const g = this.add.graphics();
+    g.clear();
     g.fillStyle(color, 1);
     g.fillRect(0, 0, width, height);
     g.generateTexture(key, width, height);
-    g.destroy();
   }
 
   private generateVehicle(
+    g: Phaser.GameObjects.Graphics,
     key: string,
     width: number,
     height: number,
     color: number,
     outline: number,
   ): void {
-    const g = this.add.graphics();
+    g.clear();
     // Body
     g.fillStyle(outline, 1);
     g.fillRoundedRect(0, 0, width, height, 4);
@@ -143,17 +150,17 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 0.2);
     g.fillRect(4, 4, width - 8, 6);
     g.generateTexture(key, width, height);
-    g.destroy();
   }
 
   private generateZombie(
+    g: Phaser.GameObjects.Graphics,
     key: string,
     width: number,
     height: number,
     color: number,
     outline: number,
   ): void {
-    const g = this.add.graphics();
+    g.clear();
     // Body
     g.fillStyle(outline, 1);
     g.fillRoundedRect(0, 4, width, height - 4, 3);
@@ -167,17 +174,17 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(width / 2 - 3, 5, 2);
     g.fillCircle(width / 2 + 3, 5, 2);
     g.generateTexture(key, width, height);
-    g.destroy();
   }
 
   private generateHouse(
+    g: Phaser.GameObjects.Graphics,
     key: string,
     width: number,
     height: number,
     color: number,
     isSubscriber: boolean,
   ): void {
-    const g = this.add.graphics();
+    g.clear();
     // Wall
     g.fillStyle(color, 1);
     g.fillRect(4, height * 0.3, width - 8, height * 0.7);
@@ -196,17 +203,17 @@ export class BootScene extends Phaser.Scene {
     g.fillRect(width * 0.2, height * 0.45, 10, 8);
     g.fillRect(width * 0.65, height * 0.45, 10, 8);
     g.generateTexture(key, width, height);
-    g.destroy();
   }
 
   private generateHazard(
+    g: Phaser.GameObjects.Graphics,
     key: string,
     width: number,
     height: number,
     color: number,
     border: number,
   ): void {
-    const g = this.add.graphics();
+    g.clear();
     g.fillStyle(border, 1);
     g.fillRoundedRect(0, 0, width, height, 2);
     g.fillStyle(color, 1);
@@ -218,17 +225,16 @@ export class BootScene extends Phaser.Scene {
       g.fillRect(i + 6, height - 3, 6, 3);
     }
     g.generateTexture(key, width, height);
-    g.destroy();
   }
 
   private generatePickup(
+    g: Phaser.GameObjects.Graphics,
     key: string,
     width: number,
     height: number,
     color: number,
-    _icon: string,
   ): void {
-    const g = this.add.graphics();
+    g.clear();
     // Glowing circle
     g.fillStyle(color, 0.3);
     g.fillCircle(width / 2, height / 2, width / 2);
@@ -238,11 +244,15 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 0.3);
     g.fillCircle(width / 2 - 2, height / 2 - 2, 3);
     g.generateTexture(key, width, height);
-    g.destroy();
   }
 
-  private generateTarget(key: string, width: number, height: number): void {
-    const g = this.add.graphics();
+  private generateTarget(
+    g: Phaser.GameObjects.Graphics,
+    key: string,
+    width: number,
+    height: number,
+  ): void {
+    g.clear();
     // Concentric rings
     g.fillStyle(0xffffff, 1);
     g.fillCircle(width / 2, height / 2, width / 2);
@@ -253,6 +263,5 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0xcc1100, 1);
     g.fillCircle(width / 2, height / 2, width / 2 - 12);
     g.generateTexture(key, width, height);
-    g.destroy();
   }
 }

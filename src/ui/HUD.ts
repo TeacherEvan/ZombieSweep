@@ -7,12 +7,10 @@ import { BC, BROADCAST_FONT } from "./broadcast-styles";
 export class HUD {
   private scene: Phaser.Scene;
   private gameState: GameState;
-  private dayManager: DayManager;
 
   private hudBg!: Phaser.GameObjects.Graphics;
   private scoreText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
-  private dayText!: Phaser.GameObjects.Text;
   private papersText!: Phaser.GameObjects.Text;
   private subscribersText!: Phaser.GameObjects.Text;
 
@@ -21,6 +19,9 @@ export class HUD {
   private lastScore = 0;
   private lastLives = 0;
   private lastPaperCount = 0;
+  private lastAmmoCount = 0;
+  private lastSubscribers = 0;
+  private cachedDayString: string;
 
   constructor(
     scene: Phaser.Scene,
@@ -30,12 +31,18 @@ export class HUD {
   ) {
     this.scene = scene;
     this.gameState = gameState;
-    this.dayManager = new DayManager();
     this.paperCount = paperCount;
     this.ammoCount = ammoCount;
     this.lastScore = gameState.score;
     this.lastLives = gameState.lives;
     this.lastPaperCount = paperCount;
+    this.lastAmmoCount = ammoCount;
+    this.lastSubscribers = gameState.subscribers;
+
+    // Day doesn't change during a scene — cache the formatted string
+    const dayManager = new DayManager();
+    const dow = dayManager.getDayOfWeek(gameState.day);
+    this.cachedDayString = `${gameState.day} — ${dow}`;
 
     this.create();
   }
@@ -72,14 +79,14 @@ export class HUD {
     let x = 14;
     const cy = 16;
 
-    // Day
+    // Day — static for the duration of the scene, set once
     this.scene.add
       .text(x, cy - 5, "DAY", labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    this.dayText = this.scene.add
-      .text(x, cy + 7, "", valueCfg)
+    this.scene.add
+      .text(x, cy + 7, this.cachedDayString, valueCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -136,7 +143,11 @@ export class HUD {
       .setDepth(100)
       .setOrigin(0, 0.5);
 
-    this.update();
+    // Set initial values (avoids empty text on first frame)
+    this.scoreText.setText(`${this.gameState.score}`);
+    this.livesText.setText("●".repeat(this.gameState.lives));
+    this.papersText.setText(`${this.paperCount}   Ammo: ${this.ammoCount}`);
+    this.subscribersText.setText(`${this.gameState.subscribers}/10`);
   }
 
   setPaperCount(count: number): void {
@@ -148,36 +159,51 @@ export class HUD {
   }
 
   update(): void {
-    const dow = this.dayManager.getDayOfWeek(this.gameState.day);
-    this.dayText.setText(`${this.gameState.day} — ${dow}`);
-    this.scoreText.setText(`${this.gameState.score}`);
-    this.livesText.setText("●".repeat(this.gameState.lives));
-    this.papersText.setText(`${this.paperCount}   Ammo: ${this.ammoCount}`);
-    this.subscribersText.setText(`${this.gameState.subscribers}/10`);
+    // Only call setText() when values actually change — Phaser recreates
+    // the internal canvas texture on every setText(), which is expensive.
 
-    // Score changed — pulse the score text
+    // Score
     if (this.gameState.score !== this.lastScore) {
+      this.scoreText.setText(`${this.gameState.score}`);
       pulse(this.scene, this.scoreText, 1.3, 180);
       this.lastScore = this.gameState.score;
     }
 
-    // Life lost — flash lives text then recover
-    if (this.gameState.lives < this.lastLives) {
-      this.livesText.setColor("#ff2222");
-      pulse(this.scene, this.livesText, 1.4, 200);
-      this.scene.time.delayedCall(300, () => {
-        this.livesText.setColor(BC.css.RED);
-      });
+    // Lives
+    if (this.gameState.lives !== this.lastLives) {
+      this.livesText.setText("●".repeat(this.gameState.lives));
+      if (this.gameState.lives < this.lastLives) {
+        this.livesText.setColor("#ff2222");
+        pulse(this.scene, this.livesText, 1.4, 200);
+        this.scene.time.delayedCall(300, () => {
+          this.livesText.setColor(BC.css.RED);
+        });
+      }
       this.lastLives = this.gameState.lives;
     }
 
-    // Low paper warning
-    if (this.paperCount <= 3 && this.paperCount !== this.lastPaperCount) {
-      this.papersText.setColor("#cc2222");
-      pulse(this.scene, this.papersText, 1.2, 150);
-    } else if (this.paperCount > 3) {
-      this.papersText.setColor(BC.TEXT);
+    // Papers + Ammo (combined text field)
+    if (
+      this.paperCount !== this.lastPaperCount ||
+      this.ammoCount !== this.lastAmmoCount
+    ) {
+      this.papersText.setText(`${this.paperCount}   Ammo: ${this.ammoCount}`);
+
+      // Low paper warning
+      if (this.paperCount <= 3 && this.paperCount !== this.lastPaperCount) {
+        this.papersText.setColor("#cc2222");
+        pulse(this.scene, this.papersText, 1.2, 150);
+      } else if (this.paperCount > 3) {
+        this.papersText.setColor(BC.TEXT);
+      }
+      this.lastPaperCount = this.paperCount;
+      this.lastAmmoCount = this.ammoCount;
     }
-    this.lastPaperCount = this.paperCount;
+
+    // Subscribers
+    if (this.gameState.subscribers !== this.lastSubscribers) {
+      this.subscribersText.setText(`${this.gameState.subscribers}/10`);
+      this.lastSubscribers = this.gameState.subscribers;
+    }
   }
 }

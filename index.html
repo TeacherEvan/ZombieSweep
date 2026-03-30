@@ -12,6 +12,9 @@
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23cc1100'/><text x='16' y='22' font-size='16' font-weight='bold' text-anchor='middle' fill='white' font-family='sans-serif'>Z</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload"
+        href="https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B46r2z3bWuYMBYgo.woff2"
+        as="font" type="font/woff2" crossorigin />
     <link
         href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,600&display=swap"
         rel="stylesheet" />
@@ -250,6 +253,7 @@
                     rgba(0, 0, 0, 0.04) 4px);
             pointer-events: none;
             z-index: 5;
+            contain: strict;
         }
 
         /* Vignette on the screen edges */
@@ -259,6 +263,7 @@
             box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.5), inset 0 0 200px rgba(0, 0, 0, 0.2);
             pointer-events: none;
             z-index: 4;
+            contain: strict;
         }
 
         /* ── Bottom Ticker ── */
@@ -301,6 +306,7 @@
             display: flex;
             white-space: nowrap;
             animation: ticker-move 100s linear infinite;
+            will-change: transform;
         }
 
         .ticker-scroll span {

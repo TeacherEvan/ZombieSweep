@@ -34,12 +34,17 @@ export class PauseMenu {
       0.88,
     );
 
-    // Scan lines effect (subtle horizontal lines)
-    const scanLines = this.scene.add.graphics();
-    scanLines.lineStyle(1, 0xffffff, 0.03);
-    for (let sy = 0; sy < height; sy += 4) {
-      scanLines.lineBetween(0, sy, width, sy);
+    // Scan lines effect — generate a small tileable texture instead of
+    // drawing 135 individual lines with lineBetween() calls.
+    const scanKey = "__pause_scanlines__";
+    if (!this.scene.textures.exists(scanKey)) {
+      const sg = this.scene.add.graphics();
+      sg.fillStyle(0xffffff, 0.03);
+      sg.fillRect(0, 0, 4, 1);
+      sg.generateTexture(scanKey, 4, 4);
+      sg.destroy();
     }
+    const scanLines = this.scene.add.tileSprite(cx, cy, width, height, scanKey);
 
     // Top / bottom accent bars
     const accents = this.scene.add.graphics();
