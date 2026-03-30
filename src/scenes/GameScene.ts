@@ -97,11 +97,52 @@ export class GameScene extends Phaser.Scene {
     this.player.meleeWeapon = createMeleeWeapon(meleeConfig);
     this.player.rangedWeapon = createRangedWeapon(rangedConfig);
 
-    // Road background
-    this.cameras.main.setBackgroundColor("#555555");
-    // Sidewalks
-    this.add.rectangle(80, 270, 120, 540, 0x888888);
-    this.add.rectangle(880, 270, 120, 540, 0x888888);
+    // Road background — dark asphalt with texture
+    this.cameras.main.setBackgroundColor("#2a2a2a");
+
+    // Road surface detail
+    const roadGfx = this.add.graphics();
+    roadGfx.setDepth(-10);
+    // Center road area
+    roadGfx.fillStyle(0x3a3a3a, 1);
+    roadGfx.fillRect(140, 0, 680, 540);
+    // Road lane lines (dashed)
+    roadGfx.fillStyle(0x5a5a3a, 0.4);
+    for (let ly = 0; ly < 540; ly += 40) {
+      roadGfx.fillRect(477, ly, 6, 24);
+    }
+    // Road edge markings
+    roadGfx.fillStyle(0x4a4a35, 0.3);
+    roadGfx.fillRect(140, 0, 3, 540);
+    roadGfx.fillRect(817, 0, 3, 540);
+
+    // Sidewalks with texture
+    const sidewalkGfx = this.add.graphics();
+    sidewalkGfx.setDepth(-10);
+    sidewalkGfx.fillStyle(0x666660, 1);
+    sidewalkGfx.fillRect(20, 0, 120, 540);
+    sidewalkGfx.fillRect(820, 0, 120, 540);
+    // Sidewalk cracks
+    sidewalkGfx.fillStyle(0x555550, 0.6);
+    for (let sy = 0; sy < 540; sy += 60) {
+      sidewalkGfx.fillRect(20, sy, 120, 2);
+    }
+    // Grass/dirt edges
+    const edgeGfx = this.add.graphics();
+    edgeGfx.setDepth(-10);
+    edgeGfx.fillStyle(0x2d4a2d, 0.6);
+    edgeGfx.fillRect(0, 0, 20, 540);
+    edgeGfx.fillRect(940, 0, 20, 540);
+
+    // Atmospheric vignette effect on edges
+    const vignetteGfx = this.add.graphics();
+    vignetteGfx.setDepth(50);
+    vignetteGfx.fillStyle(0x000000, 0.3);
+    vignetteGfx.fillRect(0, 0, 30, 540);
+    vignetteGfx.fillRect(930, 0, 30, 540);
+    vignetteGfx.fillStyle(0x000000, 0.15);
+    vignetteGfx.fillRect(0, 0, 960, 15);
+    vignetteGfx.fillRect(0, 525, 960, 15);
 
     // Place houses on both sides of street
     this.spawnHouses();

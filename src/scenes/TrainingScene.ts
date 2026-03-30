@@ -39,23 +39,64 @@ export class TrainingScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager(this.gameState);
     this.dayManager = new DayManager();
 
-    this.cameras.main.setBackgroundColor("#336633");
+    this.cameras.main.setBackgroundColor("#1a2a1a");
 
-    // Header
+    // Training ground textures
+    const groundGfx = this.add.graphics();
+    groundGfx.setDepth(-10);
+    // Grass field
+    groundGfx.fillStyle(0x2a4a2a, 1);
+    groundGfx.fillRect(0, 0, 960, 540);
+    // Central track lane
+    groundGfx.fillStyle(0x3a3a2a, 1);
+    groundGfx.fillRect(180, 0, 600, 540);
+    // Lane markings
+    groundGfx.fillStyle(0x5a5a3a, 0.3);
+    for (let ly = 0; ly < 540; ly += 30) {
+      groundGfx.fillRect(478, ly, 4, 18);
+    }
+    // Side grass detail
+    groundGfx.fillStyle(0x224422, 0.4);
+    for (let gy = 0; gy < 540; gy += 20) {
+      groundGfx.fillRect(0, gy, 180, 1);
+      groundGfx.fillRect(780, gy, 180, 1);
+    }
+
+    // Header with dramatic styling
+    this.add
+      .text(482, 22, "TRAINING COURSE", {
+        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontSize: "34px",
+        color: "#000000",
+      })
+      .setOrigin(0.5, 0)
+      .setAlpha(0.4)
+      .setDepth(10);
+
     this.add
       .text(480, 20, "TRAINING COURSE", {
-        fontSize: "28px",
-        color: "#ffffff",
-        fontStyle: "bold",
+        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontSize: "34px",
+        color: "#ddaa22",
+        shadow: {
+          offsetX: 0,
+          offsetY: 0,
+          color: "#ffcc44",
+          blur: 10,
+          fill: true,
+        },
       })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 0)
+      .setDepth(10);
 
     this.add
-      .text(480, 55, "Unlimited papers! Hit targets for bonus points.", {
-        fontSize: "14px",
-        color: "#cccccc",
+      .text(480, 58, "UNLIMITED PAPERS  ·  HIT TARGETS FOR BONUS", {
+        fontFamily: "'Courier New', monospace",
+        fontSize: "11px",
+        color: "#778866",
       })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 0)
+      .setDepth(10);
 
     // Physics groups
     this.papers = this.physics.add.group();

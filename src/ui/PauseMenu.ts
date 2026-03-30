@@ -17,52 +17,111 @@ export class PauseMenu {
       .setScrollFactor(0)
       .setDepth(200);
 
+    // Dark overlay
     const overlay = this.scene.add.rectangle(
       width / 2,
       height / 2,
       width,
       height,
       0x000000,
-      0.7,
+      0.8,
     );
+
+    // Centered panel
+    const panelWidth = 300;
+    const panelHeight = 240;
+    const panel = this.scene.add.graphics();
+    panel.fillStyle(0x141418, 0.95);
+    panel.fillRoundedRect(
+      width / 2 - panelWidth / 2,
+      height / 2 - panelHeight / 2,
+      panelWidth,
+      panelHeight,
+      8,
+    );
+    // Top accent bar
+    panel.fillStyle(0xcc1100, 1);
+    panel.fillRect(
+      width / 2 - panelWidth / 2,
+      height / 2 - panelHeight / 2,
+      panelWidth,
+      4,
+    );
+
     const title = this.scene.add
       .text(width / 2, height / 2 - 80, "PAUSED", {
-        fontSize: "36px",
-        color: "#ffffff",
-        fontStyle: "bold",
+        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontSize: "38px",
+        color: "#cc1100",
+        shadow: {
+          offsetX: 0,
+          offsetY: 0,
+          color: "#ff3300",
+          blur: 10,
+          fill: true,
+        },
       })
       .setOrigin(0.5);
 
-    const resumeBtn = this.scene.add
-      .rectangle(width / 2, height / 2, 200, 50, 0x333333)
+    // Resume button
+    const resumeBg = this.scene.add
+      .rectangle(width / 2, height / 2, 220, 48, 0x1a1a1a)
+      .setStrokeStyle(2, 0x3d0000)
       .setInteractive({ useHandCursor: true });
     const resumeText = this.scene.add
-      .text(width / 2, height / 2, "Resume", {
-        fontSize: "20px",
-        color: "#ffffff",
+      .text(width / 2, height / 2, "RESUME", {
+        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontSize: "22px",
+        color: "#aa8877",
       })
       .setOrigin(0.5);
-    resumeBtn.on("pointerdown", () => this.hide());
 
-    const quitBtn = this.scene.add
-      .rectangle(width / 2, height / 2 + 70, 200, 50, 0x8b0000)
+    resumeBg.on("pointerover", () => {
+      resumeBg.setFillStyle(0x2a0a08);
+      resumeBg.setStrokeStyle(2, 0xcc1100);
+      resumeText.setColor("#ffffff");
+    });
+    resumeBg.on("pointerout", () => {
+      resumeBg.setFillStyle(0x1a1a1a);
+      resumeBg.setStrokeStyle(2, 0x3d0000);
+      resumeText.setColor("#aa8877");
+    });
+    resumeBg.on("pointerdown", () => this.hide());
+
+    // Quit button
+    const quitBg = this.scene.add
+      .rectangle(width / 2, height / 2 + 66, 220, 48, 0x1a1a1a)
+      .setStrokeStyle(2, 0x330000)
       .setInteractive({ useHandCursor: true });
     const quitText = this.scene.add
-      .text(width / 2, height / 2 + 70, "Quit to Menu", {
-        fontSize: "20px",
-        color: "#ffffff",
+      .text(width / 2, height / 2 + 66, "QUIT TO MENU", {
+        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontSize: "22px",
+        color: "#cc4422",
       })
       .setOrigin(0.5);
-    quitBtn.on("pointerdown", () => {
+
+    quitBg.on("pointerover", () => {
+      quitBg.setFillStyle(0x2a0808);
+      quitBg.setStrokeStyle(2, 0xcc1100);
+      quitText.setColor("#ff4422");
+    });
+    quitBg.on("pointerout", () => {
+      quitBg.setFillStyle(0x1a1a1a);
+      quitBg.setStrokeStyle(2, 0x330000);
+      quitText.setColor("#cc4422");
+    });
+    quitBg.on("pointerdown", () => {
       this.scene.scene.start("WelcomeScene");
     });
 
     this.container.add([
       overlay,
+      panel,
       title,
-      resumeBtn,
+      resumeBg,
       resumeText,
-      quitBtn,
+      quitBg,
       quitText,
     ]);
     this.container.setVisible(false);

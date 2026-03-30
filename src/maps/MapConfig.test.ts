@@ -65,7 +65,11 @@ describe("Map configs", () => {
     });
 
     it("zombie density escalates across maps", () => {
-      const densityRank: Record<DensityLevel, number> = { low: 1, medium: 2, high: 3 };
+      const densityRank: Record<DensityLevel, number> = {
+        low: 1,
+        medium: 2,
+        high: 3,
+      };
       const mg = densityRank[MAPS[MapName.MapleGrove].zombieDensity];
       const dd = densityRank[MAPS[MapName.DowntownDeadwood].zombieDensity];
       const rc = densityRank[MAPS[MapName.RustCreek].zombieDensity];
