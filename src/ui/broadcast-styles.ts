@@ -30,7 +30,9 @@ export const BC = {
     RED_DIM: "#6b0a00",
     GOLD: "#d4a828",
     GOLD_DIM: "#7a6218",
+    GOLD_GLOW: "#ffcc44",
     GREEN: "#22aa44",
+    GREEN_BRIGHT: "#22ee66",
     AMBER: "#cc8822",
   },
 } as const;

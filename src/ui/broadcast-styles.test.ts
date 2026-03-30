@@ -41,6 +41,8 @@ describe("broadcast-styles", () => {
       expect(BC.css.RED_GLOW).toBe("#ff2a10");
       expect(BC.css.RED_DIM).toBe("#6b0a00");
       expect(BC.css.GOLD_DIM).toBe("#7a6218");
+      expect(BC.css.GOLD_GLOW).toBe("#ffcc44");
+      expect(BC.css.GREEN_BRIGHT).toBe("#22ee66");
     });
   });
 });

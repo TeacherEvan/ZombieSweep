@@ -46,7 +46,7 @@ export function floatingText(
 ): Phaser.GameObjects.Text {
   const txt = scene.add
     .text(x, y, text, {
-      fontFamily: "'Barlow Condensed', 'Arial Narrow', sans-serif",
+      fontFamily: BROADCAST_FONT,
       fontSize,
       color,
       shadow: {

@@ -216,6 +216,12 @@
             background: var(--bc-chrome-lit);
         }
 
+        .fs-btn:focus-visible {
+            color: var(--bc-text);
+            outline: 2px solid var(--bc-red);
+            outline-offset: -2px;
+        }
+
         .fs-btn svg {
             width: 16px;
             height: 16px;
@@ -451,27 +457,20 @@
         }
 
         .load-bar-fill {
-            width: 40%;
+            width: 30%;
             height: 100%;
             background: var(--bc-red);
             border-radius: 1px;
-            animation: load-sweep 2s ease-in-out infinite;
+            animation: load-sweep 1.8s ease-in-out infinite alternate;
         }
 
         @keyframes load-sweep {
-            0% {
-                width: 10%;
+            from {
                 transform: translateX(0);
             }
 
-            50% {
-                width: 60%;
-                transform: translateX(100px);
-            }
-
-            100% {
-                width: 10%;
-                transform: translateX(200px);
+            to {
+                transform: translateX(233%);
             }
         }
 

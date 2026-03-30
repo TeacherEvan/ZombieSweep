@@ -166,7 +166,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         scaleY: { from: 0.8, to: 1 },
         duration: 400,
         delay: 500,
-        ease: "Back.easeOut",
+        ease: "Quart.easeOut",
       });
       y += 40;
     }

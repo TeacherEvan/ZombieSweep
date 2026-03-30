@@ -88,7 +88,7 @@ export class TrainingScene extends Phaser.Scene {
         shadow: {
           offsetX: 0,
           offsetY: 0,
-          color: "#ffcc44",
+          color: BC.css.GOLD_GLOW,
           blur: 10,
           fill: true,
         },
@@ -297,7 +297,7 @@ export class TrainingScene extends Phaser.Scene {
         targetSprite.x,
         targetSprite.y - 10,
         `${this.consecutiveHits}× COMBO!`,
-        "#ffcc22",
+        BC.css.GOLD_GLOW,
         "20px",
         50,
         900,
@@ -308,7 +308,7 @@ export class TrainingScene extends Phaser.Scene {
         targetSprite.x,
         targetSprite.y - 10,
         "HIT!",
-        "#22ee66",
+        BC.css.GREEN_BRIGHT,
         "14px",
       );
     }
@@ -327,7 +327,7 @@ export class TrainingScene extends Phaser.Scene {
       paperSprite.x,
       paperSprite.y - 10,
       "RAMP!",
-      "#ddaa22",
+      BC.css.AMBER,
       "14px",
     );
     paperSprite.destroy();

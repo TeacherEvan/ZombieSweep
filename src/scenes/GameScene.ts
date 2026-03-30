@@ -18,6 +18,7 @@ import { generateRoute, Route } from "../maps/MapGenerator";
 import { DayManager } from "../systems/DayManager";
 import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
+import { BC } from "../ui/broadcast-styles";
 import { HUD } from "../ui/HUD";
 import { PauseMenu } from "../ui/PauseMenu";
 import {
@@ -456,7 +457,7 @@ export class GameScene extends Phaser.Scene {
               houseRect.x,
               houseRect.y - 20,
               "MAILBOX!",
-              "#22ee66",
+              BC.css.GREEN_BRIGHT,
               "18px",
             );
             headlineDelivery();
@@ -467,7 +468,7 @@ export class GameScene extends Phaser.Scene {
               houseRect.x,
               houseRect.y - 20,
               "DELIVERED",
-              "#44cc66",
+              BC.css.GREEN,
               "14px",
             );
           }
@@ -479,7 +480,7 @@ export class GameScene extends Phaser.Scene {
             houseRect.x,
             houseRect.y - 20,
             "CRASH!",
-            "#cc4422",
+            BC.css.RED,
             "16px",
           );
         }
@@ -503,7 +504,7 @@ export class GameScene extends Phaser.Scene {
           sprite.x,
           sprite.y,
           `+${pickup.quantity} PAPERS`,
-          "#f5f0d0",
+          BC.TEXT,
           "13px",
         );
       } else if (pickup.type === "AmmoCrate") {
@@ -513,7 +514,7 @@ export class GameScene extends Phaser.Scene {
           sprite.x,
           sprite.y,
           `+${pickup.quantity} AMMO`,
-          "#ff7733",
+          BC.css.AMBER,
           "13px",
         );
       }

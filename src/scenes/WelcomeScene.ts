@@ -272,7 +272,7 @@ export class WelcomeScene extends Phaser.Scene {
 
   private showControls(width: number, height: number): void {
     const overlay = this.add
-      .rectangle(width / 2, height / 2, width, height, 0x000000, 0.92)
+      .rectangle(width / 2, height / 2, width, height, 0x000000, 0)
       .setInteractive();
 
     const headerText = this.add
@@ -283,7 +283,8 @@ export class WelcomeScene extends Phaser.Scene {
         color: BC.css.RED,
         letterSpacing: 2,
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setAlpha(0);
 
     const controls = [
       ["WASD / ARROWS", "Move"],
@@ -305,7 +306,8 @@ export class WelcomeScene extends Phaser.Scene {
           fontStyle: "700",
           color: BC.css.GOLD,
         })
-        .setOrigin(1, 0.5);
+        .setOrigin(1, 0.5)
+        .setAlpha(0);
       const actionText = this.add
         .text(width / 2 - 70, y, action, {
           fontFamily: BROADCAST_FONT,
@@ -313,39 +315,59 @@ export class WelcomeScene extends Phaser.Scene {
           fontStyle: "600",
           color: BC.TEXT_DIM,
         })
-        .setOrigin(0, 0.5);
+        .setOrigin(0, 0.5)
+        .setAlpha(0);
       controlTexts.push(keyText, actionText);
     });
 
     const closeHint = this.add
-      .text(width / 2, height * 0.85, "CLICK TO CLOSE", {
+      .text(width / 2, height * 0.85, "ESC OR CLICK TO CLOSE", {
         fontFamily: BROADCAST_FONT,
         fontSize: "12px",
         fontStyle: "600",
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setAlpha(0);
+
+    // Entrance animation
+    const allElements = [overlay, headerText, ...controlTexts, closeHint];
+    this.tweens.add({
+      targets: overlay,
+      fillAlpha: 0.92,
+      duration: 200,
+      ease: "Quart.easeOut",
+    });
+    this.tweens.add({
+      targets: [headerText, ...controlTexts, closeHint],
+      alpha: 1,
+      duration: 300,
+      delay: 100,
+      ease: "Quart.easeOut",
+    });
 
     this.tweens.add({
       targets: closeHint,
       alpha: 0.3,
       duration: 800,
+      delay: 500,
       yoyo: true,
       repeat: -1,
     });
 
-    overlay.on("pointerdown", () => {
-      overlay.destroy();
-      headerText.destroy();
-      closeHint.destroy();
-      controlTexts.forEach((t) => t.destroy());
-    });
+    const closeOverlay = () => {
+      this.input.keyboard?.off("keydown-ESC", closeOverlay);
+      allElements.forEach((el) => el.destroy());
+    };
+
+    overlay.on("pointerdown", closeOverlay);
+    this.input.keyboard?.on("keydown-ESC", closeOverlay);
   }
 
   private showCredits(width: number, height: number): void {
     const overlay = this.add
-      .rectangle(width / 2, height / 2, width, height, 0x000000, 0.92)
+      .rectangle(width / 2, height / 2, width, height, 0x000000, 0)
       .setInteractive();
 
     const title = this.add
@@ -355,7 +377,8 @@ export class WelcomeScene extends Phaser.Scene {
         fontStyle: "800",
         color: BC.css.RED,
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setAlpha(0);
 
     const credits = this.add
       .text(
@@ -371,23 +394,42 @@ export class WelcomeScene extends Phaser.Scene {
           lineSpacing: 6,
         },
       )
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setAlpha(0);
 
     const closeHint = this.add
-      .text(width / 2, height * 0.85, "CLICK TO CLOSE", {
+      .text(width / 2, height * 0.85, "ESC OR CLICK TO CLOSE", {
         fontFamily: BROADCAST_FONT,
         fontSize: "12px",
         fontStyle: "600",
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setAlpha(0);
 
-    overlay.on("pointerdown", () => {
-      overlay.destroy();
-      title.destroy();
-      credits.destroy();
-      closeHint.destroy();
+    // Entrance animation
+    const allElements = [overlay, title, credits, closeHint];
+    this.tweens.add({
+      targets: overlay,
+      fillAlpha: 0.92,
+      duration: 200,
+      ease: "Quart.easeOut",
     });
+    this.tweens.add({
+      targets: [title, credits, closeHint],
+      alpha: 1,
+      duration: 300,
+      delay: 100,
+      ease: "Quart.easeOut",
+    });
+
+    const closeOverlay = () => {
+      this.input.keyboard?.off("keydown-ESC", closeOverlay);
+      allElements.forEach((el) => el.destroy());
+    };
+
+    overlay.on("pointerdown", closeOverlay);
+    this.input.keyboard?.on("keydown-ESC", closeOverlay);
   }
 }

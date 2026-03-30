@@ -160,7 +160,7 @@ export class GameOverScene extends Phaser.Scene {
           shadow: {
             offsetX: 0,
             offsetY: 0,
-            color: "#ffcc44",
+            color: BC.css.GOLD_GLOW,
             blur: 16,
             fill: true,
           },

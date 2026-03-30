@@ -173,7 +173,7 @@ export class HUD {
     if (this.gameState.lives !== this.lastLives) {
       this.livesText.setText("●".repeat(this.gameState.lives));
       if (this.gameState.lives < this.lastLives) {
-        this.livesText.setColor("#ff2222");
+        this.livesText.setColor(BC.css.RED_GLOW);
         pulse(this.scene, this.livesText, 1.4, 200);
         this.scene.time.delayedCall(300, () => {
           this.livesText.setColor(BC.css.RED);
@@ -191,7 +191,7 @@ export class HUD {
 
       // Low paper warning
       if (this.paperCount <= 3 && this.paperCount !== this.lastPaperCount) {
-        this.papersText.setColor("#cc2222");
+        this.papersText.setColor(BC.css.RED);
         pulse(this.scene, this.papersText, 1.2, 150);
       } else if (this.paperCount > 3) {
         this.papersText.setColor(BC.TEXT);
