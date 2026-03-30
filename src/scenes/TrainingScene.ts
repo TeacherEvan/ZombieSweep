@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { createNewspaper } from "../entities/Newspaper";
 import { DayManager } from "../systems/DayManager";
-import { GameState } from "../systems/GameState";
+import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
 import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
 import { HUD } from "../ui/HUD";
@@ -26,6 +26,7 @@ export class TrainingScene extends Phaser.Scene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private consecutiveHits = 0;
   private deliveryData: DeliveryData[] = [];
+  private transitioning = false;
 
   constructor() {
     super({ key: "TrainingScene" });
@@ -37,9 +38,10 @@ export class TrainingScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.gameState = this.registry.get("gameState") as GameState;
+    this.gameState = getOrCreateGameState(this.registry);
     this.scoreManager = new ScoreManager(this.gameState);
     this.dayManager = new DayManager();
+    this.transitioning = false;
 
     this.cameras.main.setBackgroundColor("#1a2a1a");
     fadeIn(this);
@@ -160,18 +162,21 @@ export class TrainingScene extends Phaser.Scene {
       this,
     );
 
-    // Input
-    this.cursors = this.input.keyboard!.createCursorKeys();
-    this.wasd = {
-      W: this.input.keyboard!.addKey("W"),
-      A: this.input.keyboard!.addKey("A"),
-      S: this.input.keyboard!.addKey("S"),
-      D: this.input.keyboard!.addKey("D"),
-    };
-    this.keys = {
-      Q: this.input.keyboard!.addKey("Q"),
-      E: this.input.keyboard!.addKey("E"),
-    };
+    // Input (guard keyboard availability)
+    const kb = this.input.keyboard;
+    if (kb) {
+      this.cursors = kb.createCursorKeys();
+      this.wasd = {
+        W: kb.addKey("W"),
+        A: kb.addKey("A"),
+        S: kb.addKey("S"),
+        D: kb.addKey("D"),
+      };
+      this.keys = {
+        Q: kb.addKey("Q"),
+        E: kb.addKey("E"),
+      };
+    }
 
     // HUD
     const paperCount = 999; // Unlimited
@@ -220,17 +225,17 @@ export class TrainingScene extends Phaser.Scene {
     let vx = 0;
     let vy = 0;
 
-    if (this.cursors.left.isDown || this.wasd.A.isDown) vx = -speed;
-    if (this.cursors.right.isDown || this.wasd.D.isDown) vx = speed;
-    if (this.cursors.up.isDown || this.wasd.W.isDown) vy = -speed;
-    if (this.cursors.down.isDown || this.wasd.S.isDown) vy = speed;
+    if (this.cursors?.left.isDown || this.wasd?.A.isDown) vx = -speed;
+    if (this.cursors?.right.isDown || this.wasd?.D.isDown) vx = speed;
+    if (this.cursors?.up.isDown || this.wasd?.W.isDown) vy = -speed;
+    if (this.cursors?.down.isDown || this.wasd?.S.isDown) vy = speed;
 
     this.player.setVelocity(vx, vy);
 
-    if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) {
+    if (this.keys?.Q && Phaser.Input.Keyboard.JustDown(this.keys.Q)) {
       this.throwPaper("left");
     }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.E)) {
+    if (this.keys?.E && Phaser.Input.Keyboard.JustDown(this.keys.E)) {
       this.throwPaper("right");
     }
 
@@ -334,6 +339,8 @@ export class TrainingScene extends Phaser.Scene {
   }
 
   private endTraining(): void {
+    if (this.transitioning) return;
+    this.transitioning = true;
     fadeToScene(this, "ScoreSummaryScene", { deliveryData: this.deliveryData });
   }
 }

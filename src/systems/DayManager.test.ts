@@ -104,4 +104,29 @@ describe("DayManager", () => {
       expect(dayManager.getThrowSpeedMultiplier(7)).toBe(minMultiplier);
     });
   });
+
+  describe("out-of-range day hardening", () => {
+    it("getDayOfWeek wraps day 8 to a valid weekday", () => {
+      const result = dayManager.getDayOfWeek(8);
+      const allDays = Object.values(DayOfWeek);
+      expect(allDays).toContain(result);
+    });
+
+    it("getDayOfWeek returns Monday for day 0 or negative", () => {
+      expect(dayManager.getDayOfWeek(0)).toBe(DayOfWeek.Monday);
+      expect(dayManager.getDayOfWeek(-1)).toBe(DayOfWeek.Monday);
+    });
+
+    it("getMapForDay returns a valid map for day > 7", () => {
+      const result = dayManager.getMapForDay(8);
+      const allMaps = Object.values(MapName);
+      expect(allMaps).toContain(result);
+    });
+
+    it("getMapForDay returns a valid map for day 0", () => {
+      const result = dayManager.getMapForDay(0);
+      const allMaps = Object.values(MapName);
+      expect(allMaps).toContain(result);
+    });
+  });
 });

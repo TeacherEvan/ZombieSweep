@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Difficulty } from "../config/difficulty";
 import { VehicleType } from "../config/vehicles";
-import { GameState } from "../systems/GameState";
+import { getOrCreateGameState } from "../systems/GameState";
 import { BC, BROADCAST_FONT, createChyron } from "../ui/broadcast-styles";
 import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
 
@@ -50,6 +50,7 @@ export class DifficultySelectScene extends Phaser.Scene {
     info: (typeof THREAT_LEVELS)[string];
   }[] = [];
   private vehicle!: VehicleType;
+  private transitioning = false;
 
   constructor() {
     super({ key: "DifficultySelectScene" });
@@ -63,6 +64,7 @@ export class DifficultySelectScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
     this.rows = [];
     this.selectedIndex = 0;
+    this.transitioning = false;
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
@@ -210,24 +212,28 @@ export class DifficultySelectScene extends Phaser.Scene {
     this.time.delayedCall(400, () => this.updateSelection());
 
     // Keyboard
-    this.input.keyboard!.on("keydown-UP", () => {
+    this.input.keyboard?.on("keydown-UP", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-DOWN", () => {
+    this.input.keyboard?.on("keydown-DOWN", () => {
       this.selectedIndex = Math.min(2, this.selectedIndex + 1);
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-W", () => {
+    this.input.keyboard?.on("keydown-W", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-S", () => {
+    this.input.keyboard?.on("keydown-S", () => {
       this.selectedIndex = Math.min(2, this.selectedIndex + 1);
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-ENTER", () => this.confirmSelection());
-    this.input.keyboard!.on("keydown-SPACE", () => this.confirmSelection());
+    this.input.keyboard?.on("keydown-ENTER", () => this.confirmSelection());
+    this.input.keyboard?.on("keydown-SPACE", () => this.confirmSelection());
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.removeAllListeners();
+    });
   }
 
   private updateSelection(): void {
@@ -278,12 +284,13 @@ export class DifficultySelectScene extends Phaser.Scene {
   }
 
   private confirmSelection(): void {
+    if (this.transitioning) return;
+    this.transitioning = true;
     const difficulty = this.difficulties[this.selectedIndex];
     const { width, height } = this.cameras.main;
 
     // Initialize game state
-    const gameState =
-      (this.registry.get("gameState") as GameState) || new GameState();
+    const gameState = getOrCreateGameState(this.registry);
     gameState.reset();
     gameState.configure(difficulty, this.vehicle);
     this.registry.set("gameState", gameState);

@@ -38,11 +38,15 @@ const DAY_TO_MAP: Record<number, MapName> = {
 
 export class DayManager {
   getDayOfWeek(day: number): DayOfWeek {
-    return DAY_TO_WEEKDAY[day];
+    return (
+      DAY_TO_WEEKDAY[day] ??
+      DAY_TO_WEEKDAY[((day - 1) % 7) + 1] ??
+      DayOfWeek.Monday
+    );
   }
 
   getMapForDay(day: number): MapName {
-    return DAY_TO_MAP[day];
+    return DAY_TO_MAP[day] ?? DAY_TO_MAP[Math.min(day, 7)] ?? MapName.RustCreek;
   }
 
   isSunday(day: number): boolean {

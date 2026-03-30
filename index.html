@@ -671,14 +671,17 @@
         (function updateClock() {
             const el = document.getElementById('broadcast-time');
             if (!el) return;
-            const now = new Date();
-            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-                'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-            const pad = n => String(n).padStart(2, '0');
-            el.textContent = `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()}` +
-                ` \u2022 ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-            setTimeout(updateClock, 1000);
+            function tick() {
+                const now = new Date();
+                const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+                const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                const pad = n => String(n).padStart(2, '0');
+                el.textContent = `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()}` +
+                    ` \u2022 ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            }
+            tick();
+            setInterval(tick, 1000);
         })();
 
         /* ── News ticker ── */
@@ -693,11 +696,21 @@
                 'TRI-COUNTY AMATEUR RADIO NETWORK BROADCASTS SAFE ZONE COORDINATES \u2014 TUNE TO 145.230 MHZ',
                 'SKATEBOARD MILITIA CLEARS ROUTE 7 CORRIDOR \u2014 MACHETE SALES UP 400% AT REMAINING HARDWARE STORES',
             ];
-            const sep = ' <span class="sep">\u25C6</span> ';
-            const block = headlines.join(sep) + sep;
             const container = document.getElementById('ticker-scroll');
-            if (container) {
-                container.innerHTML = `<span>${block}</span><span>${block}</span>`;
+            if (!container) return;
+            // Build ticker using DOM methods (defense-in-depth against injection)
+            for (let copy = 0; copy < 2; copy++) {
+                headlines.forEach((headline, i) => {
+                    if (i > 0 || copy > 0) {
+                        const sep = document.createElement('span');
+                        sep.className = 'sep';
+                        sep.textContent = '\u25C6';
+                        container.appendChild(sep);
+                    }
+                    const span = document.createElement('span');
+                    span.textContent = headline;
+                    container.appendChild(span);
+                });
             }
         })();
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Difficulty } from "../config/difficulty";
 import { VehicleType } from "../config/vehicles";
-import { GameState } from "./GameState";
+import { GameState, getOrCreateGameState } from "./GameState";
 
 describe("GameState", () => {
   let state: GameState;
@@ -237,6 +237,47 @@ describe("GameState", () => {
       expect(state.subscribers).toBe(10);
       expect(state.difficulty).toBe(Difficulty.EasyStreet);
       expect(state.vehicle).toBe(VehicleType.Bicycle);
+    });
+  });
+
+  describe("getOrCreateGameState()", () => {
+    it("returns existing GameState from registry", () => {
+      const existing = new GameState();
+      existing.addRawScore(999);
+      const registry = {
+        get: (_key: string) => existing,
+        set: (_key: string, _value: unknown) => {},
+      };
+      const result = getOrCreateGameState(registry);
+      expect(result).toBe(existing);
+      expect(result.score).toBe(999);
+    });
+
+    it("creates and registers a fresh GameState when registry has none", () => {
+      let stored: unknown = undefined;
+      const registry = {
+        get: (_key: string) => stored,
+        set: (_key: string, value: unknown) => {
+          stored = value;
+        },
+      };
+      const result = getOrCreateGameState(registry);
+      expect(result).toBeInstanceOf(GameState);
+      expect(result.day).toBe(1);
+      expect(stored).toBe(result);
+    });
+
+    it("creates fresh GameState when registry returns wrong type", () => {
+      let stored: unknown = "not-a-gamestate";
+      const registry = {
+        get: (_key: string) => stored,
+        set: (_key: string, value: unknown) => {
+          stored = value;
+        },
+      };
+      const result = getOrCreateGameState(registry);
+      expect(result).toBeInstanceOf(GameState);
+      expect(stored).toBe(result);
     });
   });
 });

@@ -1,10 +1,6 @@
 import Phaser from "phaser";
 import { fadeToScene } from "../utils/animations";
-import {
-  BC,
-  BROADCAST_FONT,
-  createBroadcastButton,
-} from "./broadcast-styles";
+import { BC, BROADCAST_FONT, createBroadcastButton } from "./broadcast-styles";
 
 export class PauseMenu {
   private scene: Phaser.Scene;
@@ -29,7 +25,14 @@ export class PauseMenu {
       .setDepth(200);
 
     // Dark overlay
-    const overlay = this.scene.add.rectangle(cx, cy, width, height, BC.BG, 0.88);
+    const overlay = this.scene.add.rectangle(
+      cx,
+      cy,
+      width,
+      height,
+      BC.BG,
+      0.88,
+    );
 
     // Scan lines effect (subtle horizontal lines)
     const scanLines = this.scene.add.graphics();
@@ -77,20 +80,32 @@ export class PauseMenu {
       .setOrigin(0.5, 0.5);
 
     // Buttons
-    const resumeBtn = createBroadcastButton(this.scene, cx, cy + 20, "RESUME BROADCAST", {
-      width: 280,
-      height: 42,
-    });
+    const resumeBtn = createBroadcastButton(
+      this.scene,
+      cx,
+      cy + 20,
+      "RESUME BROADCAST",
+      {
+        width: 280,
+        height: 42,
+      },
+    );
     resumeBtn.hitArea.on("pointerover", () => {
       this.selectedIndex = 0;
       this.updateSelection();
     });
     resumeBtn.hitArea.on("pointerdown", () => this.hide());
 
-    const quitBtn = createBroadcastButton(this.scene, cx, cy + 72, "END TRANSMISSION", {
-      width: 280,
-      height: 42,
-    });
+    const quitBtn = createBroadcastButton(
+      this.scene,
+      cx,
+      cy + 72,
+      "END TRANSMISSION",
+      {
+        width: 280,
+        height: 42,
+      },
+    );
     quitBtn.hitArea.on("pointerover", () => {
       this.selectedIndex = 1;
       this.updateSelection();
@@ -128,6 +143,7 @@ export class PauseMenu {
   }
 
   show(): void {
+    if (this.isVisible) return;
     this.isVisible = true;
     this.selectedIndex = 0;
     this.updateSelection();
@@ -142,22 +158,23 @@ export class PauseMenu {
     this.scene.physics.pause();
 
     // Keyboard nav
-    this.scene.input.keyboard!.on("keydown-UP", this.navUp, this);
-    this.scene.input.keyboard!.on("keydown-DOWN", this.navDown, this);
-    this.scene.input.keyboard!.on("keydown-W", this.navUp, this);
-    this.scene.input.keyboard!.on("keydown-S", this.navDown, this);
-    this.scene.input.keyboard!.on("keydown-ENTER", this.confirm, this);
-    this.scene.input.keyboard!.on("keydown-SPACE", this.confirm, this);
+    this.scene.input.keyboard?.on("keydown-UP", this.navUp, this);
+    this.scene.input.keyboard?.on("keydown-DOWN", this.navDown, this);
+    this.scene.input.keyboard?.on("keydown-W", this.navUp, this);
+    this.scene.input.keyboard?.on("keydown-S", this.navDown, this);
+    this.scene.input.keyboard?.on("keydown-ENTER", this.confirm, this);
+    this.scene.input.keyboard?.on("keydown-SPACE", this.confirm, this);
   }
 
   hide(): void {
+    if (!this.isVisible) return;
     // Remove keyboard listeners
-    this.scene.input.keyboard!.off("keydown-UP", this.navUp, this);
-    this.scene.input.keyboard!.off("keydown-DOWN", this.navDown, this);
-    this.scene.input.keyboard!.off("keydown-W", this.navUp, this);
-    this.scene.input.keyboard!.off("keydown-S", this.navDown, this);
-    this.scene.input.keyboard!.off("keydown-ENTER", this.confirm, this);
-    this.scene.input.keyboard!.off("keydown-SPACE", this.confirm, this);
+    this.scene.input.keyboard?.off("keydown-UP", this.navUp, this);
+    this.scene.input.keyboard?.off("keydown-DOWN", this.navDown, this);
+    this.scene.input.keyboard?.off("keydown-W", this.navUp, this);
+    this.scene.input.keyboard?.off("keydown-S", this.navDown, this);
+    this.scene.input.keyboard?.off("keydown-ENTER", this.confirm, this);
+    this.scene.input.keyboard?.off("keydown-SPACE", this.confirm, this);
 
     this.scene.tweens.add({
       targets: this.container,
@@ -182,7 +199,10 @@ export class PauseMenu {
   };
 
   private navDown = (): void => {
-    this.selectedIndex = Math.min(this.buttons.length - 1, this.selectedIndex + 1);
+    this.selectedIndex = Math.min(
+      this.buttons.length - 1,
+      this.selectedIndex + 1,
+    );
     this.updateSelection();
   };
 

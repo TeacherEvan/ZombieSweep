@@ -17,6 +17,7 @@ export class WelcomeScene extends Phaser.Scene {
   private selectedIndex = 0;
   private menuItems: ReturnType<typeof createBroadcastButton>[] = [];
   private reducedMotion = false;
+  private transitioning = false;
 
   constructor() {
     super({ key: "WelcomeScene" });
@@ -27,6 +28,7 @@ export class WelcomeScene extends Phaser.Scene {
     this.selectedIndex = 0;
     this.menuItems = [];
     this.reducedMotion = prefersReducedMotion();
+    this.transitioning = false;
 
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
@@ -124,6 +126,8 @@ export class WelcomeScene extends Phaser.Scene {
       });
       btn.hitArea.on("pointerdown", () => {
         if (item.scene) {
+          if (this.transitioning) return;
+          this.transitioning = true;
           fadeToScene(this, item.scene);
         } else if (item.action === "controls") {
           this.showControls(width, height);
@@ -136,32 +140,32 @@ export class WelcomeScene extends Phaser.Scene {
     this.time.delayedCall(600, () => this.updateMenuSelection(true));
 
     // ── Keyboard navigation ──
-    this.input.keyboard!.on("keydown-UP", () => {
+    this.input.keyboard?.on("keydown-UP", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateMenuSelection(true);
     });
-    this.input.keyboard!.on("keydown-DOWN", () => {
+    this.input.keyboard?.on("keydown-DOWN", () => {
       this.selectedIndex = Math.min(
         menuDefs.length - 1,
         this.selectedIndex + 1,
       );
       this.updateMenuSelection(true);
     });
-    this.input.keyboard!.on("keydown-W", () => {
+    this.input.keyboard?.on("keydown-W", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateMenuSelection(true);
     });
-    this.input.keyboard!.on("keydown-S", () => {
+    this.input.keyboard?.on("keydown-S", () => {
       this.selectedIndex = Math.min(
         menuDefs.length - 1,
         this.selectedIndex + 1,
       );
       this.updateMenuSelection(true);
     });
-    this.input.keyboard!.on("keydown-ENTER", () => {
+    this.input.keyboard?.on("keydown-ENTER", () => {
       this.menuItems[this.selectedIndex]?.hitArea.emit("pointerdown");
     });
-    this.input.keyboard!.on("keydown-SPACE", () => {
+    this.input.keyboard?.on("keydown-SPACE", () => {
       this.menuItems[this.selectedIndex]?.hitArea.emit("pointerdown");
     });
 

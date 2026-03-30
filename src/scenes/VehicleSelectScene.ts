@@ -13,6 +13,7 @@ export class VehicleSelectScene extends Phaser.Scene {
   private selectedIndex = 0;
   private vehicles = Object.values(VehicleType);
   private cards: Phaser.GameObjects.Container[] = [];
+  private transitioning = false;
 
   constructor() {
     super({ key: "VehicleSelectScene" });
@@ -22,6 +23,7 @@ export class VehicleSelectScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
     this.cards = [];
     this.selectedIndex = 0;
+    this.transitioning = false;
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
@@ -85,30 +87,34 @@ export class VehicleSelectScene extends Phaser.Scene {
     this.updateSelection();
 
     // Keyboard
-    this.input.keyboard!.on("keydown-LEFT", () => {
+    this.input.keyboard?.on("keydown-LEFT", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-RIGHT", () => {
+    this.input.keyboard?.on("keydown-RIGHT", () => {
       this.selectedIndex = Math.min(
         this.vehicles.length - 1,
         this.selectedIndex + 1,
       );
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-A", () => {
+    this.input.keyboard?.on("keydown-A", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-D", () => {
+    this.input.keyboard?.on("keydown-D", () => {
       this.selectedIndex = Math.min(
         this.vehicles.length - 1,
         this.selectedIndex + 1,
       );
       this.updateSelection();
     });
-    this.input.keyboard!.on("keydown-ENTER", () => this.confirmSelection());
-    this.input.keyboard!.on("keydown-SPACE", () => this.confirmSelection());
+    this.input.keyboard?.on("keydown-ENTER", () => this.confirmSelection());
+    this.input.keyboard?.on("keydown-SPACE", () => this.confirmSelection());
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.removeAllListeners();
+    });
   }
 
   private createVehicleCard(
@@ -303,6 +309,8 @@ export class VehicleSelectScene extends Phaser.Scene {
   }
 
   private confirmSelection(): void {
+    if (this.transitioning) return;
+    this.transitioning = true;
     const vehicle = this.vehicles[this.selectedIndex];
     const card = this.cards[this.selectedIndex];
     const { width, height } = this.cameras.main;
