@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { POINTS } from "../config/constants";
-import { GameState } from "../systems/GameState";
+import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
 import {
   BC,
@@ -16,16 +16,18 @@ export class GameOverScene extends Phaser.Scene {
   private gameState!: GameState;
   private selectedIndex = 0;
   private buttons: ReturnType<typeof createBroadcastButton>[] = [];
+  private transitioning = false;
 
   constructor() {
     super({ key: "GameOverScene" });
   }
 
   create(): void {
-    this.gameState = this.registry.get("gameState") as GameState;
+    this.gameState = getOrCreateGameState(this.registry);
     const scoreManager = new ScoreManager(this.gameState);
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
+    this.transitioning = false;
 
     const { width, height } = this.cameras.main;
     const cx = width / 2;
@@ -277,6 +279,8 @@ export class GameOverScene extends Phaser.Scene {
         this.updateButtonSelection();
       });
       btn.hitArea.on("pointerdown", () => {
+        if (this.transitioning) return;
+        this.transitioning = true;
         this.gameState.reset();
         if (def.action === "restart") {
           fadeToScene(this, "WelcomeScene");
@@ -289,27 +293,31 @@ export class GameOverScene extends Phaser.Scene {
     this.time.delayedCall(950, () => this.updateButtonSelection());
 
     // Keyboard
-    this.input.keyboard!.on("keydown-UP", () => {
+    this.input.keyboard?.on("keydown-UP", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateButtonSelection();
     });
-    this.input.keyboard!.on("keydown-DOWN", () => {
+    this.input.keyboard?.on("keydown-DOWN", () => {
       this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
       this.updateButtonSelection();
     });
-    this.input.keyboard!.on("keydown-W", () => {
+    this.input.keyboard?.on("keydown-W", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateButtonSelection();
     });
-    this.input.keyboard!.on("keydown-S", () => {
+    this.input.keyboard?.on("keydown-S", () => {
       this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
       this.updateButtonSelection();
     });
-    this.input.keyboard!.on("keydown-ENTER", () => {
+    this.input.keyboard?.on("keydown-ENTER", () => {
       this.buttons[this.selectedIndex]?.hitArea.emit("pointerdown");
     });
-    this.input.keyboard!.on("keydown-SPACE", () => {
+    this.input.keyboard?.on("keydown-SPACE", () => {
       this.buttons[this.selectedIndex]?.hitArea.emit("pointerdown");
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.removeAllListeners();
     });
   }
 

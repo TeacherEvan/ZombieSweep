@@ -4,6 +4,22 @@ import { VehicleType } from "../config/vehicles";
 
 export type GameOverReason = "lives" | "subscriptions" | "completed";
 
+/**
+ * Safely retrieve GameState from a Phaser registry.
+ * Returns existing instance or creates + registers a fresh one
+ * so scenes never crash when loaded out of order.
+ */
+export function getOrCreateGameState(registry: {
+  get(key: string): unknown;
+  set(key: string, value: unknown): void;
+}): GameState {
+  const existing = registry.get("gameState");
+  if (existing instanceof GameState) return existing;
+  const fresh = new GameState();
+  registry.set("gameState", fresh);
+  return fresh;
+}
+
 export class GameState {
   day: number;
   lives: number;

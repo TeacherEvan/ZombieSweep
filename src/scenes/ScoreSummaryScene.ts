@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { GAME } from "../config/constants";
 import { MAPS } from "../maps/MapConfig";
 import { DayManager } from "../systems/DayManager";
-import { GameState } from "../systems/GameState";
+import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
 import {
   BC,
@@ -21,6 +21,7 @@ interface DeliveryData {
 export class ScoreSummaryScene extends Phaser.Scene {
   private gameState!: GameState;
   private deliveryData: DeliveryData[] = [];
+  private transitioning = false;
 
   constructor() {
     super({ key: "ScoreSummaryScene" });
@@ -31,7 +32,8 @@ export class ScoreSummaryScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.gameState = this.registry.get("gameState") as GameState;
+    this.gameState = getOrCreateGameState(this.registry);
+    this.transitioning = false;
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
@@ -289,6 +291,8 @@ export class ScoreSummaryScene extends Phaser.Scene {
     }
 
     const advance = () => {
+      if (this.transitioning) return;
+      this.transitioning = true;
       if (goToGameOver) {
         fadeToScene(this, "GameOverScene");
       } else {
@@ -296,7 +300,11 @@ export class ScoreSummaryScene extends Phaser.Scene {
       }
     };
 
-    this.input.keyboard!.once("keydown-ENTER", advance);
+    this.input.keyboard?.once("keydown-ENTER", advance);
     this.input.once("pointerdown", advance);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.removeAllListeners();
+    });
   }
 }

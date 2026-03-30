@@ -16,7 +16,7 @@ import {
 import { MAPS } from "../maps/MapConfig";
 import { generateRoute, Route } from "../maps/MapGenerator";
 import { DayManager } from "../systems/DayManager";
-import { GameState } from "../systems/GameState";
+import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
 import { HUD } from "../ui/HUD";
 import { PauseMenu } from "../ui/PauseMenu";
@@ -65,15 +65,17 @@ export class GameScene extends Phaser.Scene {
   private scrollSpeed = 0;
   private worldY = 0;
   private deliveries: boolean[] = [];
+  private transitioning = false;
 
   constructor() {
     super({ key: "GameScene" });
   }
 
   create(): void {
-    this.gameState = this.registry.get("gameState") as GameState;
+    this.gameState = getOrCreateGameState(this.registry);
     this.scoreManager = new ScoreManager(this.gameState);
     this.dayManager = new DayManager();
+    this.transitioning = false;
 
     const mapName = this.dayManager.getMapForDay(this.gameState.day);
     const mapConfig = MAPS[mapName];
@@ -164,21 +166,24 @@ export class GameScene extends Phaser.Scene {
     // Place pickups
     this.spawnPickups();
 
-    // Input
-    this.cursors = this.input.keyboard!.createCursorKeys();
-    this.wasd = {
-      W: this.input.keyboard!.addKey("W"),
-      A: this.input.keyboard!.addKey("A"),
-      S: this.input.keyboard!.addKey("S"),
-      D: this.input.keyboard!.addKey("D"),
-    };
-    this.keys = {
-      Q: this.input.keyboard!.addKey("Q"),
-      E: this.input.keyboard!.addKey("E"),
-      SPACE: this.input.keyboard!.addKey("SPACE"),
-      F: this.input.keyboard!.addKey("F"),
-      ESC: this.input.keyboard!.addKey("ESC"),
-    };
+    // Input (guard keyboard availability for touch-only devices)
+    const kb = this.input.keyboard;
+    if (kb) {
+      this.cursors = kb.createCursorKeys();
+      this.wasd = {
+        W: kb.addKey("W"),
+        A: kb.addKey("A"),
+        S: kb.addKey("S"),
+        D: kb.addKey("D"),
+      };
+      this.keys = {
+        Q: kb.addKey("Q"),
+        E: kb.addKey("E"),
+        SPACE: kb.addKey("SPACE"),
+        F: kb.addKey("F"),
+        ESC: kb.addKey("ESC"),
+      };
+    }
 
     // HUD + Pause
     this.hud = new HUD(
@@ -235,9 +240,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    if (this.transitioning) return;
     if (this.pauseMenu.getIsVisible()) return;
 
-    if (Phaser.Input.Keyboard.JustDown(this.keys.ESC)) {
+    if (this.keys?.ESC && Phaser.Input.Keyboard.JustDown(this.keys.ESC)) {
       this.pauseMenu.toggle();
       return;
     }
@@ -248,10 +254,10 @@ export class GameScene extends Phaser.Scene {
     // Movement
     let vx = 0;
     let vy = 0;
-    if (this.cursors.left.isDown || this.wasd.A.isDown) vx = -speed;
-    if (this.cursors.right.isDown || this.wasd.D.isDown) vx = speed;
-    if (this.cursors.up.isDown || this.wasd.W.isDown) vy = -speed;
-    if (this.cursors.down.isDown || this.wasd.S.isDown) vy = speed;
+    if (this.cursors?.left.isDown || this.wasd?.A.isDown) vx = -speed;
+    if (this.cursors?.right.isDown || this.wasd?.D.isDown) vx = speed;
+    if (this.cursors?.up.isDown || this.wasd?.W.isDown) vy = -speed;
+    if (this.cursors?.down.isDown || this.wasd?.S.isDown) vy = speed;
 
     this.player.setVelocity(vx, vy);
 
@@ -261,12 +267,14 @@ export class GameScene extends Phaser.Scene {
 
     // Throw newspaper left/right
     if (
+      this.keys?.Q &&
       Phaser.Input.Keyboard.JustDown(this.keys.Q) &&
       this.player.paperCount > 0
     ) {
       this.throwNewspaper("left");
     }
     if (
+      this.keys?.E &&
       Phaser.Input.Keyboard.JustDown(this.keys.E) &&
       this.player.paperCount > 0
     ) {
@@ -274,12 +282,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Melee attack
-    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
+    if (this.keys?.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
       this.meleeAttack();
     }
 
     // Ranged attack
-    if (Phaser.Input.Keyboard.JustDown(this.keys.F)) {
+    if (this.keys?.F && Phaser.Input.Keyboard.JustDown(this.keys.F)) {
       this.rangedAttack();
     }
 
@@ -307,7 +315,11 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Check if route is complete (passed all houses)
-    if (this.worldY > this.route.houses.length * 50 + 200) {
+    if (
+      this.worldY > this.route.houses.length * 50 + 200 &&
+      !this.transitioning
+    ) {
+      this.transitioning = true;
       this.endRoute();
     }
 
@@ -499,7 +511,8 @@ export class GameScene extends Phaser.Scene {
     this.gameState.loseLife();
     screenShake(this, 0.012, 200);
     damageFlash(this, 180);
-    if (this.gameState.isGameOver()) {
+    if (this.gameState.isGameOver() && !this.transitioning) {
+      this.transitioning = true;
       fadeToScene(this, "GameOverScene");
     } else {
       // Brief invincibility flash
@@ -523,7 +536,8 @@ export class GameScene extends Phaser.Scene {
     damageFlash(this, 200);
     deathFlash(this, sprite);
 
-    if (this.gameState.isGameOver()) {
+    if (this.gameState.isGameOver() && !this.transitioning) {
+      this.transitioning = true;
       fadeToScene(this, "GameOverScene");
     }
   }
@@ -601,13 +615,11 @@ export class GameScene extends Phaser.Scene {
         ZombieType.Runner,
         ZombieType.Spitter,
       ];
-      const type =
-        types[
-          Phaser.Math.Between(
-            0,
-            Math.min(2, Math.floor(this.gameState.day / 2)),
-          )
-        ];
+      const maxTypeIndex = Math.min(
+        types.length - 1,
+        Math.floor(this.gameState.day / 2),
+      );
+      const type = types[Phaser.Math.Between(0, maxTypeIndex)];
 
       let zombie;
       switch (type) {
