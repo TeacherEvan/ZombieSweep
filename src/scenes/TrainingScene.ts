@@ -3,6 +3,7 @@ import { createNewspaper } from "../entities/Newspaper";
 import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
+import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
 import { HUD } from "../ui/HUD";
 import { fadeIn, fadeToScene, floatingText } from "../utils/animations";
 
@@ -67,8 +68,9 @@ export class TrainingScene extends Phaser.Scene {
     // Header with dramatic styling
     this.add
       .text(482, 22, "TRAINING COURSE", {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontFamily: BROADCAST_FONT,
         fontSize: "34px",
+        fontStyle: "800",
         color: "#000000",
       })
       .setOrigin(0.5, 0)
@@ -77,9 +79,10 @@ export class TrainingScene extends Phaser.Scene {
 
     this.add
       .text(480, 20, "TRAINING COURSE", {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontFamily: BROADCAST_FONT,
         fontSize: "34px",
-        color: "#ddaa22",
+        fontStyle: "800",
+        color: BC.css.GOLD,
         shadow: {
           offsetX: 0,
           offsetY: 0,
@@ -93,9 +96,11 @@ export class TrainingScene extends Phaser.Scene {
 
     this.add
       .text(480, 58, "UNLIMITED PAPERS  ·  HIT TARGETS FOR BONUS", {
-        fontFamily: "'Courier New', monospace",
-        fontSize: "11px",
-        color: "#778866",
+        fontFamily: BROADCAST_FONT,
+        fontSize: "12px",
+        fontStyle: "600",
+        color: BC.TEXT_DIM,
+        letterSpacing: 2,
       })
       .setOrigin(0.5, 0)
       .setDepth(10);
@@ -175,9 +180,10 @@ export class TrainingScene extends Phaser.Scene {
     // Countdown timer display
     const timerText = this.add
       .text(920, 20, "15", {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontFamily: BROADCAST_FONT,
         fontSize: "28px",
-        color: "#ddddcc",
+        fontStyle: "800",
+        color: BC.TEXT,
       })
       .setOrigin(1, 0)
       .setScrollFactor(0)
@@ -191,7 +197,7 @@ export class TrainingScene extends Phaser.Scene {
         remaining--;
         timerText.setText(`${remaining}`);
         if (remaining <= 5) {
-          timerText.setColor("#cc2222");
+          timerText.setColor(BC.css.RED);
           // Pulse urgency
           this.tweens.add({
             targets: timerText,

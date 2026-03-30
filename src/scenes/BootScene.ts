@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -12,9 +13,9 @@ export class BootScene extends Phaser.Scene {
 
     // Loading bar background
     const progressBox = this.add.graphics();
-    progressBox.fillStyle(0x141418, 0.9);
+    progressBox.fillStyle(BC.CHROME, 0.9);
     progressBox.fillRoundedRect(width / 2 - 170, height / 2 - 30, 340, 60, 6);
-    progressBox.fillStyle(0xcc1100, 1);
+    progressBox.fillStyle(BC.RED, 1);
     progressBox.fillRect(width / 2 - 170, height / 2 - 30, 340, 3);
 
     const progressBar = this.add.graphics();
@@ -24,16 +25,18 @@ export class BootScene extends Phaser.Scene {
       height / 2 - 55,
       "LOADING...",
       {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontFamily: BROADCAST_FONT,
         fontSize: "22px",
-        color: "#cc1100",
+        fontStyle: "700",
+        color: BC.css.RED,
+        letterSpacing: 3,
       },
     );
     loadingText.setOrigin(0.5, 0.5);
 
     this.load.on("progress", (value: number) => {
       progressBar.clear();
-      progressBar.fillStyle(0xcc1100, 1);
+      progressBar.fillStyle(BC.RED, 1);
       progressBar.fillRoundedRect(
         width / 2 - 155,
         height / 2 - 12,
@@ -42,7 +45,7 @@ export class BootScene extends Phaser.Scene {
         3,
       );
       // Inner highlight
-      progressBar.fillStyle(0xff3300, 0.3);
+      progressBar.fillStyle(BC.RED_GLOW, 0.3);
       progressBar.fillRect(width / 2 - 155, height / 2 - 12, 310 * value, 8);
     });
 
