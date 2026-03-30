@@ -2,14 +2,21 @@ import Phaser from "phaser";
 import {
   BC,
   BROADCAST_FONT,
-  createChyron,
   createBroadcastButton,
+  createChyron,
 } from "../ui/broadcast-styles";
-import { fadeIn, fadeToScene } from "../utils/animations";
+import {
+  fadeIn,
+  fadeToScene,
+  isTouchPrimary,
+  prefersReducedMotion,
+  pulse,
+} from "../utils/animations";
 
 export class WelcomeScene extends Phaser.Scene {
   private selectedIndex = 0;
   private menuItems: ReturnType<typeof createBroadcastButton>[] = [];
+  private reducedMotion = false;
 
   constructor() {
     super({ key: "WelcomeScene" });
@@ -19,6 +26,7 @@ export class WelcomeScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
     this.selectedIndex = 0;
     this.menuItems = [];
+    this.reducedMotion = prefersReducedMotion();
 
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
@@ -44,6 +52,21 @@ export class WelcomeScene extends Phaser.Scene {
     borderBar.fillStyle(BC.RED, 1);
     borderBar.fillRect(0, 0, width, 3);
     borderBar.fillRect(0, height - 3, width, 3);
+
+    // ── Broadcast sweep: subtle signal scan across the screen ──
+    const scanline = this.add
+      .rectangle(0, -6, width, 2, BC.RED_GLOW, this.reducedMotion ? 0.03 : 0.08)
+      .setOrigin(0, 0.5);
+    if (!this.reducedMotion) {
+      this.tweens.add({
+        targets: scanline,
+        y: height + 6,
+        duration: 4800,
+        delay: 750,
+        repeat: -1,
+        ease: "Linear",
+      });
+    }
 
     // ── Chyron: title as breaking news slug ──
     const chyron = createChyron(
@@ -97,7 +120,7 @@ export class WelcomeScene extends Phaser.Scene {
 
       btn.hitArea.on("pointerover", () => {
         this.selectedIndex = i;
-        this.updateMenuSelection();
+        this.updateMenuSelection(true);
       });
       btn.hitArea.on("pointerdown", () => {
         if (item.scene) {
@@ -110,30 +133,40 @@ export class WelcomeScene extends Phaser.Scene {
       });
     });
 
-    this.time.delayedCall(600, () => this.updateMenuSelection());
+    this.time.delayedCall(600, () => this.updateMenuSelection(true));
 
     // ── Keyboard navigation ──
     this.input.keyboard!.on("keydown-UP", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      this.updateMenuSelection();
+      this.updateMenuSelection(true);
     });
     this.input.keyboard!.on("keydown-DOWN", () => {
-      this.selectedIndex = Math.min(menuDefs.length - 1, this.selectedIndex + 1);
-      this.updateMenuSelection();
+      this.selectedIndex = Math.min(
+        menuDefs.length - 1,
+        this.selectedIndex + 1,
+      );
+      this.updateMenuSelection(true);
     });
     this.input.keyboard!.on("keydown-W", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      this.updateMenuSelection();
+      this.updateMenuSelection(true);
     });
     this.input.keyboard!.on("keydown-S", () => {
-      this.selectedIndex = Math.min(menuDefs.length - 1, this.selectedIndex + 1);
-      this.updateMenuSelection();
+      this.selectedIndex = Math.min(
+        menuDefs.length - 1,
+        this.selectedIndex + 1,
+      );
+      this.updateMenuSelection(true);
     });
     this.input.keyboard!.on("keydown-ENTER", () => {
       this.menuItems[this.selectedIndex]?.hitArea.emit("pointerdown");
     });
     this.input.keyboard!.on("keydown-SPACE", () => {
       this.menuItems[this.selectedIndex]?.hitArea.emit("pointerdown");
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.removeAllListeners();
     });
 
     // ── Zombie silhouettes marching across bottom ──
@@ -195,14 +228,20 @@ export class WelcomeScene extends Phaser.Scene {
       })
       .setOrigin(0, 1);
 
+    const touchMode = isTouchPrimary();
     const prompt = this.add
-      .text(width - 14, height - 14, "PRESS ENTER TO BEGIN", {
-        fontFamily: BROADCAST_FONT,
-        fontSize: "11px",
-        fontStyle: "600",
-        color: BC.TEXT_MUTED,
-        letterSpacing: 2,
-      })
+      .text(
+        width - 14,
+        height - 14,
+        touchMode ? "TAP TO BEGIN" : "PRESS ENTER TO BEGIN",
+        {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "11px",
+          fontStyle: "600",
+          color: BC.TEXT_MUTED,
+          letterSpacing: 2,
+        },
+      )
       .setOrigin(1, 1);
 
     this.tweens.add({
@@ -214,10 +253,17 @@ export class WelcomeScene extends Phaser.Scene {
     });
   }
 
-  private updateMenuSelection(): void {
+  private updateMenuSelection(animate = false): void {
     this.menuItems.forEach((btn, i) => {
       btn.setSelected(i === this.selectedIndex);
     });
+
+    if (animate && !this.reducedMotion) {
+      const selected = this.menuItems[this.selectedIndex];
+      if (selected) {
+        pulse(this, selected.container, 1.03, 120);
+      }
+    }
   }
 
   private showControls(width: number, height: number): void {

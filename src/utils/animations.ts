@@ -247,3 +247,15 @@ export function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+
+// ── Touch Device Detection ──
+// Returns true when the primary input is touch (phone/tablet).
+// Used to swap instruction text ("PRESS ENTER" → "TAP").
+export function isTouchPrimary(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0 ||
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}

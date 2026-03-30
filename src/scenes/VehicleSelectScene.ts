@@ -1,11 +1,7 @@
 import Phaser from "phaser";
 import { VEHICLE_STATS, VehicleType, WeaponSlot } from "../config/vehicles";
-import {
-  BC,
-  BROADCAST_FONT,
-  createChyron,
-} from "../ui/broadcast-styles";
-import { fadeIn, fadeToScene } from "../utils/animations";
+import { BC, BROADCAST_FONT, createChyron } from "../ui/broadcast-styles";
+import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
 
 const VEHICLE_COLORS: Record<string, number> = {
   [VehicleType.Bicycle]: 0x22bb44,
@@ -56,14 +52,20 @@ export class VehicleSelectScene extends Phaser.Scene {
     });
 
     // Instruction
+    const touchMode = isTouchPrimary();
     this.add
-      .text(width / 2, height - 28, "← →  SELECT  ·  ENTER  CONFIRM", {
-        fontFamily: BROADCAST_FONT,
-        fontSize: "11px",
-        fontStyle: "600",
-        color: BC.TEXT_MUTED,
-        letterSpacing: 2,
-      })
+      .text(
+        width / 2,
+        height - 28,
+        touchMode ? "TAP TO SELECT" : "← →  SELECT  ·  ENTER  CONFIRM",
+        {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "11px",
+          fontStyle: "600",
+          color: BC.TEXT_MUTED,
+          letterSpacing: 2,
+        },
+      )
       .setOrigin(0.5);
 
     // Vehicle cards
@@ -132,12 +134,7 @@ export class VehicleSelectScene extends Phaser.Scene {
     // Left accent bar — vehicle color
     const accentBar = this.add.graphics().setName("accent");
     accentBar.fillStyle(accentColor, 1);
-    accentBar.fillRect(
-      -cardWidth / 2,
-      -cardHeight / 2,
-      4,
-      cardHeight,
-    );
+    accentBar.fillRect(-cardWidth / 2, -cardHeight / 2, 4, cardHeight);
 
     // Hit area
     const hitArea = this.add

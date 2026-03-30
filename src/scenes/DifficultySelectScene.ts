@@ -3,7 +3,7 @@ import { Difficulty } from "../config/difficulty";
 import { VehicleType } from "../config/vehicles";
 import { GameState } from "../systems/GameState";
 import { BC, BROADCAST_FONT, createChyron } from "../ui/broadcast-styles";
-import { fadeIn, fadeToScene } from "../utils/animations";
+import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
 
 const THREAT_LEVELS: Record<
   string,
@@ -93,14 +93,20 @@ export class DifficultySelectScene extends Phaser.Scene {
     });
 
     // Instruction
+    const touchMode = isTouchPrimary();
     this.add
-      .text(width / 2, height - 28, "↑ ↓  SELECT  ·  ENTER  CONFIRM", {
-        fontFamily: BROADCAST_FONT,
-        fontSize: "11px",
-        fontStyle: "600",
-        color: BC.TEXT_MUTED,
-        letterSpacing: 2,
-      })
+      .text(
+        width / 2,
+        height - 28,
+        touchMode ? "TAP TO SELECT" : "↑ ↓  SELECT  ·  ENTER  CONFIRM",
+        {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "11px",
+          fontStyle: "600",
+          color: BC.TEXT_MUTED,
+          letterSpacing: 2,
+        },
+      )
       .setOrigin(0.5);
 
     // Threat rows

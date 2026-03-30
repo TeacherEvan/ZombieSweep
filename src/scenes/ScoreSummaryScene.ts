@@ -11,7 +11,7 @@ import {
   createChyron,
   createDataRow,
 } from "../ui/broadcast-styles";
-import { fadeIn, fadeToScene } from "../utils/animations";
+import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
 
 interface DeliveryData {
   house: { isSubscriber: boolean };
@@ -254,10 +254,15 @@ export class ScoreSummaryScene extends Phaser.Scene {
     const isLastDay = this.gameState.day >= GAME.TOTAL_DAYS;
     const isSubsGone = this.gameState.subscribers <= 0;
 
+    const touchMode = isTouchPrimary();
     const promptText =
       isLastDay || isSubsGone || this.gameState.isGameOver()
-        ? "PRESS ENTER FOR FINAL RESULTS"
-        : "PRESS ENTER TO CONTINUE COVERAGE";
+        ? touchMode
+          ? "TAP FOR FINAL RESULTS"
+          : "PRESS ENTER FOR FINAL RESULTS"
+        : touchMode
+          ? "TAP TO CONTINUE COVERAGE"
+          : "PRESS ENTER TO CONTINUE COVERAGE";
 
     const prompt = this.add
       .text(cx, height - 36, promptText, {
@@ -277,15 +282,21 @@ export class ScoreSummaryScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    if (isLastDay || isSubsGone || this.gameState.isGameOver()) {
-      this.input.keyboard!.once("keydown-ENTER", () => {
-        fadeToScene(this, "GameOverScene");
-      });
-    } else {
+    const goToGameOver = isLastDay || isSubsGone || this.gameState.isGameOver();
+
+    if (!goToGameOver) {
       this.gameState.advanceDay();
-      this.input.keyboard!.once("keydown-ENTER", () => {
-        fadeToScene(this, "GameScene");
-      });
     }
+
+    const advance = () => {
+      if (goToGameOver) {
+        fadeToScene(this, "GameOverScene");
+      } else {
+        fadeToScene(this, "GameScene");
+      }
+    };
+
+    this.input.keyboard!.once("keydown-ENTER", advance);
+    this.input.once("pointerdown", advance);
   }
 }
