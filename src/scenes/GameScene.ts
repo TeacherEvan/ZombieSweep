@@ -21,6 +21,16 @@ import { ScoreManager } from "../systems/ScoreManager";
 import { HUD } from "../ui/HUD";
 import { PauseMenu } from "../ui/PauseMenu";
 import {
+  collectEffect,
+  damageFlash,
+  deathFlash,
+  fadeIn,
+  fadeToScene,
+  floatingText,
+  meleeSwingArc,
+  screenShake,
+} from "../utils/animations";
+import {
   createMeleeWeapon,
   createRangedWeapon,
   MeleeWeapon,
@@ -99,6 +109,7 @@ export class GameScene extends Phaser.Scene {
 
     // Road background — dark asphalt with texture
     this.cameras.main.setBackgroundColor("#2a2a2a");
+    fadeIn(this);
 
     // Road surface detail
     const roadGfx = this.add.graphics();
@@ -289,8 +300,7 @@ export class GameScene extends Phaser.Scene {
     this.zombieSprites.getChildren().forEach((obj) => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
       const zombie = sprite.getData("zombie") as Zombie;
-      if (zombie.isDead()) {
-        sprite.destroy();
+      if (!zombie || zombie.isDead()) {
         return;
       }
       this.physics.moveToObject(sprite, this.player, zombie.speed * 20);
@@ -332,6 +342,9 @@ export class GameScene extends Phaser.Scene {
     const damage = this.player.meleeWeapon.attack();
     const range = this.player.meleeWeapon.range * 32;
 
+    // Visual swing arc
+    meleeSwingArc(this, this.player.x, this.player.y, range, 0xccaa88);
+
     this.zombieSprites.getChildren().forEach((obj) => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
       const dist = Phaser.Math.Distance.Between(
@@ -345,7 +358,7 @@ export class GameScene extends Phaser.Scene {
         zombie.takeDamage(damage);
         if (zombie.isDead()) {
           this.awardZombieKill(zombie);
-          sprite.destroy();
+          deathFlash(this, sprite);
         }
       }
     });
@@ -380,7 +393,7 @@ export class GameScene extends Phaser.Scene {
       zombie.takeDamage(damage);
       if (zombie.isDead()) {
         this.awardZombieKill(zombie);
-        (nearest as Phaser.Physics.Arcade.Sprite).destroy();
+        deathFlash(this, nearest as Phaser.Physics.Arcade.Sprite);
       }
     }
   }
@@ -413,12 +426,36 @@ export class GameScene extends Phaser.Scene {
           const xDist = Math.abs(npSprite.x - houseRect.x);
           if (xDist < 20) {
             this.scoreManager.mailboxDelivery();
+            floatingText(
+              this,
+              houseRect.x,
+              houseRect.y - 20,
+              "MAILBOX!",
+              "#22ee66",
+              "18px",
+            );
           } else {
             this.scoreManager.porchDelivery();
+            floatingText(
+              this,
+              houseRect.x,
+              houseRect.y - 20,
+              "DELIVERED",
+              "#44cc66",
+              "14px",
+            );
           }
         } else {
           // Non-subscriber — potential damage points
           this.scoreManager.windowBreak();
+          floatingText(
+            this,
+            houseRect.x,
+            houseRect.y - 20,
+            "CRASH!",
+            "#cc4422",
+            "16px",
+          );
         }
         break;
       }
@@ -435,17 +472,35 @@ export class GameScene extends Phaser.Scene {
       pickup.collect();
       if (pickup.type === "NewspaperBundle") {
         this.player.paperCount += pickup.quantity;
+        floatingText(
+          this,
+          sprite.x,
+          sprite.y,
+          `+${pickup.quantity} PAPERS`,
+          "#f5f0d0",
+          "13px",
+        );
       } else if (pickup.type === "AmmoCrate") {
         this.player.rangedWeapon.addAmmo(pickup.quantity);
+        floatingText(
+          this,
+          sprite.x,
+          sprite.y,
+          `+${pickup.quantity} AMMO`,
+          "#ff7733",
+          "13px",
+        );
       }
-      sprite.destroy();
+      collectEffect(this, sprite);
     }
   }
 
   private onHazardHit(): void {
     this.gameState.loseLife();
+    screenShake(this, 0.012, 200);
+    damageFlash(this, 180);
     if (this.gameState.isGameOver()) {
-      this.scene.start("GameOverScene");
+      fadeToScene(this, "GameOverScene");
     } else {
       // Brief invincibility flash
       this.player.setAlpha(0.5);
@@ -464,10 +519,12 @@ export class GameScene extends Phaser.Scene {
     if (!zombie || zombie.isDead()) return;
 
     this.gameState.loseLife();
-    sprite.destroy();
+    screenShake(this, 0.015, 250);
+    damageFlash(this, 200);
+    deathFlash(this, sprite);
 
     if (this.gameState.isGameOver()) {
-      this.scene.start("GameOverScene");
+      fadeToScene(this, "GameOverScene");
     }
   }
 
@@ -487,7 +544,7 @@ export class GameScene extends Phaser.Scene {
 
     if (zombie.isDead()) {
       this.awardZombieKill(zombie);
-      zombieSprite.destroy();
+      deathFlash(this, zombieSprite);
     }
   }
 
@@ -579,6 +636,6 @@ export class GameScene extends Phaser.Scene {
       delivered: this.deliveries[i],
     }));
 
-    this.scene.start("TrainingScene", { deliveryData });
+    fadeToScene(this, "TrainingScene", { deliveryData });
   }
 }

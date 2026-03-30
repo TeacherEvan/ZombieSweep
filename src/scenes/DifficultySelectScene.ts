@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { Difficulty } from "../config/difficulty";
 import { VehicleType } from "../config/vehicles";
 import { GameState } from "../systems/GameState";
+import { fadeIn, fadeToScene } from "../utils/animations";
 
 const DIFF_STYLES: Record<
   string,
@@ -50,6 +51,7 @@ export class DifficultySelectScene extends Phaser.Scene {
     this.rows = [];
     this.selectedIndex = 0;
     this.cameras.main.setBackgroundColor("#0d0d0d");
+    fadeIn(this);
 
     // Atmospheric glow
     const bgGlow = this.add.graphics();
@@ -261,7 +263,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       duration: 80,
       yoyo: true,
       repeat: 2,
-      onComplete: () => this.scene.start("GameScene"),
+      onComplete: () => fadeToScene(this, "GameScene"),
     });
   }
 }

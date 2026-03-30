@@ -4,6 +4,7 @@ import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
 import { HUD } from "../ui/HUD";
+import { fadeIn, fadeToScene, floatingText } from "../utils/animations";
 
 interface DeliveryData {
   house: { isSubscriber: boolean };
@@ -40,6 +41,7 @@ export class TrainingScene extends Phaser.Scene {
     this.dayManager = new DayManager();
 
     this.cameras.main.setBackgroundColor("#1a2a1a");
+    fadeIn(this);
 
     // Training ground textures
     const groundGfx = this.add.graphics();
@@ -170,6 +172,39 @@ export class TrainingScene extends Phaser.Scene {
     const paperCount = 999; // Unlimited
     this.hud = new HUD(this, this.gameState, paperCount, 0);
 
+    // Countdown timer display
+    const timerText = this.add
+      .text(920, 20, "15", {
+        fontFamily: "Impact, 'Arial Black', sans-serif",
+        fontSize: "28px",
+        color: "#ddddcc",
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    let remaining = 15;
+    this.time.addEvent({
+      delay: 1000,
+      repeat: 14,
+      callback: () => {
+        remaining--;
+        timerText.setText(`${remaining}`);
+        if (remaining <= 5) {
+          timerText.setColor("#cc2222");
+          // Pulse urgency
+          this.tweens.add({
+            targets: timerText,
+            scaleX: 1.3,
+            scaleY: 1.3,
+            duration: 120,
+            yoyo: true,
+            ease: "Quart.easeOut",
+          });
+        }
+      },
+    });
+
     // Auto-end after 15 seconds
     this.time.delayedCall(15000, () => this.endTraining());
   }
@@ -230,12 +265,43 @@ export class TrainingScene extends Phaser.Scene {
     _targetObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
   ): void {
     const paperSprite = _paperObj as Phaser.Physics.Arcade.Sprite;
+    const targetSprite = _targetObj as Phaser.Physics.Arcade.Sprite;
     this.consecutiveHits++;
     // Multiplier: 1x, 2x, 3x etc.
     this.scoreManager.trainingTarget();
     if (this.consecutiveHits > 1) {
       this.gameState.addRawScore(50 * (this.consecutiveHits - 1));
     }
+
+    // Target hit flash
+    targetSprite.setTint(0xffffff);
+    this.time.delayedCall(100, () => {
+      targetSprite.clearTint();
+    });
+
+    // Floating combo text
+    if (this.consecutiveHits > 1) {
+      floatingText(
+        this,
+        targetSprite.x,
+        targetSprite.y - 10,
+        `${this.consecutiveHits}× COMBO!`,
+        "#ffcc22",
+        "20px",
+        50,
+        900,
+      );
+    } else {
+      floatingText(
+        this,
+        targetSprite.x,
+        targetSprite.y - 10,
+        "HIT!",
+        "#22ee66",
+        "14px",
+      );
+    }
+
     paperSprite.destroy();
   }
 
@@ -245,6 +311,14 @@ export class TrainingScene extends Phaser.Scene {
   ): void {
     const paperSprite = _paperObj as Phaser.Physics.Arcade.Sprite;
     this.scoreManager.trainingRamp();
+    floatingText(
+      this,
+      paperSprite.x,
+      paperSprite.y - 10,
+      "RAMP!",
+      "#ddaa22",
+      "14px",
+    );
     paperSprite.destroy();
   }
 
@@ -254,6 +328,6 @@ export class TrainingScene extends Phaser.Scene {
   }
 
   private endTraining(): void {
-    this.scene.start("ScoreSummaryScene", { deliveryData: this.deliveryData });
+    fadeToScene(this, "ScoreSummaryScene", { deliveryData: this.deliveryData });
   }
 }

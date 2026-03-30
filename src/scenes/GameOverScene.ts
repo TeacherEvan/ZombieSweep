@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { POINTS } from "../config/constants";
 import { GameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
+import { countUp, fadeIn, fadeToScene } from "../utils/animations";
 
 export class GameOverScene extends Phaser.Scene {
   private gameState!: GameState;
@@ -14,6 +15,7 @@ export class GameOverScene extends Phaser.Scene {
     this.gameState = this.registry.get("gameState") as GameState;
     const scoreManager = new ScoreManager(this.gameState);
     this.cameras.main.setBackgroundColor("#0a0a0a");
+    fadeIn(this);
 
     const { width, height } = this.cameras.main;
     const cx = width / 2;
@@ -166,7 +168,7 @@ export class GameOverScene extends Phaser.Scene {
     y += 28;
 
     const scoreText = this.add
-      .text(cx, y, `${this.gameState.score}`, {
+      .text(cx, y, "0", {
         fontFamily: "Impact, 'Arial Black', sans-serif",
         fontSize: "64px",
         color: "#ddaa22",
@@ -181,7 +183,7 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setAlpha(0);
 
-    // Score count-up animation
+    // Score entrance + count-up animation
     this.tweens.add({
       targets: scoreText,
       alpha: 1,
@@ -190,6 +192,9 @@ export class GameOverScene extends Phaser.Scene {
       duration: 800,
       delay: 500,
       ease: "Back.easeOut",
+      onComplete: () => {
+        countUp(this, scoreText, this.gameState.score, 1500, 0);
+      },
     });
 
     y += 90;
@@ -200,14 +205,14 @@ export class GameOverScene extends Phaser.Scene {
         text: "PLAY AGAIN",
         callback: () => {
           this.gameState.reset();
-          this.scene.start("WelcomeScene");
+          fadeToScene(this, "WelcomeScene");
         },
       },
       {
         text: "MAIN MENU",
         callback: () => {
           this.gameState.reset();
-          this.scene.start("WelcomeScene");
+          fadeToScene(this, "WelcomeScene");
         },
       },
     ];
@@ -253,7 +258,7 @@ export class GameOverScene extends Phaser.Scene {
     // Keyboard shortcut
     this.input.keyboard!.on("keydown-ENTER", () => {
       this.gameState.reset();
-      this.scene.start("WelcomeScene");
+      fadeToScene(this, "WelcomeScene");
     });
   }
 }

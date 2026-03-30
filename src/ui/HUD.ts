@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
+import { pulse } from "../utils/animations";
 
 export class HUD {
   private scene: Phaser.Scene;
@@ -16,6 +17,9 @@ export class HUD {
 
   private paperCount: number;
   private ammoCount: number;
+  private lastScore = 0;
+  private lastLives = 0;
+  private lastPaperCount = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -28,6 +32,9 @@ export class HUD {
     this.dayManager = new DayManager();
     this.paperCount = paperCount;
     this.ammoCount = ammoCount;
+    this.lastScore = gameState.score;
+    this.lastLives = gameState.lives;
+    this.lastPaperCount = paperCount;
 
     this.create();
   }
@@ -128,5 +135,30 @@ export class HUD {
     this.livesText.setText("❤️".repeat(this.gameState.lives));
     this.papersText.setText(`${this.paperCount}   Ammo: ${this.ammoCount}`);
     this.subscribersText.setText(`${this.gameState.subscribers}/10`);
+
+    // Score changed — pulse the score text
+    if (this.gameState.score !== this.lastScore) {
+      pulse(this.scene, this.scoreText, 1.3, 180);
+      this.lastScore = this.gameState.score;
+    }
+
+    // Life lost — flash lives text red then back
+    if (this.gameState.lives < this.lastLives) {
+      this.livesText.setColor("#ff2222");
+      pulse(this.scene, this.livesText, 1.4, 200);
+      this.scene.time.delayedCall(300, () => {
+        this.livesText.setColor("#ddddcc");
+      });
+      this.lastLives = this.gameState.lives;
+    }
+
+    // Low paper warning — text turns red and pulses
+    if (this.paperCount <= 3 && this.paperCount !== this.lastPaperCount) {
+      this.papersText.setColor("#cc2222");
+      pulse(this.scene, this.papersText, 1.2, 150);
+    } else if (this.paperCount > 3) {
+      this.papersText.setColor("#ddddcc");
+    }
+    this.lastPaperCount = this.paperCount;
   }
 }

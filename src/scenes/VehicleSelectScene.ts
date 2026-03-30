@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { VEHICLE_STATS, VehicleType, WeaponSlot } from "../config/vehicles";
+import { fadeIn, fadeToScene } from "../utils/animations";
 
 const VEHICLE_COLORS: Record<string, number> = {
   [VehicleType.Bicycle]: 0x22bb44,
@@ -21,6 +22,7 @@ export class VehicleSelectScene extends Phaser.Scene {
     this.cards = [];
     this.selectedIndex = 0;
     this.cameras.main.setBackgroundColor("#0d0d0d");
+    fadeIn(this);
 
     // Atmospheric background
     const bgGlow = this.add.graphics();
@@ -291,7 +293,7 @@ export class VehicleSelectScene extends Phaser.Scene {
       duration: 120,
       yoyo: true,
       onComplete: () => {
-        this.scene.start("DifficultySelectScene", { vehicle });
+        fadeToScene(this, "DifficultySelectScene", { vehicle });
       },
     });
   }

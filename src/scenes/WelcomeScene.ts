@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { fadeIn, fadeToScene } from "../utils/animations";
 
 export class WelcomeScene extends Phaser.Scene {
   private selectedIndex = 0;
@@ -19,6 +20,7 @@ export class WelcomeScene extends Phaser.Scene {
 
     // ── Background: deep dark with vignette effect ──
     this.cameras.main.setBackgroundColor("#0d0d0d");
+    fadeIn(this);
 
     // Atmospheric background layers — blood-red radial glow
     const bgGlow = this.add.graphics();
@@ -172,7 +174,7 @@ export class WelcomeScene extends Phaser.Scene {
       bg.on("pointerdown", () => {
         this.flashAndGo(bg, () => {
           if (item.scene) {
-            this.scene.start(item.scene);
+            fadeToScene(this, item.scene);
           } else if (item.action === "controls") {
             this.showControls(width, height);
           } else if (item.action === "credits") {

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { fadeToScene } from "../utils/animations";
 
 export class PauseMenu {
   private scene: Phaser.Scene;
@@ -112,7 +113,7 @@ export class PauseMenu {
       quitText.setColor("#cc4422");
     });
     quitBg.on("pointerdown", () => {
-      this.scene.scene.start("WelcomeScene");
+      fadeToScene(this.scene, "WelcomeScene");
     });
 
     this.container.add([
@@ -138,13 +139,28 @@ export class PauseMenu {
   show(): void {
     this.isVisible = true;
     this.container.setVisible(true);
+    this.container.setAlpha(0);
+    this.scene.tweens.add({
+      targets: this.container,
+      alpha: 1,
+      duration: 200,
+      ease: "Quart.easeOut",
+    });
     this.scene.physics.pause();
   }
 
   hide(): void {
-    this.isVisible = false;
-    this.container.setVisible(false);
-    this.scene.physics.resume();
+    this.scene.tweens.add({
+      targets: this.container,
+      alpha: 0,
+      duration: 150,
+      ease: "Quart.easeIn",
+      onComplete: () => {
+        this.isVisible = false;
+        this.container.setVisible(false);
+        this.scene.physics.resume();
+      },
+    });
   }
 
   getIsVisible(): boolean {

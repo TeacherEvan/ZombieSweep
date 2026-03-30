@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { GAME } from "../config/constants";
 import { GameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
+import { fadeIn, fadeToScene } from "../utils/animations";
 
 interface DeliveryData {
   house: { isSubscriber: boolean };
@@ -23,6 +24,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
   create(): void {
     this.gameState = this.registry.get("gameState") as GameState;
     this.cameras.main.setBackgroundColor("#0d0d0d");
+    fadeIn(this);
 
     const { width, height } = this.cameras.main;
     const cx = width / 2;
@@ -103,6 +105,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
       "DELIVERIES",
       `${successfulDeliveries} / ${subscriberHouses.length}`,
       deliveryColor,
+      400,
     );
     y += 38;
 
@@ -172,9 +175,17 @@ export class ScoreSummaryScene extends Phaser.Scene {
       "SUBSCRIBERS",
       `${this.gameState.subscribers}`,
       "#aaaaaa",
+      600,
     );
     y += 36;
-    this.createStatRow(cx, y, "SCORE", `${this.gameState.score}`, "#ddaa22");
+    this.createStatRow(
+      cx,
+      y,
+      "SCORE",
+      `${this.gameState.score}`,
+      "#ddaa22",
+      800,
+    );
     y += 36;
     this.createStatRow(
       cx,
@@ -182,6 +193,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
       "LIVES",
       "❤️".repeat(this.gameState.lives),
       "#cc4444",
+      1000,
     );
     y += 42;
 
@@ -249,12 +261,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
 
     if (isLastDay || isSubsGone || this.gameState.isGameOver()) {
       this.input.keyboard!.once("keydown-ENTER", () => {
-        this.scene.start("GameOverScene");
+        fadeToScene(this, "GameOverScene");
       });
     } else {
       this.gameState.advanceDay();
       this.input.keyboard!.once("keydown-ENTER", () => {
-        this.scene.start("GameScene");
+        fadeToScene(this, "GameScene");
       });
     }
   }
@@ -265,21 +277,37 @@ export class ScoreSummaryScene extends Phaser.Scene {
     label: string,
     value: string,
     valueColor: string,
+    delay = 0,
   ): void {
-    this.add
+    const labelText = this.add
       .text(cx - 120, y, label, {
         fontFamily: "'Courier New', monospace",
         fontSize: "13px",
         color: "#666655",
       })
-      .setOrigin(0, 0);
+      .setOrigin(0, 0)
+      .setAlpha(0);
 
-    this.add
+    const valueText = this.add
       .text(cx + 120, y, value, {
         fontFamily: "Impact, 'Arial Black', sans-serif",
         fontSize: "20px",
         color: valueColor,
       })
-      .setOrigin(1, 0);
+      .setOrigin(1, 0)
+      .setAlpha(0);
+
+    // Staggered entrance
+    this.tweens.add({
+      targets: [labelText, valueText],
+      alpha: 1,
+      x: {
+        from: (target: Phaser.GameObjects.Text) => target.x - 20,
+        to: (target: Phaser.GameObjects.Text) => target.x,
+      },
+      duration: 350,
+      delay,
+      ease: "Quart.easeOut",
+    });
   }
 }
