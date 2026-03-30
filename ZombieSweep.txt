@@ -1,0 +1,25 @@
+The player assumes the role of a Zombie exterminator on a bicycle living in a post apocalyptic world and everyone has grown use to living with zombies. Killing zombies whilst Delivering newspapers along a suburban street in the United States, which is displayed in an oblique projection view. Controls consist of a set of handlebars that can be turned/tilted to steer and control speed, with mounted buttons that can be pressed to throw papers.
+
+At the start of the game, the player is offered a choice of three difficulty settings: Easy Street, Middle Road, and Hard Way. The latter two options double or triple all point values, respectively. The street consists of 20 houses, 10 of which are originally decorated in bright colors to mark them as subscribers. 
+
+The primary goal is to shoot attacking or passive zombies while delivering news-papers on a bicycle, to subscribers by throwing them either onto the front porch or into the mailbox, while avoiding obstacles such as cars, attacking or passive zombies, skateboarders, and rolling tires that are on fire. Bonus points are awarded for damaging non-subscribers' houses (breaking windows, knocking over tombstones, killing zombies etc.) and hitting certain obstacles with papers or bullets depending on the weapon. The player has a limited supply of papers and bullets and must pick up bundles lying on the ground in order to restock. After completing the route, the player moves onto a training course and can earn points for hitting targets and using ramps to jump over walls/ditches/holes, with an unlimited supply of papers. Crashing into any obstacle on the route costs the player one life, while doing so on the training course ends it immediately without penalty.
+
+After the training course, the player earns bonus points for each successful delivery and advances to the next level. Any subscribers who did not receive a paper or who suffered damage to their houses will cancel their subscriptions, while making all deliveries will add one subscriber to the route, up to a maximum of 10.
+
+The game consists of seven levels, each corresponding to a different day from Monday through Sunday. Papers on the Sunday level are heavier than on earlier days and thus travel more slowly when thrown. The game ends once each life is exhausted, all subscriptions are canceled, or the player completes the Sunday training course, whichever comes first. In the last case, the player earns a bonus for any remaining lives.
+
+Mechanics is based off the Paperboy (video game) from the 1980's arcade game.
+
+Plan must include:
+Wellcome window
+3x maps
+3x vehicles (Bicycle, Roller blades and Skateboard)
+3x weappons
+3x types of houses
+3x types of citizens
+3x types of zombies
+3x Types of hazzards (Whole in the ground, log accross the road, ice)
+
+Game has to be able to run through Vercel
+
+

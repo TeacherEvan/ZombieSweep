@@ -1,0 +1,543 @@
+import Phaser from "phaser";
+import { GAME } from "../config/constants";
+import { VEHICLE_STATS, WeaponSlot } from "../config/vehicles";
+import {
+  createNewspaper,
+  Newspaper,
+  NewspaperState,
+} from "../entities/Newspaper";
+import {
+  createRunner,
+  createShambler,
+  createSpitter,
+  Zombie,
+  ZombieType,
+} from "../entities/Zombie";
+import { MAPS } from "../maps/MapConfig";
+import { generateRoute, Route } from "../maps/MapGenerator";
+import { DayManager } from "../systems/DayManager";
+import { GameState } from "../systems/GameState";
+import { ScoreManager } from "../systems/ScoreManager";
+import { HUD } from "../ui/HUD";
+import { PauseMenu } from "../ui/PauseMenu";
+import {
+  createMeleeWeapon,
+  createRangedWeapon,
+  MeleeWeapon,
+  RangedWeapon,
+} from "../weapons/Weapon";
+
+interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
+  paperCount: number;
+  meleeWeapon: MeleeWeapon;
+  rangedWeapon: RangedWeapon;
+}
+
+export class GameScene extends Phaser.Scene {
+  private gameState!: GameState;
+  private scoreManager!: ScoreManager;
+  private dayManager!: DayManager;
+  private route!: Route;
+  private hud!: HUD;
+  private pauseMenu!: PauseMenu;
+
+  private player!: PlayerSprite;
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
+  private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+
+  private zombieSprites!: Phaser.Physics.Arcade.Group;
+  private newspaperSprites!: Phaser.Physics.Arcade.Group;
+  private houseSprites: Phaser.GameObjects.Rectangle[] = [];
+  private hazardSprites!: Phaser.Physics.Arcade.StaticGroup;
+  private pickupSprites!: Phaser.Physics.Arcade.StaticGroup;
+
+  private scrollSpeed = 0;
+  private worldY = 0;
+  private deliveries: boolean[] = [];
+
+  constructor() {
+    super({ key: "GameScene" });
+  }
+
+  create(): void {
+    this.gameState = this.registry.get("gameState") as GameState;
+    this.scoreManager = new ScoreManager(this.gameState);
+    this.dayManager = new DayManager();
+
+    const mapName = this.dayManager.getMapForDay(this.gameState.day);
+    const mapConfig = MAPS[mapName];
+    this.route = generateRoute(
+      mapConfig,
+      this.gameState.difficulty,
+      this.gameState.day,
+      this.gameState.subscribers,
+    );
+
+    this.deliveries = new Array(this.route.houses.length).fill(false);
+    this.worldY = 0;
+
+    const vehicleStats = VEHICLE_STATS[this.gameState.vehicle];
+
+    // Create physics groups
+    this.zombieSprites = this.physics.add.group();
+    this.newspaperSprites = this.physics.add.group();
+    this.hazardSprites = this.physics.add.staticGroup();
+    this.pickupSprites = this.physics.add.staticGroup();
+    this.houseSprites = [];
+
+    // Player
+    const playerKey = `player-${this.gameState.vehicle.toLowerCase()}`;
+    this.player = this.physics.add.sprite(480, 450, playerKey) as PlayerSprite;
+    this.player.setCollideWorldBounds(true);
+    this.player.paperCount = GAME.STARTING_PAPERS;
+
+    const meleeConfig = vehicleStats.weapons[WeaponSlot.Melee];
+    const rangedConfig = vehicleStats.weapons[WeaponSlot.Ranged];
+    this.player.meleeWeapon = createMeleeWeapon(meleeConfig);
+    this.player.rangedWeapon = createRangedWeapon(rangedConfig);
+
+    // Road background
+    this.cameras.main.setBackgroundColor("#555555");
+    // Sidewalks
+    this.add.rectangle(80, 270, 120, 540, 0x888888);
+    this.add.rectangle(880, 270, 120, 540, 0x888888);
+
+    // Place houses on both sides of street
+    this.spawnHouses();
+
+    // Place hazards
+    this.spawnHazards();
+
+    // Place pickups
+    this.spawnPickups();
+
+    // Input
+    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.wasd = {
+      W: this.input.keyboard!.addKey("W"),
+      A: this.input.keyboard!.addKey("A"),
+      S: this.input.keyboard!.addKey("S"),
+      D: this.input.keyboard!.addKey("D"),
+    };
+    this.keys = {
+      Q: this.input.keyboard!.addKey("Q"),
+      E: this.input.keyboard!.addKey("E"),
+      SPACE: this.input.keyboard!.addKey("SPACE"),
+      F: this.input.keyboard!.addKey("F"),
+      ESC: this.input.keyboard!.addKey("ESC"),
+    };
+
+    // HUD + Pause
+    this.hud = new HUD(
+      this,
+      this.gameState,
+      this.player.paperCount,
+      this.player.rangedWeapon.ammo,
+    );
+    this.pauseMenu = new PauseMenu(this);
+
+    // Collisions
+    this.physics.add.overlap(
+      this.player,
+      this.pickupSprites,
+      this
+        .onPickup as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      undefined,
+      this,
+    );
+    this.physics.add.overlap(
+      this.player,
+      this.hazardSprites,
+      this
+        .onHazardHit as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      undefined,
+      this,
+    );
+    this.physics.add.overlap(
+      this.player,
+      this.zombieSprites,
+      this
+        .onZombieContact as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      undefined,
+      this,
+    );
+    this.physics.add.overlap(
+      this.newspaperSprites,
+      this.zombieSprites,
+      this
+        .onNewspaperHitZombie as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      undefined,
+      this,
+    );
+
+    // Spawn initial zombies
+    this.spawnZombieWave();
+
+    // Timer to spawn zombies periodically
+    this.time.addEvent({
+      delay: 3000,
+      callback: () => this.spawnZombieWave(),
+      loop: true,
+    });
+  }
+
+  update(_time: number, delta: number): void {
+    if (this.pauseMenu.getIsVisible()) return;
+
+    if (Phaser.Input.Keyboard.JustDown(this.keys.ESC)) {
+      this.pauseMenu.toggle();
+      return;
+    }
+
+    const vehicleStats = VEHICLE_STATS[this.gameState.vehicle];
+    const speed = vehicleStats.speed * 30;
+
+    // Movement
+    let vx = 0;
+    let vy = 0;
+    if (this.cursors.left.isDown || this.wasd.A.isDown) vx = -speed;
+    if (this.cursors.right.isDown || this.wasd.D.isDown) vx = speed;
+    if (this.cursors.up.isDown || this.wasd.W.isDown) vy = -speed;
+    if (this.cursors.down.isDown || this.wasd.S.isDown) vy = speed;
+
+    this.player.setVelocity(vx, vy);
+
+    // Auto scroll
+    this.scrollSpeed = delta * 0.05;
+    this.worldY += this.scrollSpeed;
+
+    // Throw newspaper left/right
+    if (
+      Phaser.Input.Keyboard.JustDown(this.keys.Q) &&
+      this.player.paperCount > 0
+    ) {
+      this.throwNewspaper("left");
+    }
+    if (
+      Phaser.Input.Keyboard.JustDown(this.keys.E) &&
+      this.player.paperCount > 0
+    ) {
+      this.throwNewspaper("right");
+    }
+
+    // Melee attack
+    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
+      this.meleeAttack();
+    }
+
+    // Ranged attack
+    if (Phaser.Input.Keyboard.JustDown(this.keys.F)) {
+      this.rangedAttack();
+    }
+
+    // Update newspaper positions
+    this.newspaperSprites.getChildren().forEach((obj) => {
+      const np = obj as Phaser.Physics.Arcade.Sprite;
+      const data = np.getData("newspaper") as Newspaper;
+      if (data.state === NewspaperState.Flying) {
+        // Check if out of bounds
+        if (np.x < -50 || np.x > 1010) {
+          this.checkDelivery(np);
+          np.destroy();
+        }
+      }
+    });
+
+    // Move zombies toward player
+    this.zombieSprites.getChildren().forEach((obj) => {
+      const sprite = obj as Phaser.Physics.Arcade.Sprite;
+      const zombie = sprite.getData("zombie") as Zombie;
+      if (zombie.isDead()) {
+        sprite.destroy();
+        return;
+      }
+      this.physics.moveToObject(sprite, this.player, zombie.speed * 20);
+    });
+
+    // Check if route is complete (passed all houses)
+    if (this.worldY > this.route.houses.length * 50 + 200) {
+      this.endRoute();
+    }
+
+    // Update HUD
+    this.hud.setPaperCount(this.player.paperCount);
+    this.hud.setAmmoCount(this.player.rangedWeapon.ammo);
+    this.hud.update();
+  }
+
+  private throwNewspaper(direction: "left" | "right"): void {
+    this.player.paperCount--;
+    const isSunday = this.dayManager.isSunday(this.gameState.day);
+    const np = createNewspaper(
+      this.player.x,
+      this.player.y,
+      direction,
+      isSunday,
+    );
+
+    const sprite = this.physics.add.sprite(
+      this.player.x,
+      this.player.y,
+      "newspaper",
+    );
+    sprite.setData("newspaper", np);
+    const vx = direction === "left" ? -np.speed * 40 : np.speed * 40;
+    sprite.setVelocity(vx, -30);
+    this.newspaperSprites.add(sprite);
+  }
+
+  private meleeAttack(): void {
+    const damage = this.player.meleeWeapon.attack();
+    const range = this.player.meleeWeapon.range * 32;
+
+    this.zombieSprites.getChildren().forEach((obj) => {
+      const sprite = obj as Phaser.Physics.Arcade.Sprite;
+      const dist = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        sprite.x,
+        sprite.y,
+      );
+      if (dist < range) {
+        const zombie = sprite.getData("zombie") as Zombie;
+        zombie.takeDamage(damage);
+        if (zombie.isDead()) {
+          this.awardZombieKill(zombie);
+          sprite.destroy();
+        }
+      }
+    });
+  }
+
+  private rangedAttack(): void {
+    const damage = this.player.rangedWeapon.fire();
+    if (damage === 0) return;
+
+    // Simple: damage nearest zombie in front
+    let nearest: Phaser.Physics.Arcade.Sprite | null = null;
+    let nearestDist = Infinity;
+
+    this.zombieSprites.getChildren().forEach((obj) => {
+      const sprite = obj as Phaser.Physics.Arcade.Sprite;
+      const dist = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        sprite.x,
+        sprite.y,
+      );
+      if (dist < this.player.rangedWeapon.range * 32 && dist < nearestDist) {
+        nearest = sprite;
+        nearestDist = dist;
+      }
+    });
+
+    if (nearest) {
+      const zombie = (nearest as Phaser.Physics.Arcade.Sprite).getData(
+        "zombie",
+      ) as Zombie;
+      zombie.takeDamage(damage);
+      if (zombie.isDead()) {
+        this.awardZombieKill(zombie);
+        (nearest as Phaser.Physics.Arcade.Sprite).destroy();
+      }
+    }
+  }
+
+  private awardZombieKill(zombie: Zombie): void {
+    switch (zombie.type) {
+      case ZombieType.Shambler:
+        this.scoreManager.shamblerKill();
+        break;
+      case ZombieType.Runner:
+        this.scoreManager.runnerKill();
+        break;
+      case ZombieType.Spitter:
+        this.scoreManager.spitterKill();
+        break;
+    }
+  }
+
+  private checkDelivery(npSprite: Phaser.Physics.Arcade.Sprite): void {
+    // Check if newspaper landed near a house
+    for (let i = 0; i < this.houseSprites.length; i++) {
+      const houseRect = this.houseSprites[i];
+      const dist = Math.abs(npSprite.y - houseRect.y);
+      if (dist < 60 && !this.deliveries[i]) {
+        const house = this.route.houses[i];
+        if (house.isSubscriber) {
+          this.deliveries[i] = true;
+          house.markDelivered();
+          // Determine if mailbox or porch delivery based on x proximity
+          const xDist = Math.abs(npSprite.x - houseRect.x);
+          if (xDist < 20) {
+            this.scoreManager.mailboxDelivery();
+          } else {
+            this.scoreManager.porchDelivery();
+          }
+        } else {
+          // Non-subscriber — potential damage points
+          this.scoreManager.windowBreak();
+        }
+        break;
+      }
+    }
+  }
+
+  private onPickup(
+    _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    pickupObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+  ): void {
+    const sprite = pickupObj as Phaser.Physics.Arcade.Sprite;
+    const pickup = sprite.getData("pickup");
+    if (pickup && !pickup.collected) {
+      pickup.collect();
+      if (pickup.type === "NewspaperBundle") {
+        this.player.paperCount += pickup.quantity;
+      } else if (pickup.type === "AmmoCrate") {
+        this.player.rangedWeapon.addAmmo(pickup.quantity);
+      }
+      sprite.destroy();
+    }
+  }
+
+  private onHazardHit(): void {
+    this.gameState.loseLife();
+    if (this.gameState.isGameOver()) {
+      this.scene.start("GameOverScene");
+    } else {
+      // Brief invincibility flash
+      this.player.setAlpha(0.5);
+      this.time.delayedCall(1500, () => {
+        this.player.setAlpha(1);
+      });
+    }
+  }
+
+  private onZombieContact(
+    _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+  ): void {
+    const sprite = zombieObj as Phaser.Physics.Arcade.Sprite;
+    const zombie = sprite.getData("zombie") as Zombie;
+    if (!zombie || zombie.isDead()) return;
+
+    this.gameState.loseLife();
+    sprite.destroy();
+
+    if (this.gameState.isGameOver()) {
+      this.scene.start("GameOverScene");
+    }
+  }
+
+  private onNewspaperHitZombie(
+    npObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+  ): void {
+    const npSprite = npObj as Phaser.Physics.Arcade.Sprite;
+    const zombieSprite = zombieObj as Phaser.Physics.Arcade.Sprite;
+    const zombie = zombieSprite.getData("zombie") as Zombie;
+    const np = npSprite.getData("newspaper") as Newspaper;
+
+    if (!zombie || zombie.isDead()) return;
+
+    zombie.takeDamage(np.stunDamage);
+    npSprite.destroy();
+
+    if (zombie.isDead()) {
+      this.awardZombieKill(zombie);
+      zombieSprite.destroy();
+    }
+  }
+
+  private spawnHouses(): void {
+    this.route.houses.forEach((house, i) => {
+      const side = i % 2 === 0 ? 50 : 910;
+      const y = 80 + i * 25;
+      const color = house.isSubscriber ? 0x32cd32 : 0x696969;
+      const rect = this.add.rectangle(side, y, 60, 40, color);
+      this.houseSprites.push(rect);
+    });
+  }
+
+  private spawnHazards(): void {
+    this.route.hazards.forEach((hazard, i) => {
+      const x = 300 + ((i * 67) % 360);
+      const y = 100 + i * 60;
+      const sprite = this.physics.add.staticSprite(
+        x,
+        y,
+        `hazard-${hazard.type.toLowerCase()}`,
+      );
+      sprite.setData("hazard", hazard);
+      this.hazardSprites.add(sprite);
+    });
+  }
+
+  private spawnPickups(): void {
+    this.route.pickups.forEach((pickup, i) => {
+      const x = 250 + ((i * 130) % 460);
+      const y = 150 + i * 80;
+      const key =
+        pickup.type === "NewspaperBundle"
+          ? "pickup-newspaper"
+          : pickup.type === "AmmoCrate"
+            ? "pickup-ammo"
+            : "pickup-health";
+
+      const sprite = this.physics.add.staticSprite(x, y, key);
+      sprite.setData("pickup", pickup);
+      this.pickupSprites.add(sprite);
+    });
+  }
+
+  private spawnZombieWave(): void {
+    const count =
+      2 +
+      Math.floor(this.dayManager.getZombieDensityScale(this.gameState.day) * 2);
+    for (let i = 0; i < count; i++) {
+      const x = Phaser.Math.Between(150, 810);
+      const y = Phaser.Math.Between(-50, -10);
+      const types = [
+        ZombieType.Shambler,
+        ZombieType.Runner,
+        ZombieType.Spitter,
+      ];
+      const type =
+        types[
+          Phaser.Math.Between(
+            0,
+            Math.min(2, Math.floor(this.gameState.day / 2)),
+          )
+        ];
+
+      let zombie;
+      switch (type) {
+        case ZombieType.Shambler:
+          zombie = createShambler(x, y);
+          break;
+        case ZombieType.Runner:
+          zombie = createRunner(x, y);
+          break;
+        case ZombieType.Spitter:
+          zombie = createSpitter(x, y);
+          break;
+      }
+
+      const key = `zombie-${type.toLowerCase()}`;
+      const sprite = this.physics.add.sprite(x, y, key);
+      sprite.setData("zombie", zombie);
+      this.zombieSprites.add(sprite);
+    }
+  }
+
+  private endRoute(): void {
+    // Calculate subscription changes
+    const deliveryData = this.route.houses.map((house, i) => ({
+      house,
+      delivered: this.deliveries[i],
+    }));
+
+    this.scene.start("TrainingScene", { deliveryData });
+  }
+}
