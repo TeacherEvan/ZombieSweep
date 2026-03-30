@@ -314,6 +314,99 @@ export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// ── Newspaper Confetti ──
+// Burst of small newspaper-page rectangles for victory celebrations.
+// Runtime-drawn — no assets needed.
+export function newspaperConfetti(
+  scene: Phaser.Scene,
+  cx: number,
+  cy: number,
+  count = 24,
+): void {
+  if (prefersReducedMotion()) return;
+
+  const colors = [0xf5f0d0, 0xe8e0c8, 0xd8d0b8, 0xccbbaa];
+  const { width: cw, height: ch } = scene.cameras.main;
+
+  for (let i = 0; i < count; i++) {
+    const w = Phaser.Math.Between(6, 14);
+    const h = Phaser.Math.Between(4, 10);
+    const color = colors[i % colors.length];
+
+    const piece = scene.add.rectangle(cx, cy, w, h, color).setDepth(500);
+    piece.setAlpha(0.9);
+
+    // Scatter randomly outward
+    const angle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
+    const dist = Phaser.Math.Between(80, Math.max(cw, ch) * 0.5);
+    const targetX = cx + Math.cos(angle) * dist;
+    const targetY = cy + Math.sin(angle) * dist + Phaser.Math.Between(40, 160);
+    const rotEnd = Phaser.Math.FloatBetween(-3, 3);
+
+    scene.tweens.add({
+      targets: piece,
+      x: targetX,
+      y: targetY,
+      rotation: rotEnd,
+      alpha: 0,
+      duration: Phaser.Math.Between(1400, 2200),
+      delay: Phaser.Math.Between(0, 200),
+      ease: EASE_OUT_QUART,
+      onComplete: () => piece.destroy(),
+    });
+  }
+}
+
+// ── TV Static Noise ──
+// Brief burst of random noise rectangles simulating signal loss.
+// Used on defeat screen before "SIGNAL LOST" text appears.
+export function tvStatic(
+  scene: Phaser.Scene,
+  duration = 350,
+  onComplete?: () => void,
+): void {
+  if (prefersReducedMotion()) {
+    onComplete?.();
+    return;
+  }
+
+  const { width: cw, height: ch } = scene.cameras.main;
+  const noiseGfx = scene.add.graphics().setDepth(800);
+
+  // Draw a static noise frame
+  const drawFrame = () => {
+    noiseGfx.clear();
+    for (let i = 0; i < 200; i++) {
+      const x = Math.random() * cw;
+      const y = Math.random() * ch;
+      const size = Math.random() * 6 + 1;
+      const brightness = Math.random();
+      noiseGfx.fillStyle(0xffffff, brightness * 0.8);
+      noiseGfx.fillRect(x, y, size, size * 0.6);
+    }
+  };
+
+  // Animate noise frames at ~20fps
+  const interval = 50;
+  let elapsed = 0;
+  const timer = scene.time.addEvent({
+    delay: interval,
+    repeat: Math.floor(duration / interval),
+    callback: () => {
+      elapsed += interval;
+      if (elapsed >= duration) {
+        noiseGfx.destroy();
+        timer.destroy();
+        onComplete?.();
+      } else {
+        drawFrame();
+      }
+    },
+  });
+
+  drawFrame();
+}
+
 // ── Touch Device Detection ──
 // Returns true when the primary input is touch (phone/tablet).
 // Used to swap instruction text ("PRESS ENTER" → "TAP").

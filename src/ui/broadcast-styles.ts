@@ -167,14 +167,46 @@ export function createBroadcastButton(
       accent.fillStyle(BC.RED, 1);
       accent.fillRect(-w / 2, -h / 2, 3, h);
       label.setColor(BC.TEXT);
+
+      // Subtle lift on selection
+      scene.tweens.killTweensOf(container);
+      scene.tweens.add({
+        targets: container,
+        scaleX: 1.02,
+        scaleY: 1.02,
+        duration: 120,
+        ease: "Quart.easeOut",
+      });
     } else {
       bg.fillStyle(BC.CHROME, 0.6);
       bg.fillRect(-w / 2, -h / 2, w, h);
       bg.lineStyle(1, BC.CHROME_EDGE, 0.5);
       bg.strokeRect(-w / 2, -h / 2, w, h);
       label.setColor(BC.TEXT_DIM);
+
+      // Settle back to normal scale
+      scene.tweens.killTweensOf(container);
+      scene.tweens.add({
+        targets: container,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 100,
+        ease: "Quart.easeOut",
+      });
     }
   };
+
+  // Press-down feel on click
+  hitArea.on("pointerdown", () => {
+    scene.tweens.add({
+      targets: container,
+      scaleX: 0.97,
+      scaleY: 0.97,
+      duration: 60,
+      yoyo: true,
+      ease: "Quart.easeOut",
+    });
+  });
 
   container.add([bg, accent, label, hitArea]);
   setSelected(options.selected ?? false);

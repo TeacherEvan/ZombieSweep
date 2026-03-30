@@ -10,7 +10,14 @@ import {
   createChyron,
   createDataRow,
 } from "../ui/broadcast-styles";
-import { countUp, fadeIn, fadeToScene } from "../utils/animations";
+import { headlineGameOver, headlineVictory } from "../ui/ticker-bridge";
+import {
+  countUp,
+  fadeIn,
+  fadeToScene,
+  newspaperConfetti,
+  tvStatic,
+} from "../utils/animations";
 
 export class GameOverScene extends Phaser.Scene {
   private gameState!: GameState;
@@ -33,6 +40,12 @@ export class GameOverScene extends Phaser.Scene {
     const cx = width / 2;
     const reason = this.gameState.getGameOverReason();
     const isVictory = reason === "completed";
+
+    if (isVictory) {
+      headlineVictory();
+    } else {
+      headlineGameOver();
+    }
 
     this.selectedIndex = 0;
     this.buttons = [];
@@ -165,6 +178,7 @@ export class GameOverScene extends Phaser.Scene {
         ease: "Back.easeOut",
         onComplete: () => {
           countUp(this, scoreText, this.gameState.score, 1500, 0);
+          newspaperConfetti(this, cx, y - 40, 30);
         },
       });
 
@@ -172,8 +186,8 @@ export class GameOverScene extends Phaser.Scene {
     } else {
       // ── Defeat path ──
 
-      // Brief white flash for "static" effect
-      this.cameras.main.flash(200, 200, 200, 200);
+      // TV static burst — signal loss effect
+      tvStatic(this, 350);
 
       // Red alert banner
       const alertBanner = createAlertBanner(

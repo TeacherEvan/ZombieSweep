@@ -11,6 +11,7 @@ import {
   createChyron,
   createDataRow,
 } from "../ui/broadcast-styles";
+import { headlinePerfectDay } from "../ui/ticker-bridge";
 import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
 
 interface DeliveryData {
@@ -111,6 +112,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         delay: 300,
         ease: "Quart.easeOut",
       });
+      headlinePerfectDay();
       y += 48;
     }
 

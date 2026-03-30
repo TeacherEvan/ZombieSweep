@@ -21,6 +21,11 @@ import { ScoreManager } from "../systems/ScoreManager";
 import { HUD } from "../ui/HUD";
 import { PauseMenu } from "../ui/PauseMenu";
 import {
+  headlineDelivery,
+  headlineLifeLost,
+  headlineZombieKill,
+} from "../ui/ticker-bridge";
+import {
   collectEffect,
   damageFlash,
   deathFlash,
@@ -66,6 +71,8 @@ export class GameScene extends Phaser.Scene {
   private worldY = 0;
   private deliveries: boolean[] = [];
   private transitioning = false;
+  private zombieKillCount = 0;
+  private lastTickerKillCount = 0;
 
   constructor() {
     super({ key: "GameScene" });
@@ -422,6 +429,12 @@ export class GameScene extends Phaser.Scene {
         this.scoreManager.spitterKill();
         break;
     }
+    // Push a ticker headline every 5th kill (avoid spam)
+    this.zombieKillCount++;
+    if (this.zombieKillCount - this.lastTickerKillCount >= 5) {
+      this.lastTickerKillCount = this.zombieKillCount;
+      headlineZombieKill();
+    }
   }
 
   private checkDelivery(npSprite: Phaser.Physics.Arcade.Sprite): void {
@@ -446,6 +459,7 @@ export class GameScene extends Phaser.Scene {
               "#22ee66",
               "18px",
             );
+            headlineDelivery();
           } else {
             this.scoreManager.porchDelivery();
             floatingText(
@@ -511,6 +525,7 @@ export class GameScene extends Phaser.Scene {
     this.gameState.loseLife();
     screenShake(this, 0.012, 200);
     damageFlash(this, 180);
+    headlineLifeLost();
     if (this.gameState.isGameOver() && !this.transitioning) {
       this.transitioning = true;
       fadeToScene(this, "GameOverScene");
@@ -534,6 +549,7 @@ export class GameScene extends Phaser.Scene {
     this.gameState.loseLife();
     screenShake(this, 0.015, 250);
     damageFlash(this, 200);
+    headlineLifeLost();
     deathFlash(this, sprite);
 
     if (this.gameState.isGameOver() && !this.transitioning) {
