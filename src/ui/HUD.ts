@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
 import { pulse } from "../utils/animations";
+import { BC, BROADCAST_FONT } from "./broadcast-styles";
 
 export class HUD {
   private scene: Phaser.Scene;
@@ -40,82 +41,100 @@ export class HUD {
   }
 
   private create(): void {
-    // Semi-transparent HUD background panel
+    const { width } = this.scene.cameras.main;
+
+    // Semi-transparent broadcast strip background
     this.hudBg = this.scene.add.graphics();
     this.hudBg.setScrollFactor(0).setDepth(99);
-    this.hudBg.fillStyle(0x000000, 0.55);
-    this.hudBg.fillRoundedRect(6, 6, 200, 108, 4);
-    this.hudBg.fillStyle(0xcc1100, 0.8);
-    this.hudBg.fillRect(6, 6, 3, 108);
+    this.hudBg.fillStyle(BC.CHROME, 0.55);
+    this.hudBg.fillRect(0, 0, width, 32);
+    // Red left accent
+    this.hudBg.fillStyle(BC.RED, 0.9);
+    this.hudBg.fillRect(0, 0, 3, 32);
+    // Bottom edge line
+    this.hudBg.lineStyle(1, BC.CHROME_EDGE, 0.4);
+    this.hudBg.lineBetween(0, 32, width, 32);
 
-    const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontFamily: "'Courier New', monospace",
-      fontSize: "11px",
-      color: "#666655",
+    const labelCfg: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontFamily: BROADCAST_FONT,
+      fontSize: "10px",
+      fontStyle: "600",
+      color: BC.TEXT_DIM,
+      letterSpacing: 2,
     };
-    const valueStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontFamily: "Impact, 'Arial Black', sans-serif",
-      fontSize: "15px",
-      color: "#ddddcc",
+    const valueCfg: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontFamily: BROADCAST_FONT,
+      fontSize: "14px",
+      fontStyle: "700",
+      color: BC.TEXT,
     };
 
-    const x = 16;
-    const vx = 100;
-    let y = 14;
+    let x = 14;
+    const cy = 16;
 
-    // Day label + value
+    // Day
     this.scene.add
-      .text(x, y, "DAY", labelStyle)
+      .text(x, cy - 5, "DAY", labelCfg)
       .setScrollFactor(0)
-      .setDepth(100);
+      .setDepth(100)
+      .setOrigin(0, 0.5);
     this.dayText = this.scene.add
-      .text(vx, y, "", valueStyle)
+      .text(x, cy + 7, "", valueCfg)
       .setScrollFactor(0)
-      .setDepth(100);
-    y += 20;
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    x += 120;
 
     // Score
     this.scene.add
-      .text(x, y, "SCORE", labelStyle)
+      .text(x, cy - 5, "SCORE", labelCfg)
       .setScrollFactor(0)
-      .setDepth(100);
+      .setDepth(100)
+      .setOrigin(0, 0.5);
     this.scoreText = this.scene.add
-      .text(vx, y, "", { ...valueStyle, color: "#ddaa22" })
+      .text(x, cy + 7, "", { ...valueCfg, color: BC.css.GOLD })
       .setScrollFactor(0)
-      .setDepth(100);
-    y += 20;
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    x += 120;
 
     // Lives
     this.scene.add
-      .text(x, y, "LIVES", labelStyle)
+      .text(x, cy - 5, "LIVES", labelCfg)
       .setScrollFactor(0)
-      .setDepth(100);
+      .setDepth(100)
+      .setOrigin(0, 0.5);
     this.livesText = this.scene.add
-      .text(vx, y, "", { ...valueStyle, fontSize: "14px" })
+      .text(x, cy + 7, "", { ...valueCfg, color: BC.css.RED, fontSize: "13px" })
       .setScrollFactor(0)
-      .setDepth(100);
-    y += 20;
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    x += 80;
 
-    // Papers + Ammo
+    // Papers
     this.scene.add
-      .text(x, y, "PAPERS", labelStyle)
+      .text(x, cy - 5, "PAPERS", labelCfg)
       .setScrollFactor(0)
-      .setDepth(100);
+      .setDepth(100)
+      .setOrigin(0, 0.5);
     this.papersText = this.scene.add
-      .text(vx, y, "", valueStyle)
+      .text(x, cy + 7, "", valueCfg)
       .setScrollFactor(0)
-      .setDepth(100);
-    y += 20;
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    x += 120;
 
     // Subscribers
     this.scene.add
-      .text(x, y, "SUBS", labelStyle)
+      .text(x, cy - 5, "SUBS", labelCfg)
       .setScrollFactor(0)
-      .setDepth(100);
+      .setDepth(100)
+      .setOrigin(0, 0.5);
     this.subscribersText = this.scene.add
-      .text(vx, y, "", valueStyle)
+      .text(x, cy + 7, "", valueCfg)
       .setScrollFactor(0)
-      .setDepth(100);
+      .setDepth(100)
+      .setOrigin(0, 0.5);
 
     this.update();
   }
@@ -132,7 +151,7 @@ export class HUD {
     const dow = this.dayManager.getDayOfWeek(this.gameState.day);
     this.dayText.setText(`${this.gameState.day} — ${dow}`);
     this.scoreText.setText(`${this.gameState.score}`);
-    this.livesText.setText("❤️".repeat(this.gameState.lives));
+    this.livesText.setText("●".repeat(this.gameState.lives));
     this.papersText.setText(`${this.paperCount}   Ammo: ${this.ammoCount}`);
     this.subscribersText.setText(`${this.gameState.subscribers}/10`);
 
@@ -142,22 +161,22 @@ export class HUD {
       this.lastScore = this.gameState.score;
     }
 
-    // Life lost — flash lives text red then back
+    // Life lost — flash lives text then recover
     if (this.gameState.lives < this.lastLives) {
       this.livesText.setColor("#ff2222");
       pulse(this.scene, this.livesText, 1.4, 200);
       this.scene.time.delayedCall(300, () => {
-        this.livesText.setColor("#ddddcc");
+        this.livesText.setColor(BC.css.RED);
       });
       this.lastLives = this.gameState.lives;
     }
 
-    // Low paper warning — text turns red and pulses
+    // Low paper warning
     if (this.paperCount <= 3 && this.paperCount !== this.lastPaperCount) {
       this.papersText.setColor("#cc2222");
       pulse(this.scene, this.papersText, 1.2, 150);
     } else if (this.paperCount > 3) {
-      this.papersText.setColor("#ddddcc");
+      this.papersText.setColor(BC.TEXT);
     }
     this.lastPaperCount = this.paperCount;
   }

@@ -95,8 +95,8 @@ describe("Hazard entities", () => {
 
     it("only holes can be ollied over (skateboard advantage)", () => {
       expect(createHole(0, 0).canOllieOver).toBe(true);
-      expect(createLog(0, 0).canOllieOver).toBeFalsy();
-      expect(createIcePatch(0, 0).canOllieOver).toBeFalsy();
+      expect("canOllieOver" in createLog(0, 0)).toBeFalsy();
+      expect("canOllieOver" in createIcePatch(0, 0)).toBeFalsy();
     });
   });
 });

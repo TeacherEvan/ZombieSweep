@@ -1,5 +1,10 @@
 import Phaser from "phaser";
 import { VEHICLE_STATS, VehicleType, WeaponSlot } from "../config/vehicles";
+import {
+  BC,
+  BROADCAST_FONT,
+  createChyron,
+} from "../ui/broadcast-styles";
 import { fadeIn, fadeToScene } from "../utils/animations";
 
 const VEHICLE_COLORS: Record<string, number> = {
@@ -21,63 +26,56 @@ export class VehicleSelectScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
     this.cards = [];
     this.selectedIndex = 0;
-    this.cameras.main.setBackgroundColor("#0d0d0d");
+    this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
     // Atmospheric background
     const bgGlow = this.add.graphics();
-    bgGlow.fillStyle(0x1a1a2e, 0.5);
+    bgGlow.fillStyle(BC.CHROME_LIT, 0.4);
     bgGlow.fillEllipse(width / 2, height * 0.45, width, height * 0.8);
 
-    // Top/bottom accent bars
+    // Top/bottom bars
     const borders = this.add.graphics();
-    borders.fillStyle(0xcc1100, 1);
+    borders.fillStyle(BC.RED, 1);
     borders.fillRect(0, 0, width, 3);
     borders.fillRect(0, height - 3, width, 3);
 
-    // Title
-    this.add
-      .text(width / 2, 42, "CHOOSE YOUR RIDE", {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "42px",
-        color: "#cc1100",
-        shadow: {
-          offsetX: 0,
-          offsetY: 0,
-          color: "#ff3300",
-          blur: 12,
-          fill: true,
-        },
-      })
-      .setOrigin(0.5)
-      .setAlpha(0);
-
+    // Chyron
+    const chyron = createChyron(
+      this,
+      48,
+      "FLEET STATUS: AVAILABLE UNITS",
+      "SELECT DISPATCH VEHICLE",
+    );
+    chyron.setX(-width);
     this.tweens.add({
-      targets: this.children.last,
-      alpha: 1,
-      y: { from: 20, to: 42 },
-      duration: 500,
-      ease: "Back.easeOut",
+      targets: chyron,
+      x: width / 2,
+      duration: 350,
+      ease: "Quart.easeOut",
     });
 
-    // Instruction text
+    // Instruction
     this.add
-      .text(width / 2, height - 30, "← →  TO SELECT  ·  ENTER TO CONFIRM", {
-        fontFamily: "'Courier New', monospace",
-        fontSize: "12px",
-        color: "#555555",
+      .text(width / 2, height - 28, "← →  SELECT  ·  ENTER  CONFIRM", {
+        fontFamily: BROADCAST_FONT,
+        fontSize: "11px",
+        fontStyle: "600",
+        color: BC.TEXT_MUTED,
+        letterSpacing: 2,
       })
       .setOrigin(0.5);
 
+    // Vehicle cards
     const cardWidth = 250;
-    const gap = 40;
+    const gap = 30;
     const totalWidth =
       this.vehicles.length * cardWidth + (this.vehicles.length - 1) * gap;
     const startX = (width - totalWidth) / 2 + cardWidth / 2;
 
     this.vehicles.forEach((vehicleType, i) => {
       const x = startX + i * (cardWidth + gap);
-      const y = height / 2 + 10;
+      const y = height / 2 + 20;
       const card = this.createVehicleCard(x, y, vehicleType, cardWidth, i);
       this.cards.push(card);
     });
@@ -119,32 +117,40 @@ export class VehicleSelectScene extends Phaser.Scene {
     index: number,
   ): Phaser.GameObjects.Container {
     const stats = VEHICLE_STATS[vehicleType];
-    const accentColor = VEHICLE_COLORS[vehicleType] ?? 0xcccccc;
+    const accentColor = VEHICLE_COLORS[vehicleType] ?? BC.CHROME_EDGE;
     const container = this.add.container(x, y);
 
-    // Card glow
-    const glow = this.add
-      .rectangle(0, 0, cardWidth + 12, 320, accentColor, 0)
-      .setName("glow");
+    const cardHeight = 310;
 
     // Card background
-    const bg = this.add
-      .rectangle(0, 0, cardWidth, 310, 0x141418)
-      .setStrokeStyle(2, 0x2a2a2a)
+    const bg = this.add.graphics().setName("bg");
+    bg.fillStyle(BC.CHROME, 0.95);
+    bg.fillRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
+    bg.lineStyle(1, BC.CHROME_EDGE, 1);
+    bg.strokeRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
+
+    // Left accent bar — vehicle color
+    const accentBar = this.add.graphics().setName("accent");
+    accentBar.fillStyle(accentColor, 1);
+    accentBar.fillRect(
+      -cardWidth / 2,
+      -cardHeight / 2,
+      4,
+      cardHeight,
+    );
+
+    // Hit area
+    const hitArea = this.add
+      .rectangle(0, 0, cardWidth, cardHeight, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
-      .setName("bg");
+      .setName("hitArea");
 
-    // Top accent stripe
-    const stripe = this.add
-      .rectangle(0, -155 + 3, cardWidth, 6, accentColor)
-      .setName("stripe");
-
-    bg.on("pointerdown", () => {
+    hitArea.on("pointerdown", () => {
       this.selectedIndex = this.vehicles.indexOf(vehicleType);
       this.updateSelection();
       this.confirmSelection();
     });
-    bg.on("pointerover", () => {
+    hitArea.on("pointerover", () => {
       this.selectedIndex = this.vehicles.indexOf(vehicleType);
       this.updateSelection();
     });
@@ -156,14 +162,16 @@ export class VehicleSelectScene extends Phaser.Scene {
       .toUpperCase();
     const nameText = this.add
       .text(0, -120, name, {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "22px",
-        color: "#ffffff",
+        fontFamily: BROADCAST_FONT,
+        fontSize: "20px",
+        fontStyle: "800",
+        color: BC.TEXT,
+        letterSpacing: 1,
       })
       .setOrigin(0.5)
       .setName("name");
 
-    // Stat bars (visual, not text)
+    // Stat bars
     const barStartY = -70;
     const statLabels = ["SPEED", "HANDLING", "STABILITY"];
     const statValues = [stats.speed, stats.handling, stats.stability];
@@ -174,18 +182,20 @@ export class VehicleSelectScene extends Phaser.Scene {
       const sy = barStartY + si * 32;
       const labelText = this.add
         .text(-100, sy, label, {
-          fontFamily: "'Courier New', monospace",
+          fontFamily: BROADCAST_FONT,
           fontSize: "10px",
-          color: "#777777",
+          fontStyle: "600",
+          color: BC.TEXT_DIM,
+          letterSpacing: 2,
         })
         .setOrigin(0, 0.5);
 
-      // Bar background
-      const barBg = this.add.rectangle(20, sy, 120, 10, 0x222222);
+      // Bar track
+      const barBg = this.add.rectangle(20, sy, 120, 8, BC.CHROME_EDGE);
       const fillWidth = (statValues[si] / statMaxes[si]) * 120;
       const barFill = this.add
-        .rectangle(20 - 60 + fillWidth / 2, sy, fillWidth, 10, accentColor)
-        .setAlpha(0.8);
+        .rectangle(20 - 60 + fillWidth / 2, sy, fillWidth, 8, accentColor)
+        .setAlpha(0.85);
 
       statElements.push(labelText, barBg, barFill);
     });
@@ -194,16 +204,18 @@ export class VehicleSelectScene extends Phaser.Scene {
     const weaponY = barStartY + 110;
     const meleeLabel = this.add
       .text(0, weaponY, `⚔ ${stats.weapons[WeaponSlot.Melee].name}`, {
-        fontFamily: "'Courier New', monospace",
+        fontFamily: BROADCAST_FONT,
         fontSize: "12px",
-        color: "#cc8866",
+        fontStyle: "600",
+        color: BC.css.GOLD_DIM,
       })
       .setOrigin(0.5);
     const rangedLabel = this.add
       .text(0, weaponY + 22, `🎯 ${stats.weapons[WeaponSlot.Ranged].name}`, {
-        fontFamily: "'Courier New', monospace",
+        fontFamily: BROADCAST_FONT,
         fontSize: "12px",
-        color: "#cc8866",
+        fontStyle: "600",
+        color: BC.css.GOLD_DIM,
       })
       .setOrigin(0.5);
 
@@ -212,19 +224,20 @@ export class VehicleSelectScene extends Phaser.Scene {
     if (stats.canOllie) {
       const special = this.add
         .text(0, weaponY + 50, "★ CAN OLLIE OVER HOLES", {
-          fontFamily: "'Courier New', monospace",
+          fontFamily: BROADCAST_FONT,
           fontSize: "10px",
-          color: "#ddaa22",
-          fontStyle: "bold",
+          fontStyle: "700",
+          color: BC.css.GOLD,
+          letterSpacing: 1,
         })
         .setOrigin(0.5);
       specialElements.push(special);
     }
 
     container.add([
-      glow,
       bg,
-      stripe,
+      accentBar,
+      hitArea,
       nameText,
       ...statElements,
       meleeLabel,
@@ -239,9 +252,9 @@ export class VehicleSelectScene extends Phaser.Scene {
       targets: container,
       alpha: 1,
       y: y,
-      duration: 500,
+      duration: 450,
       delay: 200 + index * 120,
-      ease: "Back.easeOut",
+      ease: "Quart.easeOut",
     });
 
     return container;
@@ -249,34 +262,45 @@ export class VehicleSelectScene extends Phaser.Scene {
 
   private updateSelection(): void {
     this.cards.forEach((card, i) => {
-      const glow = card.getByName("glow") as Phaser.GameObjects.Rectangle;
-      const bg = card.getByName("bg") as Phaser.GameObjects.Rectangle;
-      const stripe = card.getByName("stripe") as Phaser.GameObjects.Rectangle;
+      const bg = card.getByName("bg") as Phaser.GameObjects.Graphics;
 
       if (i === this.selectedIndex) {
-        bg.setStrokeStyle(2, 0xcc1100);
-        glow.setAlpha(0.15);
-        stripe.setAlpha(1);
+        // Redraw bg with red border
+        bg.clear();
+        const cw = 250;
+        const ch = 310;
+        bg.fillStyle(BC.CHROME_LIT, 0.95);
+        bg.fillRect(-cw / 2, -ch / 2, cw, ch);
+        bg.lineStyle(2, BC.RED, 1);
+        bg.strokeRect(-cw / 2, -ch / 2, cw, ch);
+
         this.tweens.killTweensOf(card);
         this.tweens.add({
           targets: card,
-          scaleX: 1.05,
-          scaleY: 1.05,
-          duration: 250,
-          ease: "Back.easeOut",
-        });
-      } else {
-        bg.setStrokeStyle(2, 0x2a2a2a);
-        glow.setAlpha(0);
-        stripe.setAlpha(0.4);
-        this.tweens.killTweensOf(card);
-        this.tweens.add({
-          targets: card,
-          scaleX: 0.95,
-          scaleY: 0.95,
+          scaleX: 1.03,
+          scaleY: 1.03,
           duration: 200,
+          ease: "Quart.easeOut",
+        });
+        card.setAlpha(1);
+      } else {
+        bg.clear();
+        const cw = 250;
+        const ch = 310;
+        bg.fillStyle(BC.CHROME, 0.95);
+        bg.fillRect(-cw / 2, -ch / 2, cw, ch);
+        bg.lineStyle(1, BC.CHROME_EDGE, 1);
+        bg.strokeRect(-cw / 2, -ch / 2, cw, ch);
+
+        this.tweens.killTweensOf(card);
+        this.tweens.add({
+          targets: card,
+          scaleX: 0.97,
+          scaleY: 0.97,
+          duration: 150,
           ease: "Power2",
         });
+        card.setAlpha(0.7);
       }
     });
   }
@@ -284,16 +308,36 @@ export class VehicleSelectScene extends Phaser.Scene {
   private confirmSelection(): void {
     const vehicle = this.vehicles[this.selectedIndex];
     const card = this.cards[this.selectedIndex];
+    const { width, height } = this.cameras.main;
 
-    // Flash confirmation
+    // "DISPATCHING..." flash
+    const dispatchText = this.add
+      .text(width / 2, height / 2, "DISPATCHING...", {
+        fontFamily: BROADCAST_FONT,
+        fontSize: "28px",
+        fontStyle: "800",
+        color: BC.TEXT,
+        letterSpacing: 3,
+      })
+      .setOrigin(0.5)
+      .setAlpha(0)
+      .setDepth(100);
+
     this.tweens.add({
       targets: card,
-      scaleX: 1.12,
-      scaleY: 1.12,
+      scaleX: 1.08,
+      scaleY: 1.08,
       duration: 120,
       yoyo: true,
       onComplete: () => {
-        fadeToScene(this, "DifficultySelectScene", { vehicle });
+        this.tweens.add({
+          targets: dispatchText,
+          alpha: 1,
+          duration: 200,
+          onComplete: () => {
+            fadeToScene(this, "DifficultySelectScene", { vehicle });
+          },
+        });
       },
     });
   }

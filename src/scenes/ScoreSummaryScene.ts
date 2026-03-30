@@ -1,7 +1,16 @@
 import Phaser from "phaser";
 import { GAME } from "../config/constants";
+import { MAPS } from "../maps/MapConfig";
+import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
+import {
+  BC,
+  BROADCAST_FONT,
+  createAlertBanner,
+  createChyron,
+  createDataRow,
+} from "../ui/broadcast-styles";
 import { fadeIn, fadeToScene } from "../utils/animations";
 
 interface DeliveryData {
@@ -23,7 +32,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
 
   create(): void {
     this.gameState = this.registry.get("gameState") as GameState;
-    this.cameras.main.setBackgroundColor("#0d0d0d");
+    this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
     const { width, height } = this.cameras.main;
@@ -31,50 +40,36 @@ export class ScoreSummaryScene extends Phaser.Scene {
 
     // Background glow
     const bgGlow = this.add.graphics();
-    bgGlow.fillStyle(0x1a1a0a, 0.3);
+    bgGlow.fillStyle(BC.GOLD_DIM, 0.15);
     bgGlow.fillEllipse(cx, height * 0.4, width * 0.7, height * 0.6);
 
-    // Accent bars
+    // Accent bars (gold for score summary)
     const borders = this.add.graphics();
-    borders.fillStyle(0xddaa22, 1);
+    borders.fillStyle(BC.GOLD, 1);
     borders.fillRect(0, 0, width, 3);
     borders.fillRect(0, height - 3, width, 3);
 
-    let y = 35;
+    // Route name for subtitle
+    const dayManager = new DayManager();
+    const mapKey = dayManager.getMapForDay(this.gameState.day);
+    const mapName = MAPS[mapKey]?.name ?? "UNKNOWN DISTRICT";
 
-    // Title
-    const title = this.add
-      .text(cx, y, `DAY ${this.gameState.day} COMPLETE`, {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "40px",
-        color: "#ddaa22",
-        shadow: {
-          offsetX: 0,
-          offsetY: 0,
-          color: "#ffcc44",
-          blur: 12,
-          fill: true,
-        },
-      })
-      .setOrigin(0.5, 0)
-      .setAlpha(0);
-
+    // Chyron
+    const chyron = createChyron(
+      this,
+      38,
+      `DAY ${this.gameState.day} REPORT`,
+      `ROUTE STATUS — ${mapName.toUpperCase()}`,
+    );
+    chyron.setX(-width);
     this.tweens.add({
-      targets: title,
-      alpha: 1,
-      scaleX: { from: 1.2, to: 1 },
-      scaleY: { from: 1.2, to: 1 },
-      duration: 500,
-      ease: "Back.easeOut",
+      targets: chyron,
+      x: cx,
+      duration: 350,
+      ease: "Quart.easeOut",
     });
 
-    y += 60;
-
-    // Divider
-    const div = this.add.graphics();
-    div.fillStyle(0x333322, 1);
-    div.fillRect(cx - 180, y, 360, 1);
-    y += 20;
+    let y = 88;
 
     // Calculate delivery stats
     const subscriberHouses = this.deliveryData.filter(
@@ -87,26 +82,53 @@ export class ScoreSummaryScene extends Phaser.Scene {
       (d) => !d.delivered,
     ).length;
 
-    // Delivery stat row
     const deliveryRatio =
       subscriberHouses.length > 0
         ? successfulDeliveries / subscriberHouses.length
         : 0;
     const deliveryColor =
       deliveryRatio >= 1
-        ? "#22aa44"
+        ? BC.css.GREEN
         : deliveryRatio >= 0.5
-          ? "#ddaa22"
-          : "#cc4422";
+          ? BC.css.GOLD
+          : BC.css.RED;
 
-    this.createStatRow(
+    // Perfect day banner
+    if (missedDeliveries === 0 && subscriberHouses.length > 0) {
+      const perfectBanner = createAlertBanner(
+        this,
+        y,
+        "★ PERFECT DELIVERY — ALL SUBSCRIBERS REACHED",
+        { bgColor: BC.GREEN },
+      );
+      perfectBanner.setAlpha(0);
+      this.tweens.add({
+        targets: perfectBanner,
+        alpha: 1,
+        duration: 500,
+        delay: 300,
+        ease: "Quart.easeOut",
+      });
+      y += 48;
+    }
+
+    // Delivery row
+    const delRow = createDataRow(
+      this,
       cx,
       y,
       "DELIVERIES",
       `${successfulDeliveries} / ${subscriberHouses.length}`,
-      deliveryColor,
-      400,
+      { valueColor: deliveryColor },
     );
+    delRow.container.setAlpha(0);
+    this.tweens.add({
+      targets: delRow.container,
+      alpha: 1,
+      duration: 350,
+      delay: 400,
+      ease: "Quart.easeOut",
+    });
     y += 38;
 
     // Subscription changes
@@ -126,112 +148,106 @@ export class ScoreSummaryScene extends Phaser.Scene {
     }
 
     if (subsGained > 0) {
-      const gainText = this.add
-        .text(
-          cx,
-          y,
-          `+${subsGained} NEW SUBSCRIBER${subsGained > 1 ? "S" : ""}!`,
-          {
-            fontFamily: "Impact, 'Arial Black', sans-serif",
-            fontSize: "20px",
-            color: "#22aa44",
-          },
-        )
-        .setOrigin(0.5, 0)
-        .setAlpha(0);
-
+      const gainBanner = createAlertBanner(
+        this,
+        y,
+        `+${subsGained} NEW SUBSCRIBER${subsGained > 1 ? "S" : ""}`,
+        { bgColor: BC.GREEN, height: 30 },
+      );
+      gainBanner.setAlpha(0);
       this.tweens.add({
-        targets: gainText,
+        targets: gainBanner,
         alpha: 1,
-        scaleX: { from: 1.5, to: 1 },
-        scaleY: { from: 1.5, to: 1 },
-        duration: 500,
-        delay: 300,
+        scaleX: { from: 0.8, to: 1 },
+        scaleY: { from: 0.8, to: 1 },
+        duration: 400,
+        delay: 500,
         ease: "Back.easeOut",
       });
-      y += 32;
+      y += 40;
     }
 
     if (subsLost > 0) {
-      this.add
-        .text(
-          cx,
-          y,
-          `-${subsLost} subscriber${subsLost > 1 ? "s" : ""} cancelled`,
-          {
-            fontFamily: "'Courier New', monospace",
-            fontSize: "15px",
-            color: "#cc4422",
-          },
-        )
-        .setOrigin(0.5, 0);
-      y += 28;
+      const lossBanner = createAlertBanner(
+        this,
+        y,
+        `-${subsLost} SUBSCRIBER${subsLost > 1 ? "S" : ""} CANCELLED`,
+        { bgColor: BC.RED, height: 30 },
+      );
+      lossBanner.setAlpha(0);
+      this.tweens.add({
+        targets: lossBanner,
+        alpha: 1,
+        duration: 400,
+        delay: 500,
+        ease: "Quart.easeOut",
+      });
+      y += 40;
     }
 
-    y += 12;
-    this.createStatRow(
+    y += 8;
+
+    // Subscriber count
+    const subRow = createDataRow(
+      this,
       cx,
       y,
       "SUBSCRIBERS",
       `${this.gameState.subscribers}`,
-      "#aaaaaa",
-      600,
+      { valueColor: BC.TEXT },
     );
-    y += 36;
-    this.createStatRow(
+    subRow.container.setAlpha(0);
+    this.tweens.add({
+      targets: subRow.container,
+      alpha: 1,
+      duration: 350,
+      delay: 600,
+      ease: "Quart.easeOut",
+    });
+    y += 38;
+
+    // Score
+    const scoreRow = createDataRow(
+      this,
       cx,
       y,
       "SCORE",
       `${this.gameState.score}`,
-      "#ddaa22",
-      800,
+      { valueColor: BC.css.GOLD },
     );
-    y += 36;
-    this.createStatRow(
+    scoreRow.container.setAlpha(0);
+    this.tweens.add({
+      targets: scoreRow.container,
+      alpha: 1,
+      duration: 350,
+      delay: 700,
+      ease: "Quart.easeOut",
+    });
+    y += 38;
+
+    // Lives
+    const livesRow = createDataRow(
+      this,
       cx,
       y,
       "LIVES",
-      "❤️".repeat(this.gameState.lives),
-      "#cc4444",
-      1000,
+      "●".repeat(this.gameState.lives),
+      { valueColor: BC.css.RED },
     );
+    livesRow.container.setAlpha(0);
+    this.tweens.add({
+      targets: livesRow.container,
+      alpha: 1,
+      duration: 350,
+      delay: 800,
+      ease: "Quart.easeOut",
+    });
     y += 42;
 
-    // Perfect day bonus
+    // Perfect day bonus (score logic)
     if (missedDeliveries === 0 && subscriberHouses.length > 0) {
       const sm = new ScoreManager(this.gameState);
       sm.perfectDayBonus();
-
-      const perfectBg = this.add.graphics();
-      perfectBg.fillStyle(0x22aa44, 0.1);
-      perfectBg.fillRoundedRect(cx - 160, y - 5, 320, 40, 6);
-
-      const perfectText = this.add
-        .text(cx, y + 14, "★ PERFECT DAY BONUS! ★", {
-          fontFamily: "Impact, 'Arial Black', sans-serif",
-          fontSize: "22px",
-          color: "#22ee66",
-          shadow: {
-            offsetX: 0,
-            offsetY: 0,
-            color: "#22ee66",
-            blur: 10,
-            fill: true,
-          },
-        })
-        .setOrigin(0.5, 0.5)
-        .setAlpha(0);
-
-      this.tweens.add({
-        targets: perfectText,
-        alpha: 1,
-        scaleX: { from: 0.5, to: 1 },
-        scaleY: { from: 0.5, to: 1 },
-        duration: 600,
-        delay: 600,
-        ease: "Back.easeOut",
-      });
-      y += 48;
     }
 
     // Navigation prompt
@@ -241,19 +257,21 @@ export class ScoreSummaryScene extends Phaser.Scene {
     const promptText =
       isLastDay || isSubsGone || this.gameState.isGameOver()
         ? "PRESS ENTER FOR FINAL RESULTS"
-        : "PRESS ENTER TO START NEXT DAY";
+        : "PRESS ENTER TO CONTINUE COVERAGE";
 
     const prompt = this.add
-      .text(cx, height - 40, promptText, {
-        fontFamily: "'Courier New', monospace",
-        fontSize: "13px",
-        color: "#555544",
+      .text(cx, height - 36, promptText, {
+        fontFamily: BROADCAST_FONT,
+        fontSize: "12px",
+        fontStyle: "600",
+        color: BC.TEXT_MUTED,
+        letterSpacing: 2,
       })
       .setOrigin(0.5, 0);
 
     this.tweens.add({
       targets: prompt,
-      alpha: 0.4,
+      alpha: 0.3,
       duration: 600,
       yoyo: true,
       repeat: -1,
@@ -269,45 +287,5 @@ export class ScoreSummaryScene extends Phaser.Scene {
         fadeToScene(this, "GameScene");
       });
     }
-  }
-
-  private createStatRow(
-    cx: number,
-    y: number,
-    label: string,
-    value: string,
-    valueColor: string,
-    delay = 0,
-  ): void {
-    const labelText = this.add
-      .text(cx - 120, y, label, {
-        fontFamily: "'Courier New', monospace",
-        fontSize: "13px",
-        color: "#666655",
-      })
-      .setOrigin(0, 0)
-      .setAlpha(0);
-
-    const valueText = this.add
-      .text(cx + 120, y, value, {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "20px",
-        color: valueColor,
-      })
-      .setOrigin(1, 0)
-      .setAlpha(0);
-
-    // Staggered entrance
-    this.tweens.add({
-      targets: [labelText, valueText],
-      alpha: 1,
-      x: {
-        from: (target: Phaser.GameObjects.Text) => target.x - 20,
-        to: (target: Phaser.GameObjects.Text) => target.x,
-      },
-      duration: 350,
-      delay,
-      ease: "Quart.easeOut",
-    });
   }
 }

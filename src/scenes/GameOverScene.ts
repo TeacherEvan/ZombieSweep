@@ -2,10 +2,20 @@ import Phaser from "phaser";
 import { POINTS } from "../config/constants";
 import { GameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
+import {
+  BC,
+  BROADCAST_FONT,
+  createAlertBanner,
+  createBroadcastButton,
+  createChyron,
+  createDataRow,
+} from "../ui/broadcast-styles";
 import { countUp, fadeIn, fadeToScene } from "../utils/animations";
 
 export class GameOverScene extends Phaser.Scene {
   private gameState!: GameState;
+  private selectedIndex = 0;
+  private buttons: ReturnType<typeof createBroadcastButton>[] = [];
 
   constructor() {
     super({ key: "GameOverScene" });
@@ -14,251 +24,298 @@ export class GameOverScene extends Phaser.Scene {
   create(): void {
     this.gameState = this.registry.get("gameState") as GameState;
     const scoreManager = new ScoreManager(this.gameState);
-    this.cameras.main.setBackgroundColor("#0a0a0a");
+    this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
     const { width, height } = this.cameras.main;
     const cx = width / 2;
-
-    // Atmospheric background
-    const bgGlow = this.add.graphics();
     const reason = this.gameState.getGameOverReason();
     const isVictory = reason === "completed";
-    const glowColor = isVictory ? 0x003311 : 0x330000;
-    bgGlow.fillStyle(glowColor, 0.3);
+
+    this.selectedIndex = 0;
+    this.buttons = [];
+
+    // Background glow
+    const bgGlow = this.add.graphics();
+    const glowColor = isVictory ? BC.GOLD_DIM : BC.RED_DIM;
+    bgGlow.fillStyle(glowColor, 0.2);
     bgGlow.fillEllipse(cx, height * 0.3, width * 0.8, height * 0.6);
 
     // Accent bars
-    const accentColor = isVictory ? 0x22aa44 : 0xcc1100;
+    const accentColor = isVictory ? BC.GOLD : BC.RED;
     const borders = this.add.graphics();
     borders.fillStyle(accentColor, 1);
     borders.fillRect(0, 0, width, 3);
     borders.fillRect(0, height - 3, width, 3);
 
-    let y = 50;
+    let y = 40;
 
-    // Header
-    const headerText = isVictory ? "WEEK COMPLETE!" : "GAME OVER";
-    const headerColor = isVictory ? "#22aa44" : "#cc1100";
-
-    const headerShadow = this.add
-      .text(cx + 3, y + 3, headerText, {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "56px",
-        color: "#000000",
-      })
-      .setOrigin(0.5, 0)
-      .setAlpha(0.5);
-
-    const header = this.add
-      .text(cx, y, headerText, {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "56px",
-        color: headerColor,
-        shadow: {
-          offsetX: 0,
-          offsetY: 0,
-          color: headerColor,
-          blur: 16,
-          fill: true,
-        },
-      })
-      .setOrigin(0.5, 0)
-      .setAlpha(0);
-
-    // Header entrance animation
-    this.tweens.add({
-      targets: [header, headerShadow],
-      alpha: {
-        from: 0,
-        to: (target: Phaser.GameObjects.Text) => (target === header ? 1 : 0.5),
-      },
-      scaleX: { from: 1.3, to: 1 },
-      scaleY: { from: 1.3, to: 1 },
-      duration: 600,
-      ease: "Back.easeOut",
-    });
-
-    // Pulse header if game over
-    if (!isVictory) {
+    if (isVictory) {
+      // ── Victory path ──
+      const chyron = createChyron(
+        this,
+        y,
+        "SPECIAL REPORT",
+        "COURIER SURVIVES FULL WEEK — OPERATION COMPLETE",
+      );
+      chyron.setX(-width);
       this.tweens.add({
-        targets: header,
-        alpha: 0.7,
-        duration: 800,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
+        targets: chyron,
+        x: cx,
+        duration: 400,
+        ease: "Quart.easeOut",
       });
-    }
 
-    y += 70;
+      y += 70;
 
-    if (reason && reason !== "completed") {
+      // Remaining life bonus
+      if (this.gameState.lives > 0) {
+        scoreManager.remainingLifeBonus(this.gameState.lives);
+        const bonusBanner = createAlertBanner(
+          this,
+          y,
+          `LIFE BONUS: +${this.gameState.lives * POINTS.REMAINING_LIFE_BONUS}`,
+          { bgColor: BC.GREEN, height: 30 },
+        );
+        bonusBanner.setAlpha(0);
+        this.tweens.add({
+          targets: bonusBanner,
+          alpha: 1,
+          duration: 400,
+          delay: 400,
+          ease: "Quart.easeOut",
+        });
+        y += 44;
+      }
+
+      // Stats
+      const dayRow = createDataRow(this, cx, y, "DAY REACHED", `${this.gameState.day}`);
+      dayRow.container.setAlpha(0);
+      this.tweens.add({ targets: dayRow.container, alpha: 1, duration: 350, delay: 500, ease: "Quart.easeOut" });
+      y += 34;
+
+      const subRow = createDataRow(this, cx, y, "SUBSCRIBERS", `${this.gameState.subscribers}`);
+      subRow.container.setAlpha(0);
+      this.tweens.add({ targets: subRow.container, alpha: 1, duration: 350, delay: 600, ease: "Quart.easeOut" });
+      y += 44;
+
+      // Final score label
+      this.add
+        .text(cx, y, "FINAL SCORE", {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "14px",
+          fontStyle: "700",
+          color: BC.TEXT_DIM,
+          letterSpacing: 3,
+        })
+        .setOrigin(0.5, 0);
+      y += 24;
+
+      // Score count-up
+      const scoreText = this.add
+        .text(cx, y, "0", {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "52px",
+          fontStyle: "800",
+          color: BC.css.GOLD,
+          shadow: {
+            offsetX: 0,
+            offsetY: 0,
+            color: "#ffcc44",
+            blur: 16,
+            fill: true,
+          },
+        })
+        .setOrigin(0.5, 0)
+        .setAlpha(0);
+
+      this.tweens.add({
+        targets: scoreText,
+        alpha: 1,
+        scaleX: { from: 0.5, to: 1 },
+        scaleY: { from: 0.5, to: 1 },
+        duration: 600,
+        delay: 700,
+        ease: "Back.easeOut",
+        onComplete: () => {
+          countUp(this, scoreText, this.gameState.score, 1500, 0);
+        },
+      });
+
+      y += 80;
+    } else {
+      // ── Defeat path ──
+
+      // Brief white flash for "static" effect
+      this.cameras.main.flash(200, 200, 200, 200);
+
+      // Red alert banner
+      const alertBanner = createAlertBanner(this, y + 10, "SIGNAL LOST — COURIER DOWN");
+      alertBanner.setAlpha(0);
+      this.tweens.add({
+        targets: alertBanner,
+        alpha: 1,
+        duration: 300,
+        delay: 250,
+        ease: "Quart.easeOut",
+      });
+
+      y += 60;
+
+      // Reason
       let reasonText = "";
       switch (reason) {
         case "lives":
-          reasonText = "You ran out of lives!";
+          reasonText = "All lives expended";
           break;
         case "subscriptions":
-          reasonText = "All subscribers cancelled!";
+          reasonText = "All subscribers cancelled";
           break;
       }
-      this.add
-        .text(cx, y, reasonText, {
-          fontFamily: "'Courier New', monospace",
-          fontSize: "16px",
-          color: "#cc6655",
-        })
-        .setOrigin(0.5, 0);
-      y += 35;
-    }
-
-    // Remaining life bonus
-    if (this.gameState.lives > 0) {
-      scoreManager.remainingLifeBonus(this.gameState.lives);
-      this.add
-        .text(
-          cx,
-          y,
-          `Remaining Life Bonus: +${this.gameState.lives * POINTS.REMAINING_LIFE_BONUS}`,
-          {
-            fontFamily: "'Courier New', monospace",
+      if (reasonText) {
+        const reasonLabel = this.add
+          .text(cx, y, reasonText, {
+            fontFamily: BROADCAST_FONT,
             fontSize: "16px",
-            color: "#44cc66",
-          },
-        )
+            fontStyle: "600i",
+            color: BC.TEXT_DIM,
+          })
+          .setOrigin(0.5, 0)
+          .setAlpha(0);
+        this.tweens.add({
+          targets: reasonLabel,
+          alpha: 1,
+          duration: 400,
+          delay: 500,
+          ease: "Quart.easeOut",
+        });
+        y += 40;
+      }
+
+      // Remaining life bonus (if any lives remain — edge case for subscriber loss)
+      if (this.gameState.lives > 0) {
+        scoreManager.remainingLifeBonus(this.gameState.lives);
+      }
+
+      // Stats (subdued)
+      const dayRow = createDataRow(this, cx, y, "DAY REACHED", `${this.gameState.day}`, { valueColor: BC.TEXT_DIM });
+      dayRow.container.setAlpha(0);
+      this.tweens.add({ targets: dayRow.container, alpha: 1, duration: 350, delay: 600, ease: "Quart.easeOut" });
+      y += 34;
+
+      const subRow = createDataRow(this, cx, y, "SUBSCRIBERS", `${this.gameState.subscribers}`, { valueColor: BC.TEXT_DIM });
+      subRow.container.setAlpha(0);
+      this.tweens.add({ targets: subRow.container, alpha: 1, duration: 350, delay: 700, ease: "Quart.easeOut" });
+      y += 44;
+
+      // Final score
+      this.add
+        .text(cx, y, "FINAL SCORE", {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "14px",
+          fontStyle: "700",
+          color: BC.TEXT_DIM,
+          letterSpacing: 3,
+        })
         .setOrigin(0.5, 0);
-      y += 30;
+      y += 24;
+
+      const scoreText = this.add
+        .text(cx, y, "0", {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "48px",
+          fontStyle: "800",
+          color: BC.TEXT,
+        })
+        .setOrigin(0.5, 0)
+        .setAlpha(0);
+
+      this.tweens.add({
+        targets: scoreText,
+        alpha: 1,
+        duration: 500,
+        delay: 800,
+        ease: "Quart.easeOut",
+        onComplete: () => {
+          countUp(this, scoreText, this.gameState.score, 1200, 0);
+        },
+      });
+
+      y += 72;
     }
 
-    y += 15;
+    // ── Buttons ──
+    const buttonDefs = isVictory
+      ? [
+          { text: "PLAY AGAIN", action: "restart" },
+          { text: "MAIN MENU", action: "menu" },
+        ]
+      : [
+          { text: "RE-ESTABLISH CONTACT", action: "restart" },
+          { text: "MAIN MENU", action: "menu" },
+        ];
 
-    // Stats section with divider
-    const divider = this.add.graphics();
-    divider.fillStyle(0x333333, 1);
-    divider.fillRect(cx - 160, y, 320, 1);
-    y += 20;
-
-    this.add
-      .text(cx, y, `Day Reached: ${this.gameState.day}`, {
-        fontFamily: "'Courier New', monospace",
-        fontSize: "18px",
-        color: "#aaaaaa",
-      })
-      .setOrigin(0.5, 0);
-    y += 30;
-
-    this.add
-      .text(cx, y, `Subscribers: ${this.gameState.subscribers}`, {
-        fontFamily: "'Courier New', monospace",
-        fontSize: "18px",
-        color: "#aaaaaa",
-      })
-      .setOrigin(0.5, 0);
-    y += 40;
-
-    // Final score — the HERO moment
-    this.add
-      .text(cx, y, "FINAL SCORE", {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "18px",
-        color: "#777755",
-      })
-      .setOrigin(0.5, 0);
-    y += 28;
-
-    const scoreText = this.add
-      .text(cx, y, "0", {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "64px",
-        color: "#ddaa22",
-        shadow: {
-          offsetX: 0,
-          offsetY: 0,
-          color: "#ffcc44",
-          blur: 20,
-          fill: true,
-        },
-      })
-      .setOrigin(0.5, 0)
-      .setAlpha(0);
-
-    // Score entrance + count-up animation
-    this.tweens.add({
-      targets: scoreText,
-      alpha: 1,
-      scaleX: { from: 0.5, to: 1 },
-      scaleY: { from: 0.5, to: 1 },
-      duration: 800,
-      delay: 500,
-      ease: "Back.easeOut",
-      onComplete: () => {
-        countUp(this, scoreText, this.gameState.score, 1500, 0);
-      },
-    });
-
-    y += 90;
-
-    // Buttons
-    const buttons = [
-      {
-        text: "PLAY AGAIN",
-        callback: () => {
-          this.gameState.reset();
-          fadeToScene(this, "WelcomeScene");
-        },
-      },
-      {
-        text: "MAIN MENU",
-        callback: () => {
-          this.gameState.reset();
-          fadeToScene(this, "WelcomeScene");
-        },
-      },
-    ];
-
-    buttons.forEach((btn, i) => {
+    buttonDefs.forEach((def, i) => {
       const by = y + i * 52;
-      const bg = this.add
-        .rectangle(cx, by, 260, 44, 0x1a1a1a)
-        .setStrokeStyle(2, 0x3d0000)
-        .setInteractive({ useHandCursor: true });
-      const txt = this.add
-        .text(cx, by, btn.text, {
-          fontFamily: "Impact, 'Arial Black', sans-serif",
-          fontSize: "20px",
-          color: "#aa8877",
-        })
-        .setOrigin(0.5);
-
-      bg.on("pointerover", () => {
-        bg.setFillStyle(0x2a0a08);
-        bg.setStrokeStyle(2, 0xcc1100);
-        txt.setColor("#ffffff");
+      const btn = createBroadcastButton(this, cx, by, def.text, {
+        width: 300,
+        height: 44,
       });
-      bg.on("pointerout", () => {
-        bg.setFillStyle(0x1a1a1a);
-        bg.setStrokeStyle(2, 0x3d0000);
-        txt.setColor("#aa8877");
-      });
-      bg.on("pointerdown", () => btn.callback());
+      this.buttons.push(btn);
 
-      // Staggered entrance
-      bg.setAlpha(0);
-      txt.setAlpha(0);
+      btn.container.setAlpha(0);
       this.tweens.add({
-        targets: [bg, txt],
+        targets: btn.container,
         alpha: 1,
-        duration: 400,
-        delay: 800 + i * 100,
-        ease: "Power2",
+        duration: 350,
+        delay: 900 + i * 100,
+        ease: "Quart.easeOut",
+      });
+
+      btn.hitArea.on("pointerover", () => {
+        this.selectedIndex = i;
+        this.updateButtonSelection();
+      });
+      btn.hitArea.on("pointerdown", () => {
+        this.gameState.reset();
+        if (def.action === "restart") {
+          fadeToScene(this, "WelcomeScene");
+        } else {
+          fadeToScene(this, "WelcomeScene");
+        }
       });
     });
 
-    // Keyboard shortcut
+    this.time.delayedCall(950, () => this.updateButtonSelection());
+
+    // Keyboard
+    this.input.keyboard!.on("keydown-UP", () => {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.updateButtonSelection();
+    });
+    this.input.keyboard!.on("keydown-DOWN", () => {
+      this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
+      this.updateButtonSelection();
+    });
+    this.input.keyboard!.on("keydown-W", () => {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.updateButtonSelection();
+    });
+    this.input.keyboard!.on("keydown-S", () => {
+      this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
+      this.updateButtonSelection();
+    });
     this.input.keyboard!.on("keydown-ENTER", () => {
-      this.gameState.reset();
-      fadeToScene(this, "WelcomeScene");
+      this.buttons[this.selectedIndex]?.hitArea.emit("pointerdown");
+    });
+    this.input.keyboard!.on("keydown-SPACE", () => {
+      this.buttons[this.selectedIndex]?.hitArea.emit("pointerdown");
+    });
+  }
+
+  private updateButtonSelection(): void {
+    this.buttons.forEach((btn, i) => {
+      btn.setSelected(i === this.selectedIndex);
     });
   }
 }

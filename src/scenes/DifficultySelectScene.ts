@@ -2,29 +2,39 @@ import Phaser from "phaser";
 import { Difficulty } from "../config/difficulty";
 import { VehicleType } from "../config/vehicles";
 import { GameState } from "../systems/GameState";
+import { BC, BROADCAST_FONT, createChyron } from "../ui/broadcast-styles";
 import { fadeIn, fadeToScene } from "../utils/animations";
 
-const DIFF_STYLES: Record<
+const THREAT_LEVELS: Record<
   string,
-  { label: string; desc: string; color: number; icon: string }
+  {
+    threat: string;
+    label: string;
+    desc: string;
+    color: number;
+    cssColor: string;
+  }
 > = {
   [Difficulty.EasyStreet]: {
+    threat: "LOW",
     label: "EASY STREET",
-    desc: "1× Points  ·  Low zombies  ·  Low obstacles",
+    desc: "1× Points · Low density",
     color: 0x22aa44,
-    icon: "☠",
+    cssColor: "#22aa44",
   },
   [Difficulty.MiddleRoad]: {
+    threat: "ELEVATED",
     label: "MIDDLE ROAD",
-    desc: "2× Points  ·  Medium zombies  ·  Medium obstacles",
+    desc: "2× Points · Medium density",
     color: 0xcc8822,
-    icon: "☠☠",
+    cssColor: "#cc8822",
   },
   [Difficulty.HardWay]: {
+    threat: "SEVERE",
     label: "THE HARD WAY",
-    desc: "3× Points  ·  High zombies  ·  High obstacles",
+    desc: "3× Points · High density",
     color: 0xcc1100,
-    icon: "☠☠☠",
+    cssColor: "#cc1100",
   },
 };
 
@@ -32,9 +42,12 @@ export class DifficultySelectScene extends Phaser.Scene {
   private selectedIndex = 0;
   private difficulties = Object.values(Difficulty);
   private rows: {
-    bg: Phaser.GameObjects.Rectangle;
-    glow: Phaser.GameObjects.Rectangle;
+    bg: Phaser.GameObjects.Graphics;
     label: Phaser.GameObjects.Text;
+    threat: Phaser.GameObjects.Text;
+    desc: Phaser.GameObjects.Text;
+    hitArea: Phaser.GameObjects.Rectangle;
+    info: (typeof THREAT_LEVELS)[string];
   }[] = [];
   private vehicle!: VehicleType;
 
@@ -50,141 +63,139 @@ export class DifficultySelectScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
     this.rows = [];
     this.selectedIndex = 0;
-    this.cameras.main.setBackgroundColor("#0d0d0d");
+    this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
-    // Atmospheric glow
+    // Background glow
     const bgGlow = this.add.graphics();
-    bgGlow.fillStyle(0x1a0808, 0.4);
+    bgGlow.fillStyle(BC.RED_DIM, 0.25);
     bgGlow.fillEllipse(width / 2, height * 0.5, width * 0.9, height * 0.7);
 
     // Accent bars
     const borders = this.add.graphics();
-    borders.fillStyle(0xcc1100, 1);
+    borders.fillStyle(BC.RED, 1);
     borders.fillRect(0, 0, width, 3);
     borders.fillRect(0, height - 3, width, 3);
 
-    // Title
-    const title = this.add
-      .text(width / 2, 48, "SELECT DIFFICULTY", {
-        fontFamily: "Impact, 'Arial Black', sans-serif",
-        fontSize: "42px",
-        color: "#cc1100",
-        shadow: {
-          offsetX: 0,
-          offsetY: 0,
-          color: "#ff3300",
-          blur: 12,
-          fill: true,
-        },
-      })
-      .setOrigin(0.5)
-      .setAlpha(0);
-
+    // Chyron
+    const chyron = createChyron(
+      this,
+      48,
+      "ZOMBIE THREAT ADVISORY",
+      "WZMB 13 EMERGENCY BROADCAST SYSTEM",
+    );
+    chyron.setX(-width);
     this.tweens.add({
-      targets: title,
-      alpha: 1,
-      y: { from: 25, to: 48 },
-      duration: 500,
-      ease: "Back.easeOut",
+      targets: chyron,
+      x: width / 2,
+      duration: 350,
+      ease: "Quart.easeOut",
     });
 
     // Instruction
     this.add
-      .text(width / 2, height - 28, "↑ ↓  TO SELECT  ·  ENTER TO CONFIRM", {
-        fontFamily: "'Courier New', monospace",
-        fontSize: "12px",
-        color: "#555555",
+      .text(width / 2, height - 28, "↑ ↓  SELECT  ·  ENTER  CONFIRM", {
+        fontFamily: BROADCAST_FONT,
+        fontSize: "11px",
+        fontStyle: "600",
+        color: BC.TEXT_MUTED,
+        letterSpacing: 2,
       })
       .setOrigin(0.5);
 
-    // Difficulty rows
+    // Threat rows
+    const rowWidth = 520;
+    const rowHeight = 76;
+
     this.difficulties.forEach((diff, i) => {
-      const y = height * 0.35 + i * 100;
-      const info = DIFF_STYLES[diff];
-      const rowWidth = 480;
-      const rowHeight = 76;
+      const y = height * 0.34 + i * 100;
+      const info = THREAT_LEVELS[diff];
 
-      // Glow behind
-      const glow = this.add.rectangle(
-        width / 2,
-        y,
-        rowWidth + 10,
-        rowHeight + 8,
-        info.color,
-        0,
-      );
-
-      // Row background
-      const bg = this.add
-        .rectangle(width / 2, y, rowWidth, rowHeight, 0x141418)
-        .setStrokeStyle(2, 0x2a2a2a)
-        .setInteractive({ useHandCursor: true });
-
-      // Left color accent bar
-      const accentBar = this.add.graphics();
-      accentBar.fillStyle(info.color, 1);
-      accentBar.fillRect(
+      // Row background (graphics so we can redraw on selection)
+      const bg = this.add.graphics();
+      bg.fillStyle(BC.CHROME, 0.95);
+      bg.fillRect(
         width / 2 - rowWidth / 2,
         y - rowHeight / 2,
-        5,
+        rowWidth,
+        rowHeight,
+      );
+      bg.lineStyle(1, BC.CHROME_EDGE, 0.6);
+      bg.strokeRect(
+        width / 2 - rowWidth / 2,
+        y - rowHeight / 2,
+        rowWidth,
         rowHeight,
       );
 
-      // Skull icons on left
-      this.add
-        .text(width / 2 - rowWidth / 2 + 24, y - 6, info.icon, {
-          fontSize: "18px",
-          color: `#${info.color.toString(16).padStart(6, "0")}`,
+      // Left color band (6px)
+      const band = this.add.graphics();
+      band.fillStyle(info.color, 1);
+      band.fillRect(width / 2 - rowWidth / 2, y - rowHeight / 2, 6, rowHeight);
+
+      // Threat level label (colored)
+      const threatText = this.add
+        .text(width / 2 - rowWidth / 2 + 24, y - 14, info.threat, {
+          fontFamily: BROADCAST_FONT,
+          fontSize: "13px",
+          fontStyle: "800",
+          color: info.cssColor,
+          letterSpacing: 2,
         })
         .setOrigin(0, 0.5);
 
-      // Label
+      // Difficulty name
       const label = this.add
         .text(width / 2 - 40, y - 14, info.label, {
-          fontFamily: "Impact, 'Arial Black', sans-serif",
+          fontFamily: BROADCAST_FONT,
           fontSize: "24px",
-          color: "#aa8877",
+          fontStyle: "800",
+          color: BC.TEXT_DIM,
         })
         .setOrigin(0.5, 0.5);
 
       // Description
-      this.add
+      const desc = this.add
         .text(width / 2 - 40, y + 14, info.desc, {
-          fontFamily: "'Courier New', monospace",
-          fontSize: "11px",
-          color: "#666666",
+          fontFamily: BROADCAST_FONT,
+          fontSize: "12px",
+          fontStyle: "600",
+          color: BC.TEXT_MUTED,
+          letterSpacing: 1,
         })
         .setOrigin(0.5, 0.5);
 
-      this.rows.push({ bg, glow, label });
+      // Hit area
+      const hitArea = this.add
+        .rectangle(width / 2, y, rowWidth, rowHeight, 0x000000, 0)
+        .setInteractive({ useHandCursor: true });
+
+      this.rows.push({ bg, label, threat: threatText, desc, hitArea, info });
 
       // Staggered entrance
-      const rowGroup = [bg, glow, accentBar, label];
-      rowGroup.forEach((el) => {
+      [bg, band, threatText, label, desc, hitArea].forEach((el) => {
         if (
-          el instanceof Phaser.GameObjects.Rectangle ||
-          el instanceof Phaser.GameObjects.Text
+          el instanceof Phaser.GameObjects.Text ||
+          el instanceof Phaser.GameObjects.Rectangle
         ) {
           el.setAlpha(0);
         }
       });
 
       this.tweens.add({
-        targets: [bg, glow, label],
+        targets: [label, threatText, desc, hitArea],
         alpha: 1,
-        y: { from: y + 20, to: y },
         duration: 400,
         delay: 300 + i * 100,
-        ease: "Back.easeOut",
+        ease: "Quart.easeOut",
       });
 
-      bg.on("pointerdown", () => {
+      hitArea.on("pointerdown", () => {
         this.selectedIndex = i;
         this.updateSelection();
         this.confirmSelection();
       });
-      bg.on("pointerover", () => {
+      hitArea.on("pointerover", () => {
         this.selectedIndex = i;
         this.updateSelection();
       });
@@ -192,6 +203,7 @@ export class DifficultySelectScene extends Phaser.Scene {
 
     this.time.delayedCall(400, () => this.updateSelection());
 
+    // Keyboard
     this.input.keyboard!.on("keydown-UP", () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateSelection();
@@ -213,40 +225,55 @@ export class DifficultySelectScene extends Phaser.Scene {
   }
 
   private updateSelection(): void {
-    this.rows.forEach(({ bg, glow, label }, i) => {
-      const info = DIFF_STYLES[this.difficulties[i]];
+    const { width } = this.cameras.main;
+    const rowWidth = 520;
+    const rowHeight = 76;
+
+    this.rows.forEach(({ bg, label, desc, info }, i) => {
+      const y = this.cameras.main.height * 0.34 + i * 100;
+      bg.clear();
+
       if (i === this.selectedIndex) {
-        bg.setFillStyle(0x1e1218);
-        bg.setStrokeStyle(2, info.color);
-        glow.setFillStyle(info.color, 0.12);
-        label.setColor("#ffffff");
-        this.tweens.killTweensOf(bg);
-        this.tweens.add({
-          targets: bg,
-          scaleX: 1.03,
-          scaleY: 1.03,
-          duration: 200,
-          ease: "Back.easeOut",
-        });
+        bg.fillStyle(BC.CHROME_LIT, 1);
+        bg.fillRect(
+          width / 2 - rowWidth / 2,
+          y - rowHeight / 2,
+          rowWidth,
+          rowHeight,
+        );
+        bg.lineStyle(1, info.color, 0.5);
+        bg.strokeRect(
+          width / 2 - rowWidth / 2,
+          y - rowHeight / 2,
+          rowWidth,
+          rowHeight,
+        );
+        label.setColor(BC.TEXT);
+        desc.setColor(BC.TEXT_DIM);
       } else {
-        bg.setFillStyle(0x141418);
-        bg.setStrokeStyle(2, 0x2a2a2a);
-        glow.setFillStyle(info.color, 0);
-        label.setColor("#aa8877");
-        this.tweens.killTweensOf(bg);
-        this.tweens.add({
-          targets: bg,
-          scaleX: 1,
-          scaleY: 1,
-          duration: 150,
-          ease: "Power2",
-        });
+        bg.fillStyle(BC.CHROME, 0.95);
+        bg.fillRect(
+          width / 2 - rowWidth / 2,
+          y - rowHeight / 2,
+          rowWidth,
+          rowHeight,
+        );
+        bg.lineStyle(1, BC.CHROME_EDGE, 0.6);
+        bg.strokeRect(
+          width / 2 - rowWidth / 2,
+          y - rowHeight / 2,
+          rowWidth,
+          rowHeight,
+        );
+        label.setColor(BC.TEXT_DIM);
+        desc.setColor(BC.TEXT_MUTED);
       }
     });
   }
 
   private confirmSelection(): void {
     const difficulty = this.difficulties[this.selectedIndex];
+    const { width, height } = this.cameras.main;
 
     // Initialize game state
     const gameState =
@@ -255,14 +282,25 @@ export class DifficultySelectScene extends Phaser.Scene {
     gameState.configure(difficulty, this.vehicle);
     this.registry.set("gameState", gameState);
 
-    // Flash and transition
-    const { bg } = this.rows[this.selectedIndex];
+    // "ADVISORY CONFIRMED" flash
+    const confirmText = this.add
+      .text(width / 2, height / 2, "ADVISORY CONFIRMED", {
+        fontFamily: BROADCAST_FONT,
+        fontSize: "26px",
+        fontStyle: "800",
+        color: BC.TEXT,
+        letterSpacing: 3,
+      })
+      .setOrigin(0.5)
+      .setAlpha(0)
+      .setDepth(100);
+
     this.tweens.add({
-      targets: bg,
-      alpha: 0.3,
-      duration: 80,
+      targets: confirmText,
+      alpha: 1,
+      duration: 200,
       yoyo: true,
-      repeat: 2,
+      hold: 300,
       onComplete: () => fadeToScene(this, "GameScene"),
     });
   }
