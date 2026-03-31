@@ -1,7 +1,8 @@
 import Phaser from "phaser";
+import { GAME } from "../config/constants";
 import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
-import { pulse } from "../utils/animations";
+import { prefersReducedMotion, pulse } from "../utils/animations";
 import { BC, BROADCAST_FONT } from "./broadcast-styles";
 
 export class HUD {
@@ -10,9 +11,13 @@ export class HUD {
 
   private hudBg!: Phaser.GameObjects.Graphics;
   private scoreText!: Phaser.GameObjects.Text;
-  private livesText!: Phaser.GameObjects.Text;
+  private livesGfx!: Phaser.GameObjects.Graphics;
+  private livesX = 0;
   private papersText!: Phaser.GameObjects.Text;
+  private ammoText!: Phaser.GameObjects.Text;
   private subscribersText!: Phaser.GameObjects.Text;
+  private deliveryBar!: Phaser.GameObjects.Graphics;
+  private deliveryCountText!: Phaser.GameObjects.Text;
 
   private paperCount: number;
   private ammoCount: number;
@@ -21,6 +26,9 @@ export class HUD {
   private lastPaperCount = 0;
   private lastAmmoCount = 0;
   private lastSubscribers = 0;
+  private deliveryCompleted = 0;
+  private deliveryTotal = 0;
+  private lastDeliveryCompleted = -1;
   private cachedDayString: string;
 
   constructor(
@@ -103,20 +111,19 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += 120;
+    x += 100;
 
-    // Lives
+    // Lives — Graphics-drawn circles
     this.scene.add
       .text(x, cy - 5, "LIVES", labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    this.livesText = this.scene.add
-      .text(x, cy + 7, "", { ...valueCfg, color: BC.css.RED, fontSize: "13px" })
-      .setScrollFactor(0)
-      .setDepth(100)
-      .setOrigin(0, 0.5);
-    x += 80;
+    this.livesX = x;
+    this.livesGfx = this.scene.add.graphics();
+    this.livesGfx.setScrollFactor(0).setDepth(100);
+    this.drawLives();
+    x += 60;
 
     // Papers
     this.scene.add
@@ -129,7 +136,20 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += 120;
+    x += 80;
+
+    // Ammo (separate field)
+    this.scene.add
+      .text(x, cy - 5, "AMMO", labelCfg)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    this.ammoText = this.scene.add
+      .text(x, cy + 7, "", valueCfg)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    x += 70;
 
     // Subscribers
     this.scene.add
@@ -142,11 +162,30 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
+    x += 70;
+
+    // Delivery progress bar (right-aligned area)
+    this.scene.add
+      .text(x, cy - 5, "ROUTE", labelCfg)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    this.deliveryBar = this.scene.add.graphics();
+    this.deliveryBar.setScrollFactor(0).setDepth(100);
+    this.deliveryCountText = this.scene.add
+      .text(x + 90, cy + 7, "", {
+        ...valueCfg,
+        fontSize: "11px",
+      })
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    this.drawDeliveryBar(x);
 
     // Set initial values (avoids empty text on first frame)
     this.scoreText.setText(`${this.gameState.score}`);
-    this.livesText.setText("●".repeat(this.gameState.lives));
-    this.papersText.setText(`${this.paperCount}   Ammo: ${this.ammoCount}`);
+    this.papersText.setText(`${this.paperCount}`);
+    this.ammoText.setText(`${this.ammoCount}`);
     this.subscribersText.setText(`${this.gameState.subscribers}/10`);
   }
 
@@ -156,6 +195,11 @@ export class HUD {
 
   setAmmoCount(count: number): void {
     this.ammoCount = count;
+  }
+
+  setDeliveryProgress(completed: number, total: number): void {
+    this.deliveryCompleted = completed;
+    this.deliveryTotal = total;
   }
 
   update(): void {
@@ -169,34 +213,52 @@ export class HUD {
       this.lastScore = this.gameState.score;
     }
 
-    // Lives
+    // Lives — redraw circles when lives change
     if (this.gameState.lives !== this.lastLives) {
-      this.livesText.setText("●".repeat(this.gameState.lives));
-      if (this.gameState.lives < this.lastLives) {
-        this.livesText.setColor(BC.css.RED_GLOW);
-        pulse(this.scene, this.livesText, 1.4, 200);
-        this.scene.time.delayedCall(300, () => {
-          this.livesText.setColor(BC.css.RED);
+      this.drawLives();
+      if (this.gameState.lives < this.lastLives && !prefersReducedMotion()) {
+        // Flash the lives graphic on loss
+        this.scene.tweens.add({
+          targets: this.livesGfx,
+          alpha: 0.3,
+          duration: 150,
+          yoyo: true,
+          ease: "Quart.easeOut",
+          onComplete: () => {
+            this.livesGfx.setAlpha(1);
+          },
         });
       }
       this.lastLives = this.gameState.lives;
     }
 
-    // Papers + Ammo (combined text field)
-    if (
-      this.paperCount !== this.lastPaperCount ||
-      this.ammoCount !== this.lastAmmoCount
-    ) {
-      this.papersText.setText(`${this.paperCount}   Ammo: ${this.ammoCount}`);
-
-      // Low paper warning
-      if (this.paperCount <= 3 && this.paperCount !== this.lastPaperCount) {
+    // Papers
+    if (this.paperCount !== this.lastPaperCount) {
+      this.papersText.setText(`${this.paperCount}`);
+      if (this.paperCount <= 1) {
+        this.papersText.setColor(BC.css.RED_GLOW);
+        pulse(this.scene, this.papersText, 1.4, 100);
+      } else if (this.paperCount <= 3) {
         this.papersText.setColor(BC.css.RED);
         pulse(this.scene, this.papersText, 1.2, 150);
-      } else if (this.paperCount > 3) {
+      } else {
         this.papersText.setColor(BC.TEXT);
       }
       this.lastPaperCount = this.paperCount;
+    }
+
+    // Ammo
+    if (this.ammoCount !== this.lastAmmoCount) {
+      this.ammoText.setText(`${this.ammoCount}`);
+      if (this.ammoCount <= 1) {
+        this.ammoText.setColor(BC.css.RED_GLOW);
+        pulse(this.scene, this.ammoText, 1.4, 100);
+      } else if (this.ammoCount <= 2) {
+        this.ammoText.setColor(BC.css.RED);
+        pulse(this.scene, this.ammoText, 1.2, 150);
+      } else {
+        this.ammoText.setColor(BC.TEXT);
+      }
       this.lastAmmoCount = this.ammoCount;
     }
 
@@ -204,6 +266,63 @@ export class HUD {
     if (this.gameState.subscribers !== this.lastSubscribers) {
       this.subscribersText.setText(`${this.gameState.subscribers}/10`);
       this.lastSubscribers = this.gameState.subscribers;
+    }
+
+    // Delivery progress bar
+    if (this.deliveryCompleted !== this.lastDeliveryCompleted) {
+      this.drawDeliveryBar(this.deliveryBarX);
+      if (
+        this.deliveryCompleted > this.lastDeliveryCompleted &&
+        this.lastDeliveryCompleted >= 0
+      ) {
+        pulse(this.scene, this.deliveryBar, 1.1, 120);
+      }
+      this.lastDeliveryCompleted = this.deliveryCompleted;
+    }
+  }
+
+  private drawLives(): void {
+    this.livesGfx.clear();
+    const maxLives = GAME.STARTING_LIVES;
+    for (let i = 0; i < maxLives; i++) {
+      const active = i < this.gameState.lives;
+      this.livesGfx.fillStyle(
+        active ? BC.RED : BC.CHROME_EDGE,
+        active ? 1 : 0.3,
+      );
+      this.livesGfx.fillCircle(this.livesX + i * 14, 23, 5);
+    }
+  }
+
+  private deliveryBarX = 0;
+
+  private drawDeliveryBar(x: number): void {
+    this.deliveryBarX = x;
+    this.deliveryBar.clear();
+    const barW = 80;
+    const barH = 8;
+    const barY = 20;
+
+    // Background track
+    this.deliveryBar.fillStyle(BC.CHROME_EDGE, 0.6);
+    this.deliveryBar.fillRect(x, barY, barW, barH);
+
+    // Fill proportional to progress
+    if (this.deliveryTotal > 0) {
+      const fill = (this.deliveryCompleted / this.deliveryTotal) * barW;
+      this.deliveryBar.fillStyle(BC.GREEN, 0.9);
+      this.deliveryBar.fillRect(x, barY, fill, barH);
+    }
+
+    // Border
+    this.deliveryBar.lineStyle(1, BC.CHROME_EDGE, 0.8);
+    this.deliveryBar.strokeRect(x, barY, barW, barH);
+
+    // Count text
+    if (this.deliveryTotal > 0) {
+      this.deliveryCountText.setText(
+        `${this.deliveryCompleted}/${this.deliveryTotal}`,
+      );
     }
   }
 }

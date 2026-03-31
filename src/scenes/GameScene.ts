@@ -15,6 +15,7 @@ import {
 } from "../entities/Zombie";
 import { MAPS } from "../maps/MapConfig";
 import { generateRoute, Route } from "../maps/MapGenerator";
+import { ComboTracker } from "../systems/ComboTracker";
 import { DayManager } from "../systems/DayManager";
 import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
@@ -74,6 +75,8 @@ export class GameScene extends Phaser.Scene {
   private transitioning = false;
   private zombieKillCount = 0;
   private lastTickerKillCount = 0;
+  private comboTracker!: ComboTracker;
+  private subscriberTotal = 0;
 
   constructor() {
     super({ key: "GameScene" });
@@ -96,6 +99,10 @@ export class GameScene extends Phaser.Scene {
 
     this.deliveries = new Array(this.route.houses.length).fill(false);
     this.worldY = 0;
+    this.comboTracker = new ComboTracker();
+    this.subscriberTotal = this.route.houses.filter(
+      (h) => h.isSubscriber,
+    ).length;
 
     const vehicleStats = VEHICLE_STATS[this.gameState.vehicle];
 
@@ -200,6 +207,7 @@ export class GameScene extends Phaser.Scene {
       this.player.paperCount,
       this.player.rangedWeapon.ammo,
     );
+    this.hud.setDeliveryProgress(0, this.subscriberTotal);
     this.pauseMenu = new PauseMenu(this);
 
     // Collisions
@@ -377,7 +385,7 @@ export class GameScene extends Phaser.Scene {
         const zombie = sprite.getData("zombie") as Zombie;
         zombie.takeDamage(damage);
         if (zombie.isDead()) {
-          this.awardZombieKill(zombie);
+          this.awardZombieKill(zombie, sprite.x, sprite.y);
           deathFlash(this, sprite);
         }
       }
@@ -412,13 +420,17 @@ export class GameScene extends Phaser.Scene {
       ) as Zombie;
       zombie.takeDamage(damage);
       if (zombie.isDead()) {
-        this.awardZombieKill(zombie);
+        this.awardZombieKill(
+          zombie,
+          (nearest as Phaser.Physics.Arcade.Sprite).x,
+          (nearest as Phaser.Physics.Arcade.Sprite).y,
+        );
         deathFlash(this, nearest as Phaser.Physics.Arcade.Sprite);
       }
     }
   }
 
-  private awardZombieKill(zombie: Zombie): void {
+  private awardZombieKill(zombie: Zombie, x: number, y: number): void {
     switch (zombie.type) {
       case ZombieType.Shambler:
         this.scoreManager.shamblerKill();
@@ -430,6 +442,21 @@ export class GameScene extends Phaser.Scene {
         this.scoreManager.spitterKill();
         break;
     }
+
+    // Combo tracking
+    const result = this.comboTracker.registerKill(this.time.now);
+    if (result.isCombo) {
+      const size = Math.min(12 + result.comboCount * 2, 24);
+      floatingText(
+        this,
+        x,
+        y - 30,
+        `${result.comboCount}× COMBO!`,
+        BC.css.GOLD_GLOW,
+        `${size}px`,
+      );
+    }
+
     // Push a ticker headline every 5th kill (avoid spam)
     this.zombieKillCount++;
     if (this.zombieKillCount - this.lastTickerKillCount >= 5) {
@@ -440,6 +467,7 @@ export class GameScene extends Phaser.Scene {
 
   private checkDelivery(npSprite: Phaser.Physics.Arcade.Sprite): void {
     // Check if newspaper landed near a house
+    let hit = false;
     for (let i = 0; i < this.houseSprites.length; i++) {
       const houseRect = this.houseSprites[i];
       const dist = Math.abs(npSprite.y - houseRect.y);
@@ -448,6 +476,11 @@ export class GameScene extends Phaser.Scene {
         if (house.isSubscriber) {
           this.deliveries[i] = true;
           house.markDelivered();
+          // Update delivery progress
+          const completed = this.deliveries.filter(
+            (d, idx) => d && this.route.houses[idx].isSubscriber,
+          ).length;
+          this.hud.setDeliveryProgress(completed, this.subscriberTotal);
           // Determine if mailbox or porch delivery based on x proximity
           const xDist = Math.abs(npSprite.x - houseRect.x);
           if (xDist < 20) {
@@ -484,8 +517,22 @@ export class GameScene extends Phaser.Scene {
             "16px",
           );
         }
+        hit = true;
         break;
       }
+    }
+
+    // Delivery miss feedback — newspaper went out of bounds without hitting anything
+    if (!hit) {
+      floatingText(
+        this,
+        npSprite.x,
+        npSprite.y,
+        "MISS",
+        BC.css.RED_DIM,
+        "12px",
+      );
+      screenShake(this, 0.004, 100);
     }
   }
 
@@ -574,7 +621,7 @@ export class GameScene extends Phaser.Scene {
     npSprite.destroy();
 
     if (zombie.isDead()) {
-      this.awardZombieKill(zombie);
+      this.awardZombieKill(zombie, zombieSprite.x, zombieSprite.y);
       deathFlash(this, zombieSprite);
     }
   }

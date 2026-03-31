@@ -18,18 +18,18 @@ Meticulous final polish pass across the entire ZombieSweep UI surface, addressin
 
 ## Files Changed
 
-| File | Change |
-| ------ | -------- |
-| `src/ui/broadcast-styles.ts` | Added `GOLD_GLOW`, `GREEN_BRIGHT`, `AMBER` CSS string tokens |
-| `src/ui/broadcast-styles.test.ts` | Added assertions for new CSS tokens |
-| `src/utils/animations.ts` | `floatingText()` uses `BROADCAST_FONT` constant |
-| `src/ui/HUD.ts` | Replaced `#ff2222` → `BC.css.RED_GLOW`, `#cc2222` → `BC.css.RED` |
-| `src/scenes/GameScene.ts` | Added `BC` import; replaced 5 off-palette colors with tokens |
-| `src/scenes/TrainingScene.ts` | Replaced 4 off-palette colors with `BC.css.*` tokens |
-| `src/scenes/GameOverScene.ts` | Replaced `#ffcc44` shadow with `BC.css.GOLD_GLOW` |
-| `src/scenes/ScoreSummaryScene.ts` | Normalized `Back.easeOut` → `Quart.easeOut` |
-| `src/scenes/WelcomeScene.ts` | ESC dismiss + fade entrance for Controls/Credits overlays |
-| `index.html` | Transform-only loading bar animation; `:focus-visible` on fullscreen button |
+| File                              | Change                                                                      |
+| --------------------------------- | --------------------------------------------------------------------------- |
+| `src/ui/broadcast-styles.ts`      | Added `GOLD_GLOW`, `GREEN_BRIGHT`, `AMBER` CSS string tokens                |
+| `src/ui/broadcast-styles.test.ts` | Added assertions for new CSS tokens                                         |
+| `src/utils/animations.ts`         | `floatingText()` uses `BROADCAST_FONT` constant                             |
+| `src/ui/HUD.ts`                   | Replaced `#ff2222` → `BC.css.RED_GLOW`, `#cc2222` → `BC.css.RED`            |
+| `src/scenes/GameScene.ts`         | Added `BC` import; replaced 5 off-palette colors with tokens                |
+| `src/scenes/TrainingScene.ts`     | Replaced 4 off-palette colors with `BC.css.*` tokens                        |
+| `src/scenes/GameOverScene.ts`     | Replaced `#ffcc44` shadow with `BC.css.GOLD_GLOW`                           |
+| `src/scenes/ScoreSummaryScene.ts` | Normalized `Back.easeOut` → `Quart.easeOut`                                 |
+| `src/scenes/WelcomeScene.ts`      | ESC dismiss + fade entrance for Controls/Credits overlays                   |
+| `index.html`                      | Transform-only loading bar animation; `:focus-visible` on fullscreen button |
 
 ## Test Results
 

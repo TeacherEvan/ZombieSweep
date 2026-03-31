@@ -8,6 +8,8 @@ export class PauseMenu {
   private isVisible = false;
   private selectedIndex = 0;
   private buttons: ReturnType<typeof createBroadcastButton>[] = [];
+  private confirmingQuit = false;
+  private quitBtn!: ReturnType<typeof createBroadcastButton>;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -111,12 +113,19 @@ export class PauseMenu {
         height: 42,
       },
     );
+    this.quitBtn = quitBtn;
     quitBtn.hitArea.on("pointerover", () => {
       this.selectedIndex = 1;
       this.updateSelection();
     });
     quitBtn.hitArea.on("pointerdown", () => {
-      fadeToScene(this.scene, "WelcomeScene");
+      if (this.confirmingQuit) {
+        fadeToScene(this.scene, "WelcomeScene");
+      } else {
+        this.confirmingQuit = true;
+        quitBtn.label.setText("ARE YOU SURE?");
+        quitBtn.label.setColor(BC.css.RED);
+      }
     });
 
     this.buttons = [resumeBtn, quitBtn];
@@ -151,6 +160,9 @@ export class PauseMenu {
     if (this.isVisible) return;
     this.isVisible = true;
     this.selectedIndex = 0;
+    this.confirmingQuit = false;
+    this.quitBtn.label.setText("END TRANSMISSION");
+    this.quitBtn.label.setColor(BC.TEXT_DIM);
     this.updateSelection();
     this.container.setVisible(true);
     this.container.setAlpha(0);
@@ -173,6 +185,9 @@ export class PauseMenu {
 
   hide(): void {
     if (!this.isVisible) return;
+    this.confirmingQuit = false;
+    this.quitBtn.label.setText("END TRANSMISSION");
+    this.quitBtn.label.setColor(BC.TEXT_DIM);
     // Remove keyboard listeners
     this.scene.input.keyboard?.off("keydown-UP", this.navUp, this);
     this.scene.input.keyboard?.off("keydown-DOWN", this.navDown, this);
