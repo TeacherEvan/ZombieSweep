@@ -1,6 +1,7 @@
 import Phaser from "phaser";
-import { fadeToScene } from "../utils/animations";
+import { fadeToScene, isTouchPrimary } from "../utils/animations";
 import { BC, BROADCAST_FONT, createBroadcastButton } from "./broadcast-styles";
+import { resolveBroadcastViewportContext } from "./broadcast-viewport";
 
 export class PauseMenu {
   private scene: Phaser.Scene;
@@ -20,6 +21,12 @@ export class PauseMenu {
     const { width, height } = this.scene.cameras.main;
     const cx = width / 2;
     const cy = height / 2;
+    const viewport = resolveBroadcastViewportContext(
+      window.innerWidth,
+      window.innerHeight,
+      isTouchPrimary(),
+    );
+    const scale = viewport.uiScale;
 
     this.container = this.scene.add
       .container(0, 0)
@@ -58,7 +65,7 @@ export class PauseMenu {
     const standByText = this.scene.add
       .text(cx, cy - 70, "PLEASE STAND BY", {
         fontFamily: BROADCAST_FONT,
-        fontSize: "32px",
+        fontSize: `${Math.round(32 * scale)}px`,
         fontStyle: "800",
         color: BC.css.RED,
         letterSpacing: 4,
@@ -79,7 +86,7 @@ export class PauseMenu {
     const subtitle = this.scene.add
       .text(cx, cy - 40, "TECHNICAL DIFFICULTIES", {
         fontFamily: BROADCAST_FONT,
-        fontSize: "14px",
+        fontSize: `${Math.round(14 * scale)}px`,
         fontStyle: "600",
         color: BC.TEXT_DIM,
         letterSpacing: 3,
@@ -93,8 +100,9 @@ export class PauseMenu {
       cy + 20,
       "RESUME BROADCAST",
       {
-        width: 280,
-        height: 42,
+        width: Math.round(280 * scale),
+        height: Math.round(42 * scale),
+        labelSize: `${Math.round(17 * scale)}px`,
       },
     );
     resumeBtn.hitArea.on("pointerover", () => {
@@ -106,11 +114,12 @@ export class PauseMenu {
     const quitBtn = createBroadcastButton(
       this.scene,
       cx,
-      cy + 72,
+      cy + Math.round(72 * scale),
       "END TRANSMISSION",
       {
-        width: 280,
-        height: 42,
+        width: Math.round(280 * scale),
+        height: Math.round(42 * scale),
+        labelSize: `${Math.round(17 * scale)}px`,
       },
     );
     this.quitBtn = quitBtn;

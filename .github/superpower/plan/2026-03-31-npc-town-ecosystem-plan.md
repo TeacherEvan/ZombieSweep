@@ -11,14 +11,17 @@
 ## Task 1 — Shared NPC contract and archetype catalog
 
 ### Objective
+
 Create the reusable domain model that can represent civilians, defenders, traders, responders, hostile humans, and infected NPCs.
 
 ### Files
+
 - `src/entities/Npc.ts`
 - `src/entities/NpcCatalog.ts`
 - `src/entities/NpcCatalog.test.ts`
 
 ### Deliverables
+
 - `NpcFaction`, `NpcRole`, `NpcState`
 - `NpcBehaviorProfile`, `NpcScheduleProfile`, `NpcSpawnProfile`
 - `NpcDefinition`
@@ -29,6 +32,7 @@ Create the reusable domain model that can represent civilians, defenders, trader
 - safe defaults for missing or invalid input
 
 ### Acceptance criteria
+
 - shared contract is pure TypeScript and scene-free
 - invalid definitions normalize safely
 - catalog exposes the initial family/archetype set
@@ -39,20 +43,24 @@ Create the reusable domain model that can represent civilians, defenders, trader
 ## Task 2 — Town reputation and shared behavior rules
 
 ### Objective
+
 Add the pure logic that evaluates danger, trust, and faction-driven behavior transitions.
 
 ### Files
+
 - `src/systems/TownReputation.ts`
 - `src/systems/NpcRules.ts`
 - `src/systems/TownReputation.test.ts`
 - `src/systems/NpcRules.test.ts`
 
 ### Deliverables
+
 - reputation model with trust/collateral/alertness
 - behavior evaluation based on faction, role, danger, reputation, and day/time slice
 - fallback to `Idle` or `Flee` when profile data is missing
 
 ### Acceptance criteria
+
 - delivery success improves trust
 - collateral damage lowers trust
 - civilians flee under pressure
@@ -67,19 +75,23 @@ Add the pure logic that evaluates danger, trust, and faction-driven behavior tra
 ## Task 3 — Scheduler and spawn planning
 
 ### Objective
+
 Select eligible NPC archetypes deterministically from the day/map/threat context.
 
 ### Files
+
 - `src/systems/NpcScheduler.ts`
 - `src/systems/NpcScheduler.test.ts`
 
 ### Deliverables
+
 - `NpcSpawnPlan`
 - `NpcScheduleContext`
 - deterministic selection helpers
 - safe fallback behavior for invalid zones and missing schedule data
 
 ### Acceptance criteria
+
 - same inputs produce the same spawn plan
 - map/day/threat/reputation influence selection
 - invalid spawn zones are skipped safely
@@ -91,18 +103,22 @@ Select eligible NPC archetypes deterministically from the day/map/threat context
 ## Task 4 — Route generation emits NPC spawn data
 
 ### Objective
+
 Make route generation the source of truth for NPC placement hints.
 
 ### Files
+
 - `src/maps/MapGenerator.ts`
 - `src/maps/MapGenerator.test.ts`
 
 ### Deliverables
+
 - extend `Route` with `npcSpawns`
 - call the scheduler from `generateRoute()`
 - keep houses/hazards/pickups deterministic and unchanged aside from the new NPC output
 
 ### Acceptance criteria
+
 - route generation stays deterministic
 - existing route outputs remain intact
 - NPC plans are included in the returned route object
@@ -112,9 +128,11 @@ Make route generation the source of truth for NPC placement hints.
 ## Task 5 — Legacy entity adapters and scene wiring
 
 ### Objective
+
 Keep the old `Citizen` and `Zombie` APIs working while introducing the shared NPC model into the runtime path.
 
 ### Files
+
 - `src/entities/Citizen.ts`
 - `src/entities/Zombie.ts`
 - `src/systems/NpcAssets.ts`
@@ -125,11 +143,13 @@ Keep the old `Citizen` and `Zombie` APIs working while introducing the shared NP
 - `src/systems/NpcAssets.test.ts`
 
 ### Deliverables
+
 - adapter helpers from legacy entities to shared NPC families/roles/states
 - placeholder texture support for missing art
 - `GameScene` consumes spawn plans instead of hardcoding families
 
 ### Acceptance criteria
+
 - legacy factories still work
 - missing texture keys fall back safely
 - Phaser logic remains in scenes while selection logic stays in systems

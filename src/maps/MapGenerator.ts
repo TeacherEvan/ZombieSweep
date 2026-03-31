@@ -12,13 +12,21 @@ import {
   createRanchHouse,
   createVictorianHouse,
 } from "../entities/House";
+import { NpcTimeSlice } from "../entities/Npc";
 import { Pickup, PickupType, createPickup } from "../entities/Pickup";
+import {
+  NpcScheduleContext,
+  NpcSpawnPlan,
+  buildNpcSpawnPlan,
+} from "../systems/NpcScheduler";
+import { createTownReputation } from "../systems/TownReputation";
 import { DensityLevel, MapConfig } from "./MapConfig";
 
 export interface Route {
   houses: House[];
   hazards: Hazard[];
   pickups: Pickup[];
+  npcSpawns: NpcSpawnPlan[];
 }
 
 const DENSITY_TO_COUNT: Record<DensityLevel, number> = {
@@ -39,17 +47,42 @@ const HOUSE_CREATORS = [
   createVictorianHouse,
 ];
 
+const ROUTE_TRIGGERS_BY_THEME: Record<MapConfig["theme"], string[]> = {
+  suburban: ["porch", "subscriber"],
+  urban: ["market", "supply"],
+  industrial: ["alarm", "raid"],
+};
+
+const SPAWN_ZONES_BY_THEME: Record<MapConfig["theme"], string[]> = {
+  suburban: ["FrontPorch", "Yard", "LeftSidewalk", "SidewalkRight"],
+  urban: ["FrontPorch", "CenterStreet", "SidewalkRight"],
+  industrial: ["CenterStreet", "LeftSidewalk", "SidewalkRight"],
+};
+
+const THREAT_BASE_BY_DIFFICULTY: Record<Difficulty, number> = {
+  [Difficulty.EasyStreet]: 20,
+  [Difficulty.MiddleRoad]: 42,
+  [Difficulty.HardWay]: 65,
+};
+
 export function generateRoute(
   mapConfig: MapConfig,
   difficulty: Difficulty,
-  _day: number,
+  day: number,
   subscriberCount: number = GAME.STARTING_SUBSCRIBERS,
 ): Route {
   const houses = generateHouses(subscriberCount);
   const hazards = generateHazards(mapConfig, difficulty);
   const pickups = generatePickups();
+  const npcSpawns = generateNpcSpawns(
+    mapConfig,
+    difficulty,
+    day,
+    subscriberCount,
+    hazards.length,
+  );
 
-  return { houses, hazards, pickups };
+  return { houses, hazards, pickups, npcSpawns };
 }
 
 function generateHouses(subscriberCount: number): House[] {
@@ -106,4 +139,104 @@ function generatePickups(): Pickup[] {
   }
 
   return pickups;
+}
+
+function generateNpcSpawns(
+  mapConfig: MapConfig,
+  difficulty: Difficulty,
+  day: number,
+  subscriberCount: number,
+  hazardCount: number,
+): NpcSpawnPlan[] {
+  const timeSlice = getRouteTimeSlice(day);
+  const reputation = createTownReputation({
+    trust: 50 + subscriberCount * 3 - hazardCount * 2,
+    collateral: GAME.TOTAL_HOUSES - subscriberCount,
+    alertness:
+      THREAT_BASE_BY_DIFFICULTY[difficulty] +
+      hazardCount * 2 +
+      Math.max(0, day - 1) * 2,
+  });
+
+  const context: NpcScheduleContext = {
+    day,
+    timeSlice,
+    mapTags: [mapConfig.theme, mapConfig.name.toLowerCase()],
+    routeTriggers: buildRouteTriggers(
+      mapConfig,
+      difficulty,
+      subscriberCount,
+      hazardCount,
+    ),
+    threatLevel: buildThreatLevel(
+      difficulty,
+      day,
+      subscriberCount,
+      hazardCount,
+    ),
+    reputation,
+    isSafeZone: mapConfig.theme === "suburban",
+    spawnZones: SPAWN_ZONES_BY_THEME[mapConfig.theme],
+    limit: buildNpcLimit(difficulty, subscriberCount),
+  };
+
+  return buildNpcSpawnPlan(context);
+}
+
+function buildRouteTriggers(
+  mapConfig: MapConfig,
+  difficulty: Difficulty,
+  subscriberCount: number,
+  hazardCount: number,
+): string[] {
+  const triggers = [...ROUTE_TRIGGERS_BY_THEME[mapConfig.theme]];
+
+  if (difficulty === Difficulty.HardWay) {
+    triggers.push("blockade", "alarm");
+  } else if (difficulty === Difficulty.MiddleRoad) {
+    triggers.push("alarm");
+  }
+
+  if (subscriberCount < GAME.STARTING_SUBSCRIBERS) {
+    triggers.push("panic");
+  }
+
+  if (hazardCount >= 8) {
+    triggers.push("raid");
+  }
+
+  return Array.from(new Set(triggers));
+}
+
+function buildThreatLevel(
+  difficulty: Difficulty,
+  day: number,
+  subscriberCount: number,
+  hazardCount: number,
+): number {
+  const base = THREAT_BASE_BY_DIFFICULTY[difficulty];
+  const dayPressure = Math.max(0, day - 1) * 2;
+  const subscriberPressure =
+    Math.max(0, GAME.STARTING_SUBSCRIBERS - subscriberCount) * 4;
+  const hazardPressure = hazardCount * 2;
+
+  return Math.min(
+    100,
+    base + dayPressure + subscriberPressure + hazardPressure,
+  );
+}
+
+function getRouteTimeSlice(day: number): NpcTimeSlice {
+  if (day <= 2) return NpcTimeSlice.Daytime;
+  if (day <= 5) return NpcTimeSlice.Evening;
+  return NpcTimeSlice.Night;
+}
+
+function buildNpcLimit(
+  difficulty: Difficulty,
+  subscriberCount: number,
+): number {
+  const base = Math.ceil(subscriberCount / 4);
+  const difficultyBonus = difficulty === Difficulty.HardWay ? 1 : 0;
+  return Math.max(1, Math.min(4, base + difficultyBonus));
 }

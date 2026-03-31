@@ -7,6 +7,15 @@ import { ScoreSummaryScene } from "./scenes/ScoreSummaryScene";
 import { TrainingScene } from "./scenes/TrainingScene";
 import { VehicleSelectScene } from "./scenes/VehicleSelectScene";
 import { WelcomeScene } from "./scenes/WelcomeScene";
+import { syncBroadcastViewportContext } from "./ui/broadcast-viewport";
+
+syncBroadcastViewportContext();
+window.addEventListener("resize", () => {
+  syncBroadcastViewportContext();
+});
+window.addEventListener("orientationchange", () => {
+  syncBroadcastViewportContext();
+});
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.CANVAS,

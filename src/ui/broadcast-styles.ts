@@ -74,7 +74,12 @@ export function createChyron(
   y: number,
   title: string,
   subtitle: string,
-  options: { width?: number; x?: number; titleSize?: string } = {},
+  options: {
+    width?: number;
+    x?: number;
+    titleSize?: string;
+    subtitleSize?: string;
+  } = {},
 ): Phaser.GameObjects.Container {
   const { width: cw } = scene.cameras.main;
   const w = options.width ?? cw * 0.88;
@@ -108,7 +113,7 @@ export function createChyron(
   const subtitleText = scene.add
     .text(-w / 2 + 18, 14, subtitle.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
-      fontSize: "11px",
+      fontSize: options.subtitleSize ?? "11px",
       fontStyle: "600",
       color: BC.TEXT_DIM,
       letterSpacing: 2,
@@ -126,7 +131,12 @@ export function createBroadcastButton(
   x: number,
   y: number,
   text: string,
-  options: { width?: number; height?: number; selected?: boolean } = {},
+  options: {
+    width?: number;
+    height?: number;
+    selected?: boolean;
+    labelSize?: string;
+  } = {},
 ): {
   container: Phaser.GameObjects.Container;
   bg: Phaser.GameObjects.Graphics;
@@ -145,7 +155,7 @@ export function createBroadcastButton(
   const label = scene.add
     .text(-w / 2 + 18, 0, text.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
-      fontSize: "17px",
+      fontSize: options.labelSize ?? "17px",
       fontStyle: "700",
       color: BC.TEXT_DIM,
       letterSpacing: 1,
@@ -276,6 +286,7 @@ export function createAlertBanner(
     textColor?: string;
     width?: number;
     height?: number;
+    fontSize?: string;
   } = {},
 ): Phaser.GameObjects.Container {
   const { width: cw } = scene.cameras.main;
@@ -293,7 +304,7 @@ export function createAlertBanner(
   const label = scene.add
     .text(0, 0, text.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
-      fontSize: "14px",
+      fontSize: options.fontSize ?? "14px",
       fontStyle: "800",
       color: textColor,
       letterSpacing: 2,

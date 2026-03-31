@@ -5,7 +5,9 @@ import {
   createArmedSurvivalist,
   createFriendlyNeighbor,
   createPanickedRunner,
+  toNpcDefinition,
 } from "./Citizen";
+import { NpcFaction, NpcRole, NpcState } from "./Npc";
 
 describe("Citizen entities", () => {
   describe("FriendlyNeighbor", () => {
@@ -79,6 +81,35 @@ describe("Citizen entities", () => {
       const c = createFriendlyNeighbor(200, 400);
       expect(c.x).toBe(200);
       expect(c.y).toBe(400);
+    });
+  });
+
+  describe("NPC adapter", () => {
+    it("maps a friendly neighbor to a survivor civilian", () => {
+      const npc = toNpcDefinition(createFriendlyNeighbor(0, 0));
+
+      expect(npc.faction).toBe(NpcFaction.Survivor);
+      expect(npc.role).toBe(NpcRole.Civilian);
+      expect(npc.behavior.defaultState).toBe(NpcState.Idle);
+      expect(npc.textureKey).toBe("citizen-friendly");
+    });
+
+    it("maps a panicked runner to a fleeing survivor civilian", () => {
+      const npc = toNpcDefinition(createPanickedRunner(0, 0));
+
+      expect(npc.faction).toBe(NpcFaction.Survivor);
+      expect(npc.role).toBe(NpcRole.Civilian);
+      expect(npc.behavior.defaultState).toBe(NpcState.Flee);
+      expect(npc.textureKey).toBe("citizen-panicked");
+    });
+
+    it("maps an armed survivalist to a defending survivor guard", () => {
+      const npc = toNpcDefinition(createArmedSurvivalist(0, 0));
+
+      expect(npc.faction).toBe(NpcFaction.Survivor);
+      expect(npc.role).toBe(NpcRole.Guard);
+      expect(npc.behavior.defaultState).toBe(NpcState.Defend);
+      expect(npc.textureKey).toBe("citizen-armed");
     });
   });
 });

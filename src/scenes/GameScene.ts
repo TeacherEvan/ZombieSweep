@@ -2,18 +2,19 @@ import Phaser from "phaser";
 import { GAME } from "../config/constants";
 import { VEHICLE_STATS, WeaponSlot } from "../config/vehicles";
 import {
+  Citizen,
+  CitizenType,
   createArmedSurvivalist,
   createFriendlyNeighbor,
   createPanickedRunner,
-  Citizen,
-  CitizenType,
 } from "../entities/Citizen";
-import { PickupType, createPickup } from "../entities/Pickup";
 import {
   createNewspaper,
   Newspaper,
   NewspaperState,
 } from "../entities/Newspaper";
+import { NpcFaction, NpcRole, NpcState } from "../entities/Npc";
+import { createPickup, PickupType } from "../entities/Pickup";
 import {
   createRunner,
   createShambler,
@@ -21,14 +22,15 @@ import {
   Zombie,
   ZombieType,
 } from "../entities/Zombie";
-import { MAPS } from "../maps/MapConfig";
-import { MapConfig } from "../maps/MapConfig";
+import { MapConfig, MAPS } from "../maps/MapConfig";
 import { generateRoute, Route } from "../maps/MapGenerator";
 import { ComboTracker } from "../systems/ComboTracker";
 import { DayManager } from "../systems/DayManager";
 import { GameState, getOrCreateGameState } from "../systems/GameState";
+import { resolveNpcSpriteTextureKey } from "../systems/NpcAssets";
 import { ScoreManager } from "../systems/ScoreManager";
 import { BC } from "../ui/broadcast-styles";
+import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
 import { HUD } from "../ui/HUD";
 import { PauseMenu } from "../ui/PauseMenu";
 import {
@@ -36,6 +38,7 @@ import {
   headlineLifeLost,
   headlineZombieKill,
 } from "../ui/ticker-bridge";
+import { TouchControls } from "../ui/TouchControls";
 import {
   collectEffect,
   damageFlash,
@@ -43,9 +46,16 @@ import {
   fadeIn,
   fadeToScene,
   floatingText,
+  isTouchPrimary,
   meleeSwingArc,
   screenShake,
 } from "../utils/animations";
+import {
+  createMeleeWeapon,
+  createRangedWeapon,
+  MeleeWeapon,
+  RangedWeapon,
+} from "../weapons/Weapon";
 import {
   classifyDelivery,
   getHouseTextureKey,
@@ -53,12 +63,6 @@ import {
   getVehicleControlProfile,
   getZombieWaveSettings,
 } from "./arcade-rules";
-import {
-  createMeleeWeapon,
-  createRangedWeapon,
-  MeleeWeapon,
-  RangedWeapon,
-} from "../weapons/Weapon";
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -79,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private route!: Route;
   private hud!: HUD;
   private pauseMenu!: PauseMenu;
+  private touchControls?: TouchControls;
 
   private player!: PlayerSprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -100,6 +105,7 @@ export class GameScene extends Phaser.Scene {
   private lastTickerKillCount = 0;
   private comboTracker!: ComboTracker;
   private subscriberTotal = 0;
+  private viewportContext = resolveBroadcastViewportContext(960, 540, false);
 
   constructor() {
     super({ key: "GameScene" });
@@ -110,6 +116,13 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager(this.gameState);
     this.dayManager = new DayManager();
     this.transitioning = false;
+    const { width, height } = this.cameras.main;
+    const touchPrimary = isTouchPrimary();
+    this.viewportContext = resolveBroadcastViewportContext(
+      window.innerWidth,
+      window.innerHeight,
+      touchPrimary,
+    );
 
     const mapName = this.dayManager.getMapForDay(this.gameState.day);
     const mapConfig = MAPS[mapName];
@@ -207,6 +220,9 @@ export class GameScene extends Phaser.Scene {
     // Place pickups
     this.spawnPickups();
 
+    // Place NPCs from the route planner
+    this.spawnRouteNpcs();
+
     // Input (guard keyboard availability for touch-only devices)
     const kb = this.input.keyboard;
     if (kb) {
@@ -226,6 +242,15 @@ export class GameScene extends Phaser.Scene {
       };
     }
 
+    if (this.viewportContext.touchPrimary) {
+      this.touchControls = new TouchControls(
+        this,
+        width,
+        height,
+        this.viewportContext.uiScale,
+      );
+    }
+
     // HUD + Pause
     this.hud = new HUD(
       this,
@@ -235,6 +260,11 @@ export class GameScene extends Phaser.Scene {
     );
     this.hud.setDeliveryProgress(0, this.subscriberTotal);
     this.pauseMenu = new PauseMenu(this);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.touchControls?.destroy();
+      this.touchControls = undefined;
+    });
 
     // Collisions
     this.physics.add.overlap(
@@ -285,15 +315,16 @@ export class GameScene extends Phaser.Scene {
       undefined,
       this,
     );
-
-    // Spawn initial zombies
-    this.spawnZombieWave();
-    this.scheduleZombieWave();
   }
 
   update(_time: number, delta: number): void {
     if (this.transitioning) return;
     if (this.pauseMenu.getIsVisible()) return;
+
+    if (this.touchControls?.consumeAction("pause")) {
+      this.pauseMenu.toggle();
+      return;
+    }
 
     if (this.keys?.ESC && Phaser.Input.Keyboard.JustDown(this.keys.ESC)) {
       this.pauseMenu.toggle();
@@ -306,15 +337,36 @@ export class GameScene extends Phaser.Scene {
     // Movement
     let vx = 0;
     let vy = 0;
-    if (this.cursors?.left.isDown || this.wasd?.A.isDown) vx = -speed;
-    if (this.cursors?.right.isDown || this.wasd?.D.isDown) vx = speed;
-    if (this.cursors?.up.isDown || this.wasd?.W.isDown) vy = -speed;
-    if (this.cursors?.down.isDown || this.wasd?.S.isDown) vy = speed;
+    if (
+      this.cursors?.left.isDown ||
+      this.wasd?.A.isDown ||
+      this.touchControls?.isHeld("left")
+    )
+      vx = -speed;
+    if (
+      this.cursors?.right.isDown ||
+      this.wasd?.D.isDown ||
+      this.touchControls?.isHeld("right")
+    )
+      vx = speed;
+    if (
+      this.cursors?.up.isDown ||
+      this.wasd?.W.isDown ||
+      this.touchControls?.isHeld("up")
+    )
+      vy = -speed;
+    if (
+      this.cursors?.down.isDown ||
+      this.wasd?.S.isDown ||
+      this.touchControls?.isHeld("down")
+    )
+      vy = speed;
 
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const responsiveness = vx !== 0 || vy !== 0
-      ? controlProfile.inputResponsiveness
-      : controlProfile.coastResponsiveness;
+    const responsiveness =
+      vx !== 0 || vy !== 0
+        ? controlProfile.inputResponsiveness
+        : controlProfile.coastResponsiveness;
     this.player.setVelocity(
       Phaser.Math.Linear(body.velocity.x, vx, responsiveness),
       Phaser.Math.Linear(body.velocity.y, vy, responsiveness),
@@ -327,33 +379,48 @@ export class GameScene extends Phaser.Scene {
         this.gameState.day,
         deliveredCount,
         this.gameState.difficulty,
-      ) * (delta / 1000);
-    this.scrollSpeed = Phaser.Math.Linear(this.scrollSpeed, targetScrollSpeed, 0.08);
+      ) *
+      (delta / 1000);
+    this.scrollSpeed = Phaser.Math.Linear(
+      this.scrollSpeed,
+      targetScrollSpeed,
+      0.08,
+    );
     this.worldY += this.scrollSpeed;
 
     // Throw newspaper left/right
     if (
-      this.keys?.Q &&
-      Phaser.Input.Keyboard.JustDown(this.keys.Q) &&
-      this.player.paperCount > 0
+      (this.keys?.Q &&
+        Phaser.Input.Keyboard.JustDown(this.keys.Q) &&
+        this.player.paperCount > 0) ||
+      ((this.touchControls?.consumeAction("throwLeft") ?? false) &&
+        this.player.paperCount > 0)
     ) {
       this.throwNewspaper("left");
     }
     if (
-      this.keys?.E &&
-      Phaser.Input.Keyboard.JustDown(this.keys.E) &&
-      this.player.paperCount > 0
+      (this.keys?.E &&
+        Phaser.Input.Keyboard.JustDown(this.keys.E) &&
+        this.player.paperCount > 0) ||
+      ((this.touchControls?.consumeAction("throwRight") ?? false) &&
+        this.player.paperCount > 0)
     ) {
       this.throwNewspaper("right");
     }
 
     // Melee attack
-    if (this.keys?.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
+    if (
+      (this.keys?.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) ||
+      this.touchControls?.consumeAction("melee")
+    ) {
       this.meleeAttack();
     }
 
     // Ranged attack
-    if (this.keys?.F && Phaser.Input.Keyboard.JustDown(this.keys.F)) {
+    if (
+      (this.keys?.F && Phaser.Input.Keyboard.JustDown(this.keys.F)) ||
+      this.touchControls?.consumeAction("ranged")
+    ) {
       this.rangedAttack();
     }
 
@@ -869,6 +936,141 @@ export class GameScene extends Phaser.Scene {
       sprite.setData("pickup", pickup);
       this.pickupSprites.add(sprite);
     });
+  }
+
+  private spawnRouteNpcs(): void {
+    this.route.npcSpawns.forEach((plan, i) => {
+      const placement = this.houseSprites[i % this.houseSprites.length];
+      const houseSprite = placement.sprite;
+      const { x, y } = this.getNpcSpawnPosition(
+        plan.spawnZone,
+        houseSprite.x,
+        houseSprite.y,
+        i,
+      );
+      const key = resolveNpcSpriteTextureKey(
+        {
+          faction: plan.definition.faction,
+          role: plan.definition.role,
+          state: plan.state,
+          textureKey: plan.definition.textureKey,
+        },
+        this.textures,
+      );
+
+      if (plan.definition.faction === NpcFaction.Infected) {
+        const zombie = this.createZombieFromPlan(plan.definition.role, x, y);
+        const sprite = this.physics.add.sprite(x, y, key);
+        sprite.setData("npcPlan", plan);
+        sprite.setData("zombie", zombie);
+        this.zombieSprites.add(sprite);
+        return;
+      }
+
+      const citizen = this.createCitizenFromPlan(
+        plan.definition.faction,
+        plan.state,
+        x,
+        y,
+      );
+      const sprite = this.physics.add.sprite(x, y, key);
+      sprite.setData("npcPlan", plan);
+      sprite.setData("citizen", citizen);
+      sprite.setImmovable(true);
+      sprite.setDepth(4);
+      sprite.setBounce(0);
+      this.citizenSprites.add(sprite);
+
+      if (!citizen.isStationary) {
+        this.tweens.add({
+          targets: sprite,
+          x: x + (houseSprite.x < 480 ? 18 : -18),
+          duration: 900 + i * 40,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
+      }
+    });
+  }
+
+  private getNpcSpawnPosition(
+    spawnZone: string,
+    houseX: number,
+    houseY: number,
+    index: number,
+  ): { x: number; y: number } {
+    const isLeftSide = houseX < 480;
+    const offset = this.getNpcSpawnOffset(spawnZone);
+    const x =
+      spawnZone === "CenterStreet"
+        ? 480 + (index % 2 === 0 ? -18 : 18)
+        : isLeftSide
+          ? houseX + offset
+          : houseX - offset;
+    const y =
+      houseY +
+      (spawnZone === "Yard" ? 14 : spawnZone === "CenterStreet" ? 2 : 6);
+
+    return { x, y };
+  }
+
+  private getNpcSpawnOffset(spawnZone: string): number {
+    switch (spawnZone) {
+      case "BackPorch":
+        return 62;
+      case "Yard":
+        return 48;
+      case "LeftSidewalk":
+        return 34;
+      case "SidewalkRight":
+        return 34;
+      case "CenterStreet":
+        return 0;
+      case "FrontPorch":
+      default:
+        return 52;
+    }
+  }
+
+  private createCitizenFromPlan(
+    faction: NpcFaction,
+    state: NpcState,
+    x: number,
+    y: number,
+  ): Citizen {
+    if (faction === NpcFaction.Trader) {
+      return createFriendlyNeighbor(x, y);
+    }
+
+    if (
+      faction === NpcFaction.Responder ||
+      faction === NpcFaction.HostileHuman
+    ) {
+      return createArmedSurvivalist(x, y);
+    }
+
+    if (state === NpcState.Flee || state === NpcState.Travel) {
+      return createPanickedRunner(x, y);
+    }
+
+    if (state === NpcState.Defend) {
+      return createArmedSurvivalist(x, y);
+    }
+
+    return createFriendlyNeighbor(x, y);
+  }
+
+  private createZombieFromPlan(role: NpcRole, x: number, y: number): Zombie {
+    switch (role) {
+      case NpcRole.Runner:
+        return createRunner(x, y);
+      case NpcRole.Spitter:
+        return createSpitter(x, y);
+      case NpcRole.Shambler:
+      default:
+        return createShambler(x, y);
+    }
   }
 
   private spawnZombieWave(): void {
