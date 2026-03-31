@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME } from "../config/constants";
+import { GAME, POINTS } from "../config/constants";
 import { MAPS } from "../maps/MapConfig";
 import { DayManager } from "../systems/DayManager";
 import { GameState, getOrCreateGameState } from "../systems/GameState";

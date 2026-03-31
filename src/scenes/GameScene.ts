@@ -604,8 +604,10 @@ export class GameScene extends Phaser.Scene {
     const citizenSprite = citizenObj as Phaser.Physics.Arcade.Sprite;
     const citizen = citizenSprite.getData("citizen") as Citizen | undefined;
 
-    if (!citizen || citizenSprite.getData("hit")) return;
+    if (!citizen || citizenSprite.getData("resolved")) return;
+    citizenSprite.setData("resolved", true);
     citizenSprite.setData("hit", true);
+    citizenSprite.setData("contacted", true);
 
     switch (citizen.type) {
       case CitizenType.FriendlyNeighbor:
@@ -657,7 +659,9 @@ export class GameScene extends Phaser.Scene {
   ): void {
     const citizenSprite = citizenObj as Phaser.Physics.Arcade.Sprite;
     const citizen = citizenSprite.getData("citizen") as Citizen | undefined;
-    if (!citizen || citizenSprite.getData("contacted")) return;
+    if (!citizen || citizenSprite.getData("resolved")) return;
+    citizenSprite.setData("resolved", true);
+    citizenSprite.setData("hit", true);
     citizenSprite.setData("contacted", true);
 
     switch (citizen.type) {
