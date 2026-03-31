@@ -2,6 +2,14 @@ import Phaser from "phaser";
 import { GAME } from "../config/constants";
 import { VEHICLE_STATS, WeaponSlot } from "../config/vehicles";
 import {
+  createArmedSurvivalist,
+  createFriendlyNeighbor,
+  createPanickedRunner,
+  Citizen,
+  CitizenType,
+} from "../entities/Citizen";
+import { PickupType, createPickup } from "../entities/Pickup";
+import {
   createNewspaper,
   Newspaper,
   NewspaperState,
@@ -38,6 +46,13 @@ import {
   screenShake,
 } from "../utils/animations";
 import {
+  classifyDelivery,
+  getHouseTextureKey,
+  getRouteScrollSpeed,
+  getVehicleControlProfile,
+  getZombieWaveSettings,
+} from "./arcade-rules";
+import {
   createMeleeWeapon,
   createRangedWeapon,
   MeleeWeapon,
@@ -48,6 +63,16 @@ interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
   meleeWeapon: MeleeWeapon;
   rangedWeapon: RangedWeapon;
+}
+
+interface HousePlacement {
+  house: ReturnType<typeof generateRoute>["houses"][number];
+  sprite: Phaser.Physics.Arcade.StaticSprite;
+}
+
+interface CitizenPlacement {
+  citizen: Citizen;
+  sprite: Phaser.Physics.Arcade.Sprite;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -65,7 +90,8 @@ export class GameScene extends Phaser.Scene {
 
   private zombieSprites!: Phaser.Physics.Arcade.Group;
   private newspaperSprites!: Phaser.Physics.Arcade.Group;
-  private houseSprites: Phaser.GameObjects.Rectangle[] = [];
+  private houseSprites: HousePlacement[] = [];
+  private citizenSprites!: Phaser.Physics.Arcade.Group;
   private hazardSprites!: Phaser.Physics.Arcade.StaticGroup;
   private pickupSprites!: Phaser.Physics.Arcade.StaticGroup;
 
@@ -109,6 +135,7 @@ export class GameScene extends Phaser.Scene {
     // Create physics groups
     this.zombieSprites = this.physics.add.group();
     this.newspaperSprites = this.physics.add.group();
+    this.citizenSprites = this.physics.add.group();
     this.hazardSprites = this.physics.add.staticGroup();
     this.pickupSprites = this.physics.add.staticGroup();
     this.houseSprites = [];
@@ -174,6 +201,7 @@ export class GameScene extends Phaser.Scene {
 
     // Place houses on both sides of street
     this.spawnHouses();
+    this.spawnCitizens();
 
     // Place hazards
     this.spawnHazards();
@@ -243,16 +271,26 @@ export class GameScene extends Phaser.Scene {
       undefined,
       this,
     );
+    this.physics.add.overlap(
+      this.newspaperSprites,
+      this.citizenSprites,
+      this
+        .onNewspaperHitCitizen as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      undefined,
+      this,
+    );
+    this.physics.add.overlap(
+      this.player,
+      this.citizenSprites,
+      this
+        .onCitizenContact as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      undefined,
+      this,
+    );
 
     // Spawn initial zombies
     this.spawnZombieWave();
-
-    // Timer to spawn zombies periodically
-    this.time.addEvent({
-      delay: 3000,
-      callback: () => this.spawnZombieWave(),
-      loop: true,
-    });
+    this.scheduleZombieWave();
   }
 
   update(_time: number, delta: number): void {
@@ -264,8 +302,8 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const vehicleStats = VEHICLE_STATS[this.gameState.vehicle];
-    const speed = vehicleStats.speed * 30;
+    const controlProfile = getVehicleControlProfile(this.gameState.vehicle);
+    const speed = controlProfile.maxSpeed;
 
     // Movement
     let vx = 0;
@@ -275,10 +313,24 @@ export class GameScene extends Phaser.Scene {
     if (this.cursors?.up.isDown || this.wasd?.W.isDown) vy = -speed;
     if (this.cursors?.down.isDown || this.wasd?.S.isDown) vy = speed;
 
-    this.player.setVelocity(vx, vy);
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const responsiveness = vx !== 0 || vy !== 0
+      ? controlProfile.inputResponsiveness
+      : controlProfile.coastResponsiveness;
+    this.player.setVelocity(
+      Phaser.Math.Linear(body.velocity.x, vx, responsiveness),
+      Phaser.Math.Linear(body.velocity.y, vy, responsiveness),
+    );
 
     // Auto scroll
-    this.scrollSpeed = delta * 0.05;
+    const deliveredCount = this.deliveries.filter(Boolean).length;
+    const targetScrollSpeed =
+      getRouteScrollSpeed(
+        this.gameState.day,
+        deliveredCount,
+        this.gameState.difficulty,
+      ) * (delta / 1000);
+    this.scrollSpeed = Phaser.Math.Linear(this.scrollSpeed, targetScrollSpeed, 0.08);
     this.worldY += this.scrollSpeed;
 
     // Throw newspaper left/right
@@ -332,7 +384,7 @@ export class GameScene extends Phaser.Scene {
 
     // Check if route is complete (passed all houses)
     if (
-      this.worldY > this.route.houses.length * 50 + 200 &&
+      this.worldY > this.route.houses.length * 50 + 220 &&
       !this.transitioning
     ) {
       this.transitioning = true;
@@ -469,10 +521,12 @@ export class GameScene extends Phaser.Scene {
     // Check if newspaper landed near a house
     let hit = false;
     for (let i = 0; i < this.houseSprites.length; i++) {
-      const houseRect = this.houseSprites[i];
-      const dist = Math.abs(npSprite.y - houseRect.y);
-      if (dist < 60 && !this.deliveries[i]) {
-        const house = this.route.houses[i];
+      const { house, sprite: houseSprite } = this.houseSprites[i];
+      const xDist = Math.abs(npSprite.x - houseSprite.x);
+      const yDist = Math.abs(npSprite.y - houseSprite.y);
+      const deliveryResult = classifyDelivery(house, xDist, yDist);
+
+      if (deliveryResult !== "miss" && !this.deliveries[i]) {
         if (house.isSubscriber) {
           this.deliveries[i] = true;
           house.markDelivered();
@@ -481,14 +535,12 @@ export class GameScene extends Phaser.Scene {
             (d, idx) => d && this.route.houses[idx].isSubscriber,
           ).length;
           this.hud.setDeliveryProgress(completed, this.subscriberTotal);
-          // Determine if mailbox or porch delivery based on x proximity
-          const xDist = Math.abs(npSprite.x - houseRect.x);
-          if (xDist < 20) {
+          if (deliveryResult === "mailbox") {
             this.scoreManager.mailboxDelivery();
             floatingText(
               this,
-              houseRect.x,
-              houseRect.y - 20,
+              houseSprite.x,
+              houseSprite.y - 20,
               "MAILBOX!",
               BC.css.GREEN_BRIGHT,
               "18px",
@@ -498,24 +550,32 @@ export class GameScene extends Phaser.Scene {
             this.scoreManager.porchDelivery();
             floatingText(
               this,
-              houseRect.x,
-              houseRect.y - 20,
+              houseSprite.x,
+              houseSprite.y - 20,
               "DELIVERED",
               BC.css.GREEN,
               "14px",
             );
           }
         } else {
-          // Non-subscriber — potential damage points
-          this.scoreManager.windowBreak();
+          if (!house.damaged) {
+            house.markDamaged();
+            const breakable = house.breakables[0];
+            if (breakable?.name.includes("tombstone")) {
+              this.scoreManager.tombstoneKnock();
+            } else {
+              this.scoreManager.windowBreak();
+            }
+          }
           floatingText(
             this,
-            houseRect.x,
-            houseRect.y - 20,
-            "CRASH!",
+            houseSprite.x,
+            houseSprite.y - 20,
+            house.breakables[0]?.name.toUpperCase() ?? "CRASH!",
             BC.css.RED,
             "16px",
           );
+          houseSprite.setTint(0xcc6666);
         }
         hit = true;
         break;
@@ -534,6 +594,92 @@ export class GameScene extends Phaser.Scene {
       );
       screenShake(this, 0.004, 100);
     }
+  }
+
+  private onNewspaperHitCitizen(
+    paperObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    citizenObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+  ): void {
+    const paperSprite = paperObj as Phaser.Physics.Arcade.Sprite;
+    const citizenSprite = citizenObj as Phaser.Physics.Arcade.Sprite;
+    const citizen = citizenSprite.getData("citizen") as Citizen | undefined;
+
+    if (!citizen || citizenSprite.getData("hit")) return;
+    citizenSprite.setData("hit", true);
+
+    switch (citizen.type) {
+      case CitizenType.FriendlyNeighbor:
+        this.scoreManager.hitFriendlyNeighbor();
+        break;
+      case CitizenType.PanickedRunner:
+        this.scoreManager.hitPanickedRunner();
+        break;
+      case CitizenType.ArmedSurvivalist:
+        this.scoreManager.hitArmedSurvivalist();
+        break;
+    }
+
+    floatingText(
+      this,
+      citizenSprite.x,
+      citizenSprite.y - 18,
+      `${citizen.hitPenalty}`,
+      BC.css.RED,
+      "14px",
+    );
+
+    if (citizen.dropsPickup) {
+      const pickup = createPickup(
+        citizenSprite.x,
+        citizenSprite.y,
+        PickupType.NewspaperBundle,
+      );
+      const pickupSprite = this.physics.add.staticSprite(
+        citizenSprite.x,
+        citizenSprite.y,
+        "pickup-newspaper",
+      );
+      pickupSprite.setData("pickup", pickup);
+      this.pickupSprites.add(pickupSprite);
+    }
+
+    if (citizen.retaliates) {
+      screenShake(this, 0.01, 120);
+    }
+
+    collectEffect(this, citizenSprite);
+    paperSprite.destroy();
+  }
+
+  private onCitizenContact(
+    _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    citizenObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+  ): void {
+    const citizenSprite = citizenObj as Phaser.Physics.Arcade.Sprite;
+    const citizen = citizenSprite.getData("citizen") as Citizen | undefined;
+    if (!citizen || citizenSprite.getData("contacted")) return;
+    citizenSprite.setData("contacted", true);
+
+    switch (citizen.type) {
+      case CitizenType.FriendlyNeighbor:
+        this.scoreManager.hitFriendlyNeighbor();
+        break;
+      case CitizenType.PanickedRunner:
+        this.scoreManager.hitPanickedRunner();
+        break;
+      case CitizenType.ArmedSurvivalist:
+        this.scoreManager.hitArmedSurvivalist();
+        break;
+    }
+
+    floatingText(
+      this,
+      citizenSprite.x,
+      citizenSprite.y - 18,
+      "HIT!",
+      BC.css.RED,
+      "14px",
+    );
   }
 
   private onPickup(
@@ -630,9 +776,57 @@ export class GameScene extends Phaser.Scene {
     this.route.houses.forEach((house, i) => {
       const side = i % 2 === 0 ? 50 : 910;
       const y = 80 + i * 25;
-      const color = house.isSubscriber ? 0x32cd32 : 0x696969;
-      const rect = this.add.rectangle(side, y, 60, 40, color);
-      this.houseSprites.push(rect);
+      const sprite = this.physics.add.staticSprite(
+        side,
+        y,
+        getHouseTextureKey(house),
+      );
+      sprite.setData("house", house);
+      this.houseSprites.push({ house, sprite });
+    });
+  }
+
+  private spawnCitizens(): void {
+    this.route.houses.forEach((house, i) => {
+      if (i % 2 !== 0 && i % 3 !== 0) return;
+
+      let citizen: Citizen;
+      if (house.isSubscriber && house.type === "Ranch") {
+        citizen = createFriendlyNeighbor(0, 0);
+      } else if (house.type === "Victorian") {
+        citizen = createArmedSurvivalist(0, 0);
+      } else {
+        citizen = createPanickedRunner(0, 0);
+      }
+
+      const placement = this.houseSprites[i];
+      const houseSprite = placement.sprite;
+      const x = houseSprite.x < 480 ? houseSprite.x + 52 : houseSprite.x - 52;
+      const y = houseSprite.y + 6;
+      const key =
+        citizen.type === CitizenType.FriendlyNeighbor
+          ? "citizen-friendly"
+          : citizen.type === CitizenType.PanickedRunner
+            ? "citizen-panicked"
+            : "citizen-armed";
+
+      const sprite = this.physics.add.sprite(x, y, key);
+      sprite.setData("citizen", citizen);
+      sprite.setImmovable(true);
+      sprite.setDepth(4);
+      sprite.setBounce(0);
+      this.citizenSprites.add(sprite);
+
+      if (citizen.type === CitizenType.PanickedRunner) {
+        this.tweens.add({
+          targets: sprite,
+          x: x + (houseSprite.x < 480 ? 18 : -18),
+          duration: 900 + i * 40,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
+      }
     });
   }
 
@@ -668,9 +862,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnZombieWave(): void {
-    const count =
-      2 +
-      Math.floor(this.dayManager.getZombieDensityScale(this.gameState.day) * 2);
+    const { count } = getZombieWaveSettings(
+      this.gameState.day,
+      this.gameState.difficulty,
+    );
     for (let i = 0; i < count; i++) {
       const x = Phaser.Math.Between(150, 810);
       const y = Phaser.Math.Between(-50, -10);
@@ -703,6 +898,19 @@ export class GameScene extends Phaser.Scene {
       sprite.setData("zombie", zombie);
       this.zombieSprites.add(sprite);
     }
+  }
+
+  private scheduleZombieWave(): void {
+    if (this.transitioning) return;
+    const { interval } = getZombieWaveSettings(
+      this.gameState.day,
+      this.gameState.difficulty,
+    );
+    this.time.delayedCall(interval, () => {
+      if (this.transitioning) return;
+      this.spawnZombieWave();
+      this.scheduleZombieWave();
+    });
   }
 
   private endRoute(): void {
