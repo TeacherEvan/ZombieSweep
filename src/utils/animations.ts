@@ -248,6 +248,7 @@ export function fadeIn(scene: Phaser.Scene, duration = 350): void {
   const overlay = scene.add.graphics().setDepth(9999);
   overlay.fillStyle(0x000000, 1);
   overlay.fillRect(0, 0, width, height);
+
   scene.tweens.add({
     targets: overlay,
     alpha: 0,
