@@ -1,5 +1,3 @@
-import { isTouchPrimary } from "../utils/animations";
-
 export type BroadcastViewportMode =
   | "desktop"
   | "tablet"
@@ -23,6 +21,18 @@ export interface BroadcastViewportContext {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function detectTouchPrimary(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return (
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0 ||
+    window.matchMedia("(pointer: coarse)").matches
+  );
 }
 
 export function resolveBroadcastViewportContext(
@@ -77,7 +87,7 @@ export function syncBroadcastViewportContext(
   const context = resolveBroadcastViewportContext(
     window.innerWidth,
     window.innerHeight,
-    isTouchPrimary(),
+    detectTouchPrimary(),
   );
 
   root.dataset.broadcastMode = context.mode;

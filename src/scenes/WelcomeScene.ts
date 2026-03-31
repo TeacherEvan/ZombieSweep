@@ -85,7 +85,10 @@ export class WelcomeScene extends Phaser.Scene {
       compact ? height * 0.48 : height * 0.58,
       "ZOMBIESWEEP",
       "COURIER DISPATCH OPERATION — TRI-COUNTY ZONE",
-      { titleSize: compact ? `${Math.round(22 * scale)}px` : "42px" },
+      {
+        titleSize: compact ? `${Math.round(22 * scale)}px` : "42px",
+        subtitleSize: compact ? `${Math.round(10 * scale)}px` : "11px",
+      },
     );
     // Override title color to bc-red
     const titleText = chyron.getAt(2) as Phaser.GameObjects.Text;

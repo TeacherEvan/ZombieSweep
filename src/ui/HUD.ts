@@ -28,6 +28,7 @@ export class HUD {
   private ammoCount: number;
   private compactLayout = false;
   private viewportScale = 1;
+  private spacingScale = 1;
   private hudHeight = 32;
   private labelFontSize = "10px";
   private valueFontSize = "14px";
@@ -65,6 +66,9 @@ export class HUD {
     );
     this.viewportScale = viewport.uiScale;
     this.compactLayout = viewport.isCompact;
+    this.spacingScale = this.compactLayout
+      ? Math.min(this.viewportScale, 1.15)
+      : 1;
     this.hudHeight = Math.round(
       (this.compactLayout ? 38 : 32) * this.viewportScale,
     );
@@ -137,7 +141,7 @@ export class HUD {
       color: BC.TEXT,
     };
 
-    let x = this.compactLayout ? Math.round(10 * this.viewportScale) : 14;
+    let x = this.compactLayout ? Math.round(10 * this.spacingScale) : 14;
 
     // Day — static for the duration of the scene, set once
     this.scene.add
@@ -150,7 +154,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += Math.round((this.compactLayout ? 104 : 120) * this.viewportScale);
+    x += Math.round((this.compactLayout ? 104 : 120) * this.spacingScale);
 
     // Score
     this.scene.add
@@ -163,7 +167,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += Math.round((this.compactLayout ? 90 : 100) * this.viewportScale);
+    x += Math.round((this.compactLayout ? 90 : 100) * this.spacingScale);
 
     // Lives — Graphics-drawn circles
     this.scene.add
@@ -175,7 +179,7 @@ export class HUD {
     this.livesGfx = this.scene.add.graphics();
     this.livesGfx.setScrollFactor(0).setDepth(100);
     this.drawLives();
-    x += Math.round((this.compactLayout ? 54 : 60) * this.viewportScale);
+    x += Math.round((this.compactLayout ? 54 : 60) * this.spacingScale);
 
     // Papers
     this.scene.add
@@ -188,7 +192,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += Math.round((this.compactLayout ? 72 : 80) * this.viewportScale);
+    x += Math.round((this.compactLayout ? 72 : 80) * this.spacingScale);
 
     // Ammo (separate field)
     this.scene.add
@@ -201,7 +205,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += Math.round((this.compactLayout ? 66 : 70) * this.viewportScale);
+    x += Math.round((this.compactLayout ? 66 : 70) * this.spacingScale);
 
     // Subscribers
     this.scene.add
@@ -214,7 +218,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += Math.round((this.compactLayout ? 66 : 70) * this.viewportScale);
+    x += Math.round((this.compactLayout ? 66 : 70) * this.spacingScale);
 
     // Delivery progress bar (right-aligned area)
     this.scene.add
