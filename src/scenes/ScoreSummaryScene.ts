@@ -11,6 +11,7 @@ import {
   createChyron,
   createDataRow,
 } from "../ui/broadcast-styles";
+import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
 import { headlinePerfectDay } from "../ui/ticker-bridge";
 import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
 
@@ -40,6 +41,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
 
     const { width, height } = this.cameras.main;
     const cx = width / 2;
+    const viewport = resolveBroadcastViewportContext(
+      window.innerWidth,
+      window.innerHeight,
+      isTouchPrimary(),
+    );
+    const compact = viewport.isCompact;
 
     // Background glow
     const bgGlow = this.add.graphics();
@@ -63,6 +70,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
       38,
       `DAY ${this.gameState.day} REPORT`,
       `ROUTE STATUS — ${mapName.toUpperCase()}`,
+      { titleSize: compact ? "20px" : "22px" },
     );
     chyron.setX(-width);
     this.tweens.add({
@@ -72,7 +80,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
       ease: "Quart.easeOut",
     });
 
-    let y = 88;
+    let y = compact ? 80 : 88;
 
     // Calculate delivery stats
     const subscriberHouses = this.deliveryData.filter(
@@ -102,7 +110,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         "★ PERFECT DELIVERY — ALL SUBSCRIBERS REACHED",
-        { bgColor: BC.GREEN },
+        { bgColor: BC.GREEN, height: compact ? 28 : 30 },
       );
       perfectBanner.setAlpha(0);
       this.tweens.add({
@@ -123,7 +131,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
       y,
       "DELIVERIES",
       `${successfulDeliveries} / ${subscriberHouses.length}`,
-      { valueColor: deliveryColor },
+      {
+        valueColor: deliveryColor,
+        width: compact ? 500 : 400,
+        labelSize: compact ? "11px" : "12px",
+        valueSize: compact ? "18px" : "20px",
+      },
     );
     delRow.container.setAlpha(0);
     this.tweens.add({
@@ -156,7 +169,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         `+${subsGained} NEW SUBSCRIBER${subsGained > 1 ? "S" : ""}`,
-        { bgColor: BC.GREEN, height: 30 },
+        { bgColor: BC.GREEN, height: compact ? 28 : 30 },
       );
       gainBanner.setAlpha(0);
       this.tweens.add({
@@ -176,7 +189,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         `-${subsLost} SUBSCRIBER${subsLost > 1 ? "S" : ""} CANCELLED`,
-        { bgColor: BC.RED, height: 30 },
+        { bgColor: BC.RED, height: compact ? 28 : 30 },
       );
       lossBanner.setAlpha(0);
       this.tweens.add({
@@ -198,7 +211,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
       y,
       "SUBSCRIBERS",
       `${this.gameState.subscribers}`,
-      { valueColor: BC.TEXT },
+      {
+        valueColor: BC.TEXT,
+        width: compact ? 500 : 400,
+        labelSize: compact ? "11px" : "12px",
+        valueSize: compact ? "18px" : "20px",
+      },
     );
     subRow.container.setAlpha(0);
     this.tweens.add({
@@ -217,7 +235,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
       y,
       "SCORE",
       `${this.gameState.score}`,
-      { valueColor: BC.css.GOLD },
+      {
+        valueColor: BC.css.GOLD,
+        width: compact ? 500 : 400,
+        labelSize: compact ? "11px" : "12px",
+        valueSize: compact ? "18px" : "20px",
+      },
     );
     scoreRow.container.setAlpha(0);
     this.tweens.add({
@@ -236,7 +259,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
       y,
       "LIVES",
       "●".repeat(this.gameState.lives),
-      { valueColor: BC.css.RED },
+      {
+        valueColor: BC.css.RED,
+        width: compact ? 500 : 400,
+        labelSize: compact ? "11px" : "12px",
+        valueSize: compact ? "18px" : "20px",
+      },
     );
     livesRow.container.setAlpha(0);
     this.tweens.add({
@@ -257,7 +285,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         `PERFECT DAY BONUS: +${POINTS.PERFECT_DAY_BONUS}`,
-        { bgColor: BC.GOLD, height: 30 },
+        { bgColor: BC.GOLD, height: compact ? 28 : 30 },
       );
       bonusBanner.setAlpha(0);
       this.tweens.add({
@@ -287,7 +315,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
     const prompt = this.add
       .text(cx, height - 36, promptText, {
         fontFamily: BROADCAST_FONT,
-        fontSize: "12px",
+        fontSize: compact ? "13px" : "12px",
         fontStyle: "600",
         color: BC.TEXT_MUTED,
         letterSpacing: 2,

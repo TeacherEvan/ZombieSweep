@@ -30,6 +30,7 @@ import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { resolveNpcSpriteTextureKey } from "../systems/NpcAssets";
 import { ScoreManager } from "../systems/ScoreManager";
 import { BC } from "../ui/broadcast-styles";
+import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
 import { HUD } from "../ui/HUD";
 import { PauseMenu } from "../ui/PauseMenu";
 import {
@@ -37,6 +38,7 @@ import {
   headlineLifeLost,
   headlineZombieKill,
 } from "../ui/ticker-bridge";
+import { TouchControls } from "../ui/TouchControls";
 import {
   collectEffect,
   damageFlash,
@@ -44,6 +46,7 @@ import {
   fadeIn,
   fadeToScene,
   floatingText,
+  isTouchPrimary,
   meleeSwingArc,
   screenShake,
 } from "../utils/animations";
@@ -80,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private route!: Route;
   private hud!: HUD;
   private pauseMenu!: PauseMenu;
+  private touchControls?: TouchControls;
 
   private player!: PlayerSprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -101,6 +105,7 @@ export class GameScene extends Phaser.Scene {
   private lastTickerKillCount = 0;
   private comboTracker!: ComboTracker;
   private subscriberTotal = 0;
+  private viewportContext = resolveBroadcastViewportContext(960, 540, false);
 
   constructor() {
     super({ key: "GameScene" });
@@ -111,6 +116,13 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager(this.gameState);
     this.dayManager = new DayManager();
     this.transitioning = false;
+    const { width, height } = this.cameras.main;
+    const touchPrimary = isTouchPrimary();
+    this.viewportContext = resolveBroadcastViewportContext(
+      window.innerWidth,
+      window.innerHeight,
+      touchPrimary,
+    );
 
     const mapName = this.dayManager.getMapForDay(this.gameState.day);
     const mapConfig = MAPS[mapName];
@@ -230,6 +242,10 @@ export class GameScene extends Phaser.Scene {
       };
     }
 
+    if (this.viewportContext.touchPrimary) {
+      this.touchControls = new TouchControls(this, width, height);
+    }
+
     // HUD + Pause
     this.hud = new HUD(
       this,
@@ -239,6 +255,11 @@ export class GameScene extends Phaser.Scene {
     );
     this.hud.setDeliveryProgress(0, this.subscriberTotal);
     this.pauseMenu = new PauseMenu(this);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.touchControls?.destroy();
+      this.touchControls = undefined;
+    });
 
     // Collisions
     this.physics.add.overlap(
@@ -295,6 +316,11 @@ export class GameScene extends Phaser.Scene {
     if (this.transitioning) return;
     if (this.pauseMenu.getIsVisible()) return;
 
+    if (this.touchControls?.consumeAction("pause")) {
+      this.pauseMenu.toggle();
+      return;
+    }
+
     if (this.keys?.ESC && Phaser.Input.Keyboard.JustDown(this.keys.ESC)) {
       this.pauseMenu.toggle();
       return;
@@ -306,10 +332,30 @@ export class GameScene extends Phaser.Scene {
     // Movement
     let vx = 0;
     let vy = 0;
-    if (this.cursors?.left.isDown || this.wasd?.A.isDown) vx = -speed;
-    if (this.cursors?.right.isDown || this.wasd?.D.isDown) vx = speed;
-    if (this.cursors?.up.isDown || this.wasd?.W.isDown) vy = -speed;
-    if (this.cursors?.down.isDown || this.wasd?.S.isDown) vy = speed;
+    if (
+      this.cursors?.left.isDown ||
+      this.wasd?.A.isDown ||
+      this.touchControls?.isHeld("left")
+    )
+      vx = -speed;
+    if (
+      this.cursors?.right.isDown ||
+      this.wasd?.D.isDown ||
+      this.touchControls?.isHeld("right")
+    )
+      vx = speed;
+    if (
+      this.cursors?.up.isDown ||
+      this.wasd?.W.isDown ||
+      this.touchControls?.isHeld("up")
+    )
+      vy = -speed;
+    if (
+      this.cursors?.down.isDown ||
+      this.wasd?.S.isDown ||
+      this.touchControls?.isHeld("down")
+    )
+      vy = speed;
 
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const responsiveness =
@@ -339,27 +385,37 @@ export class GameScene extends Phaser.Scene {
 
     // Throw newspaper left/right
     if (
-      this.keys?.Q &&
-      Phaser.Input.Keyboard.JustDown(this.keys.Q) &&
-      this.player.paperCount > 0
+      (this.keys?.Q &&
+        Phaser.Input.Keyboard.JustDown(this.keys.Q) &&
+        this.player.paperCount > 0) ||
+      ((this.touchControls?.consumeAction("throwLeft") ?? false) &&
+        this.player.paperCount > 0)
     ) {
       this.throwNewspaper("left");
     }
     if (
-      this.keys?.E &&
-      Phaser.Input.Keyboard.JustDown(this.keys.E) &&
-      this.player.paperCount > 0
+      (this.keys?.E &&
+        Phaser.Input.Keyboard.JustDown(this.keys.E) &&
+        this.player.paperCount > 0) ||
+      ((this.touchControls?.consumeAction("throwRight") ?? false) &&
+        this.player.paperCount > 0)
     ) {
       this.throwNewspaper("right");
     }
 
     // Melee attack
-    if (this.keys?.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
+    if (
+      (this.keys?.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) ||
+      this.touchControls?.consumeAction("melee")
+    ) {
       this.meleeAttack();
     }
 
     // Ranged attack
-    if (this.keys?.F && Phaser.Input.Keyboard.JustDown(this.keys.F)) {
+    if (
+      (this.keys?.F && Phaser.Input.Keyboard.JustDown(this.keys.F)) ||
+      this.touchControls?.consumeAction("ranged")
+    ) {
       this.rangedAttack();
     }
 

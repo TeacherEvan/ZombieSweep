@@ -3,6 +3,7 @@ import { Difficulty } from "../config/difficulty";
 import { VehicleType } from "../config/vehicles";
 import { getOrCreateGameState } from "../systems/GameState";
 import { BC, BROADCAST_FONT, createChyron } from "../ui/broadcast-styles";
+import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
 import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
 
 const THREAT_LEVELS: Record<
@@ -51,6 +52,11 @@ export class DifficultySelectScene extends Phaser.Scene {
   }[] = [];
   private vehicle!: VehicleType;
   private transitioning = false;
+  private compactLayout = false;
+  private rowWidth = 520;
+  private rowHeight = 76;
+  private rowStep = 100;
+  private rowBaseY = 0;
 
   constructor() {
     super({ key: "DifficultySelectScene" });
@@ -62,6 +68,16 @@ export class DifficultySelectScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.cameras.main;
+    const viewport = resolveBroadcastViewportContext(
+      window.innerWidth,
+      window.innerHeight,
+      isTouchPrimary(),
+    );
+    this.compactLayout = viewport.isCompact;
+    this.rowWidth = this.compactLayout ? Math.min(700, width * 0.82) : 520;
+    this.rowHeight = this.compactLayout ? 88 : 76;
+    this.rowStep = this.compactLayout ? 94 : 100;
+    this.rowBaseY = this.compactLayout ? height * 0.28 : height * 0.34;
     this.rows = [];
     this.selectedIndex = 0;
     this.transitioning = false;
@@ -85,6 +101,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       48,
       "ZOMBIE THREAT ADVISORY",
       "WZMB 13 EMERGENCY BROADCAST SYSTEM",
+      { titleSize: this.compactLayout ? "20px" : "22px" },
     );
     chyron.setX(-width);
     this.tweens.add({
@@ -103,7 +120,7 @@ export class DifficultySelectScene extends Phaser.Scene {
         touchMode ? "TAP TO SELECT" : "↑ ↓  SELECT  ·  ENTER  CONFIRM",
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: "11px",
+          fontSize: this.compactLayout ? "12px" : "11px",
           fontStyle: "600",
           color: BC.TEXT_MUTED,
           letterSpacing: 2,
@@ -112,40 +129,42 @@ export class DifficultySelectScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Threat rows
-    const rowWidth = 520;
-    const rowHeight = 76;
-
     this.difficulties.forEach((diff, i) => {
-      const y = height * 0.34 + i * 100;
+      const y = this.rowBaseY + i * this.rowStep;
       const info = THREAT_LEVELS[diff];
 
       // Row background (graphics so we can redraw on selection)
       const bg = this.add.graphics();
       bg.fillStyle(BC.CHROME, 0.95);
       bg.fillRect(
-        width / 2 - rowWidth / 2,
-        y - rowHeight / 2,
-        rowWidth,
-        rowHeight,
+        width / 2 - this.rowWidth / 2,
+        y - this.rowHeight / 2,
+        this.rowWidth,
+        this.rowHeight,
       );
       bg.lineStyle(1, BC.CHROME_EDGE, 0.6);
       bg.strokeRect(
-        width / 2 - rowWidth / 2,
-        y - rowHeight / 2,
-        rowWidth,
-        rowHeight,
+        width / 2 - this.rowWidth / 2,
+        y - this.rowHeight / 2,
+        this.rowWidth,
+        this.rowHeight,
       );
 
       // Left color band (6px)
       const band = this.add.graphics();
       band.fillStyle(info.color, 1);
-      band.fillRect(width / 2 - rowWidth / 2, y - rowHeight / 2, 6, rowHeight);
+      band.fillRect(
+        width / 2 - this.rowWidth / 2,
+        y - this.rowHeight / 2,
+        6,
+        this.rowHeight,
+      );
 
       // Threat level label (colored)
       const threatText = this.add
-        .text(width / 2 - rowWidth / 2 + 24, y - 14, info.threat, {
+        .text(width / 2 - this.rowWidth / 2 + 24, y - 14, info.threat, {
           fontFamily: BROADCAST_FONT,
-          fontSize: "13px",
+          fontSize: this.compactLayout ? "14px" : "13px",
           fontStyle: "800",
           color: info.cssColor,
           letterSpacing: 2,
@@ -156,7 +175,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       const label = this.add
         .text(width / 2 - 40, y - 14, info.label, {
           fontFamily: BROADCAST_FONT,
-          fontSize: "24px",
+          fontSize: this.compactLayout ? "26px" : "24px",
           fontStyle: "800",
           color: BC.TEXT_DIM,
         })
@@ -166,7 +185,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       const desc = this.add
         .text(width / 2 - 40, y + 14, info.desc, {
           fontFamily: BROADCAST_FONT,
-          fontSize: "12px",
+          fontSize: this.compactLayout ? "13px" : "12px",
           fontStyle: "600",
           color: BC.TEXT_MUTED,
           letterSpacing: 1,
@@ -175,7 +194,7 @@ export class DifficultySelectScene extends Phaser.Scene {
 
       // Hit area
       const hitArea = this.add
-        .rectangle(width / 2, y, rowWidth, rowHeight, 0x000000, 0)
+        .rectangle(width / 2, y, this.rowWidth, this.rowHeight, 0x000000, 0)
         .setInteractive({ useHandCursor: true });
 
       this.rows.push({ bg, label, threat: threatText, desc, hitArea, info });
@@ -238,44 +257,42 @@ export class DifficultySelectScene extends Phaser.Scene {
 
   private updateSelection(): void {
     const { width } = this.cameras.main;
-    const rowWidth = 520;
-    const rowHeight = 76;
 
     this.rows.forEach(({ bg, label, desc, info }, i) => {
-      const y = this.cameras.main.height * 0.34 + i * 100;
+      const y = this.rowBaseY + i * this.rowStep;
       bg.clear();
 
       if (i === this.selectedIndex) {
         bg.fillStyle(BC.CHROME_LIT, 1);
         bg.fillRect(
-          width / 2 - rowWidth / 2,
-          y - rowHeight / 2,
-          rowWidth,
-          rowHeight,
+          width / 2 - this.rowWidth / 2,
+          y - this.rowHeight / 2,
+          this.rowWidth,
+          this.rowHeight,
         );
         bg.lineStyle(1, info.color, 0.5);
         bg.strokeRect(
-          width / 2 - rowWidth / 2,
-          y - rowHeight / 2,
-          rowWidth,
-          rowHeight,
+          width / 2 - this.rowWidth / 2,
+          y - this.rowHeight / 2,
+          this.rowWidth,
+          this.rowHeight,
         );
         label.setColor(BC.TEXT);
         desc.setColor(BC.TEXT_DIM);
       } else {
         bg.fillStyle(BC.CHROME, 0.95);
         bg.fillRect(
-          width / 2 - rowWidth / 2,
-          y - rowHeight / 2,
-          rowWidth,
-          rowHeight,
+          width / 2 - this.rowWidth / 2,
+          y - this.rowHeight / 2,
+          this.rowWidth,
+          this.rowHeight,
         );
         bg.lineStyle(1, BC.CHROME_EDGE, 0.6);
         bg.strokeRect(
-          width / 2 - rowWidth / 2,
-          y - rowHeight / 2,
-          rowWidth,
-          rowHeight,
+          width / 2 - this.rowWidth / 2,
+          y - this.rowHeight / 2,
+          this.rowWidth,
+          this.rowHeight,
         );
         label.setColor(BC.TEXT_DIM);
         desc.setColor(BC.TEXT_MUTED);

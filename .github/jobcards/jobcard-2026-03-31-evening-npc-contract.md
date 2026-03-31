@@ -2,7 +2,7 @@
 
 ## Summary
 
-Created the first milestone of the NPC town ecosystem plan on branch `feature/npc-town-ecosystem`. Added a shared NPC domain contract, a reusable archetype catalog, reputation rules, a deterministic scheduler, route-level NPC spawn output, legacy entity adapters, and safe NPC texture resolution so civilians, hostiles, responders, traders, and infected characters can be represented through one normalized model instead of scene-specific logic.
+Created the first milestone of the NPC town ecosystem plan on branch `feature/npc-town-ecosystem`. Added a shared NPC domain contract, a reusable archetype catalog, reputation rules, a deterministic scheduler, route-level NPC spawn output, legacy entity adapters, and safe NPC texture resolution so civilians, hostiles, responders, traders, and infected characters can be represented through one normalized model instead of scene-specific logic. Finished the final browser smoke check by driving the title screen into vehicle select, difficulty select, and the gameplay scene.
 
 ## Phases Completed
 
@@ -28,6 +28,7 @@ Created the first milestone of the NPC town ecosystem plan on branch `feature/np
 - ✅ Phase 20 — Wired `BootScene` and `GameScene` to the NPC route plans
 - ✅ Phase 21 — Verified targeted adapter/asset tests
 - ✅ Phase 22 — Re-ran the full test suite and production build
+- ✅ Phase 23 — Verified browser smoke check through the full scene launch flow
 
 ## Files Changed
 
@@ -52,6 +53,13 @@ Created the first milestone of the NPC town ecosystem plan on branch `feature/np
 - `src/scenes/BootScene.ts` — now creates the `npc-placeholder` texture
 - `src/scenes/GameScene.ts` — now consumes route NPC spawn plans and resolves NPC textures safely
 
+## Browser Smoke Check
+
+- Title screen responds to `Enter` and advances to `VehicleSelectScene`
+- Vehicle select responds to `Enter` and advances to `DifficultySelectScene`
+- Difficulty select responds to `Enter` and advances to `GameScene`
+- Gameplay scene renders successfully after the launch sequence
+
 ## Test Results
 
 - Targeted test: `npm test -- src/entities/NpcCatalog.test.ts` — ✅ pass
@@ -61,12 +69,12 @@ Created the first milestone of the NPC town ecosystem plan on branch `feature/np
 - Targeted tests: `npm test -- src/entities/Citizen.test.ts src/entities/Zombie.test.ts src/systems/NpcAssets.test.ts` — ✅ pass
 - Full suite: `npm test` — ✅ pass (25 files, 333 tests)
 - Production build: `npm run build` — ✅ pass
+- Browser smoke check: title → vehicle select → difficulty select → gameplay — ✅ pass
 
 ## Next Steps
 
-- Perform a browser smoke check of the updated scene wiring
 - Keep the NPC logic pure so scene wiring can stay thin and testable
-- Move on to any remaining balancing or polish once the browser pass is clean
+- Move on to any remaining balancing or polish now that the browser pass is clean
 
 ## Recommendations
 

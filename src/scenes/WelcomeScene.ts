@@ -5,6 +5,7 @@ import {
   createBroadcastButton,
   createChyron,
 } from "../ui/broadcast-styles";
+import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
 import {
   fadeIn,
   fadeToScene,
@@ -25,6 +26,12 @@ export class WelcomeScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.cameras.main;
+    const viewport = resolveBroadcastViewportContext(
+      window.innerWidth,
+      window.innerHeight,
+      isTouchPrimary(),
+    );
+    const compact = viewport.isCompact;
     this.selectedIndex = 0;
     this.menuItems = [];
     this.reducedMotion = prefersReducedMotion();
@@ -41,7 +48,8 @@ export class WelcomeScene extends Phaser.Scene {
     // Noise-like texture overlay
     const noiseGfx = this.add.graphics();
     noiseGfx.setAlpha(0.06);
-    for (let i = 0; i < 300; i++) {
+    const noiseCount = compact ? 180 : 300;
+    for (let i = 0; i < noiseCount; i++) {
       const nx = Math.random() * width;
       const ny = Math.random() * height;
       const size = Math.random() * 2 + 0.5;
@@ -73,10 +81,10 @@ export class WelcomeScene extends Phaser.Scene {
     // ── Chyron: title as breaking news slug ──
     const chyron = createChyron(
       this,
-      height * 0.58,
+      compact ? height * 0.5 : height * 0.58,
       "ZOMBIESWEEP",
       "COURIER DISPATCH OPERATION — TRI-COUNTY ZONE",
-      { titleSize: "42px" },
+      { titleSize: compact ? "48px" : "42px" },
     );
     // Override title color to bc-red
     const titleText = chyron.getAt(2) as Phaser.GameObjects.Text;
@@ -99,18 +107,22 @@ export class WelcomeScene extends Phaser.Scene {
       { text: "CREDITS", action: "credits" },
     ];
 
-    const btnX = width * 0.08 + 140;
+    const btnX = compact ? width / 2 : width * 0.08 + 140;
+    const btnWidth = compact ? 336 : 280;
+    const btnHeight = compact ? 54 : 48;
+    const btnStartY = compact ? height * 0.66 : height * 0.72;
+    const btnGap = compact ? 60 : 56;
     menuDefs.forEach((item, i) => {
-      const by = height * 0.72 + i * 56;
+      const by = btnStartY + i * btnGap;
       const btn = createBroadcastButton(this, btnX, by, item.text, {
-        width: 280,
-        height: 48,
+        width: btnWidth,
+        height: btnHeight,
       });
       this.menuItems.push(btn);
 
       // Staggered entrance from left
       btn.container.setAlpha(0);
-      btn.container.setX(btnX - 60);
+      btn.container.setX(btnX - (compact ? 90 : 60));
       this.tweens.add({
         targets: btn.container,
         alpha: 1,
@@ -137,7 +149,9 @@ export class WelcomeScene extends Phaser.Scene {
       });
     });
 
-    this.time.delayedCall(600, () => this.updateMenuSelection(true));
+    this.time.delayedCall(compact ? 450 : 600, () =>
+      this.updateMenuSelection(true),
+    );
 
     // ── Keyboard navigation ──
     this.input.keyboard?.on("keydown-UP", () => {
@@ -186,7 +200,7 @@ export class WelcomeScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
 
-    for (let z = 0; z < 8; z++) {
+    for (let z = 0; z < (compact ? 6 : 8); z++) {
       const zx = width + 60 + z * 80;
       const zombieGfx = this.add.graphics();
       zombieGfx.fillStyle(0x2d4a2d, 0.7);
@@ -224,7 +238,7 @@ export class WelcomeScene extends Phaser.Scene {
 
     // ── Footer: version + prompt ──
     this.add
-      .text(14, height - 14, "v0.1.0", {
+      .text(14, height - (compact ? 16 : 14), "v0.1.0", {
         fontFamily: BROADCAST_FONT,
         fontSize: "10px",
         fontStyle: "600",
@@ -236,11 +250,11 @@ export class WelcomeScene extends Phaser.Scene {
     const prompt = this.add
       .text(
         width - 14,
-        height - 14,
+        height - (compact ? 16 : 14),
         touchMode ? "TAP TO BEGIN" : "PRESS ENTER TO BEGIN",
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: "11px",
+          fontSize: compact ? "12px" : "11px",
           fontStyle: "600",
           color: BC.TEXT_MUTED,
           letterSpacing: 2,

@@ -2,8 +2,13 @@ import Phaser from "phaser";
 import { GAME } from "../config/constants";
 import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
-import { prefersReducedMotion, pulse } from "../utils/animations";
+import {
+  isTouchPrimary,
+  prefersReducedMotion,
+  pulse,
+} from "../utils/animations";
 import { BC, BROADCAST_FONT } from "./broadcast-styles";
+import { resolveBroadcastViewportContext } from "./broadcast-viewport";
 
 export class HUD {
   private scene: Phaser.Scene;
@@ -21,6 +26,17 @@ export class HUD {
 
   private paperCount: number;
   private ammoCount: number;
+  private compactLayout = false;
+  private hudHeight = 32;
+  private labelFontSize = "10px";
+  private valueFontSize = "14px";
+  private labelSpacing = 2;
+  private lifeSpacing = 14;
+  private lifeRadius = 5;
+  private lifeY = 23;
+  private deliveryBarY = 20;
+  private deliveryBarWidth = 80;
+  private deliveryBarTextOffset = 90;
   private lastScore = 0;
   private lastLives = 0;
   private lastPaperCount = 0;
@@ -41,6 +57,22 @@ export class HUD {
     this.gameState = gameState;
     this.paperCount = paperCount;
     this.ammoCount = ammoCount;
+    const viewport = resolveBroadcastViewportContext(
+      window.innerWidth,
+      window.innerHeight,
+      isTouchPrimary(),
+    );
+    this.compactLayout = viewport.isCompact;
+    this.hudHeight = this.compactLayout ? 38 : 32;
+    this.labelFontSize = this.compactLayout ? "9px" : "10px";
+    this.valueFontSize = this.compactLayout ? "15px" : "14px";
+    this.labelSpacing = this.compactLayout ? 1.5 : 2;
+    this.lifeSpacing = this.compactLayout ? 12 : 14;
+    this.lifeRadius = this.compactLayout ? 4 : 5;
+    this.lifeY = this.compactLayout ? 24 : 23;
+    this.deliveryBarY = this.compactLayout ? 21 : 20;
+    this.deliveryBarWidth = this.compactLayout ? 72 : 80;
+    this.deliveryBarTextOffset = this.compactLayout ? 82 : 90;
     this.lastScore = gameState.score;
     this.lastLives = gameState.lives;
     this.lastPaperCount = paperCount;
@@ -62,30 +94,30 @@ export class HUD {
     this.hudBg = this.scene.add.graphics();
     this.hudBg.setScrollFactor(0).setDepth(99);
     this.hudBg.fillStyle(BC.CHROME, 0.55);
-    this.hudBg.fillRect(0, 0, width, 32);
+    this.hudBg.fillRect(0, 0, width, this.hudHeight);
     // Red left accent
     this.hudBg.fillStyle(BC.RED, 0.9);
-    this.hudBg.fillRect(0, 0, 3, 32);
+    this.hudBg.fillRect(0, 0, 3, this.hudHeight);
     // Bottom edge line
     this.hudBg.lineStyle(1, BC.CHROME_EDGE, 0.4);
-    this.hudBg.lineBetween(0, 32, width, 32);
+    this.hudBg.lineBetween(0, this.hudHeight, width, this.hudHeight);
 
+    const cy = this.hudHeight / 2;
     const labelCfg: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: BROADCAST_FONT,
-      fontSize: "10px",
+      fontSize: this.labelFontSize,
       fontStyle: "600",
       color: BC.TEXT_DIM,
-      letterSpacing: 2,
+      letterSpacing: this.labelSpacing,
     };
     const valueCfg: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: BROADCAST_FONT,
-      fontSize: "14px",
+      fontSize: this.valueFontSize,
       fontStyle: "700",
       color: BC.TEXT,
     };
 
-    let x = 14;
-    const cy = 16;
+    let x = this.compactLayout ? 10 : 14;
 
     // Day — static for the duration of the scene, set once
     this.scene.add
@@ -98,7 +130,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += 120;
+    x += this.compactLayout ? 104 : 120;
 
     // Score
     this.scene.add
@@ -111,7 +143,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += 100;
+    x += this.compactLayout ? 90 : 100;
 
     // Lives — Graphics-drawn circles
     this.scene.add
@@ -123,7 +155,7 @@ export class HUD {
     this.livesGfx = this.scene.add.graphics();
     this.livesGfx.setScrollFactor(0).setDepth(100);
     this.drawLives();
-    x += 60;
+    x += this.compactLayout ? 54 : 60;
 
     // Papers
     this.scene.add
@@ -136,7 +168,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += 80;
+    x += this.compactLayout ? 72 : 80;
 
     // Ammo (separate field)
     this.scene.add
@@ -149,7 +181,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += 70;
+    x += this.compactLayout ? 66 : 70;
 
     // Subscribers
     this.scene.add
@@ -162,7 +194,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += 70;
+    x += this.compactLayout ? 66 : 70;
 
     // Delivery progress bar (right-aligned area)
     this.scene.add
@@ -173,9 +205,9 @@ export class HUD {
     this.deliveryBar = this.scene.add.graphics();
     this.deliveryBar.setScrollFactor(0).setDepth(100);
     this.deliveryCountText = this.scene.add
-      .text(x + 90, cy + 7, "", {
+      .text(x + this.deliveryBarTextOffset, cy + 7, "", {
         ...valueCfg,
-        fontSize: "11px",
+        fontSize: this.compactLayout ? "12px" : "11px",
       })
       .setScrollFactor(0)
       .setDepth(100)
@@ -290,7 +322,11 @@ export class HUD {
         active ? BC.RED : BC.CHROME_EDGE,
         active ? 1 : 0.3,
       );
-      this.livesGfx.fillCircle(this.livesX + i * 14, 23, 5);
+      this.livesGfx.fillCircle(
+        this.livesX + i * this.lifeSpacing,
+        this.lifeY,
+        this.lifeRadius,
+      );
     }
   }
 
@@ -299,9 +335,9 @@ export class HUD {
   private drawDeliveryBar(x: number): void {
     this.deliveryBarX = x;
     this.deliveryBar.clear();
-    const barW = 80;
+    const barW = this.deliveryBarWidth;
     const barH = 8;
-    const barY = 20;
+    const barY = this.deliveryBarY;
 
     // Background track
     this.deliveryBar.fillStyle(BC.CHROME_EDGE, 0.6);
