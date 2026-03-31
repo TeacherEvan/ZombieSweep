@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ZOMBIE_DAMAGE, ZOMBIE_HP, ZOMBIE_SPEED } from "../config/constants";
+import { NpcFaction, NpcRole, NpcState } from "./Npc";
 import {
   createRunner,
   createShambler,
   createSpitter,
+  toNpcDefinition,
   ZombieType,
 } from "./Zombie";
 
@@ -110,6 +112,35 @@ describe("Zombie entities", () => {
       const z = createShambler(150, 300);
       expect(z.x).toBe(150);
       expect(z.y).toBe(300);
+    });
+  });
+
+  describe("NPC adapter", () => {
+    it("maps a shambler to an infected shambler", () => {
+      const npc = toNpcDefinition(createShambler(0, 0));
+
+      expect(npc.faction).toBe(NpcFaction.Infected);
+      expect(npc.role).toBe(NpcRole.Shambler);
+      expect(npc.behavior.defaultState).toBe(NpcState.Infected);
+      expect(npc.textureKey).toBe("zombie-shambler");
+    });
+
+    it("maps a runner to an infected runner", () => {
+      const npc = toNpcDefinition(createRunner(0, 0));
+
+      expect(npc.faction).toBe(NpcFaction.Infected);
+      expect(npc.role).toBe(NpcRole.Runner);
+      expect(npc.behavior.defaultState).toBe(NpcState.Infected);
+      expect(npc.textureKey).toBe("zombie-runner");
+    });
+
+    it("maps a spitter to an infected spitter", () => {
+      const npc = toNpcDefinition(createSpitter(0, 0));
+
+      expect(npc.faction).toBe(NpcFaction.Infected);
+      expect(npc.role).toBe(NpcRole.Spitter);
+      expect(npc.behavior.defaultState).toBe(NpcState.Infected);
+      expect(npc.textureKey).toBe("zombie-spitter");
     });
   });
 });

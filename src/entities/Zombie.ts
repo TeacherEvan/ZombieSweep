@@ -4,6 +4,15 @@ import {
   ZOMBIE_HP,
   ZOMBIE_SPEED,
 } from "../config/constants";
+import {
+  NPC_WEEK_DAYS,
+  NpcDefinitionInput,
+  NpcFaction,
+  NpcRarity,
+  NpcRole,
+  NpcState,
+  NpcTimeSlice,
+} from "./Npc";
 
 export enum ZombieType {
   Shambler = "Shambler",
@@ -22,6 +31,121 @@ export interface Zombie {
   isRanged: boolean;
   takeDamage(amount: number): void;
   isDead(): boolean;
+}
+
+export function toNpcDefinition(zombie: Zombie): NpcDefinitionInput {
+  switch (zombie.type) {
+    case ZombieType.Shambler:
+      return {
+        id: "infected-shambler",
+        name: "Shambler",
+        faction: NpcFaction.Infected,
+        role: NpcRole.Shambler,
+        behavior: {
+          defaultState: NpcState.Infected,
+          fallbackState: NpcState.Infected,
+          preferredStates: [
+            NpcState.Infected,
+            NpcState.Travel,
+            NpcState.Investigate,
+          ],
+          caution: 0,
+          aggression: 1,
+          support: 0,
+        },
+        schedule: {
+          days: [...NPC_WEEK_DAYS],
+          timeSlice: NpcTimeSlice.Night,
+          mapTags: ["suburban", "urban", "industrial"],
+          routeTriggers: ["noise"],
+          minThreatLevel: 10,
+          maxThreatLevel: 100,
+        },
+        spawn: {
+          weight: 6,
+          rarity: NpcRarity.Common,
+          mapTags: ["suburban", "urban", "industrial"],
+          routeTriggers: ["noise"],
+          requiresSafeZone: false,
+          requiredFaction: NpcFaction.Infected,
+        },
+        textureKey: "zombie-shambler",
+      };
+
+    case ZombieType.Runner:
+      return {
+        id: "infected-runner",
+        name: "Runner",
+        faction: NpcFaction.Infected,
+        role: NpcRole.Runner,
+        behavior: {
+          defaultState: NpcState.Infected,
+          fallbackState: NpcState.Infected,
+          preferredStates: [
+            NpcState.Infected,
+            NpcState.Travel,
+            NpcState.Investigate,
+          ],
+          caution: 0,
+          aggression: 1,
+          support: 0,
+        },
+        schedule: {
+          days: [...NPC_WEEK_DAYS],
+          timeSlice: NpcTimeSlice.Night,
+          mapTags: ["suburban", "urban", "industrial"],
+          routeTriggers: ["alarm", "panic"],
+          minThreatLevel: 20,
+          maxThreatLevel: 100,
+        },
+        spawn: {
+          weight: 4,
+          rarity: NpcRarity.Uncommon,
+          mapTags: ["suburban", "urban", "industrial"],
+          routeTriggers: ["alarm"],
+          requiresSafeZone: false,
+          requiredFaction: NpcFaction.Infected,
+        },
+        textureKey: "zombie-runner",
+      };
+
+    case ZombieType.Spitter:
+      return {
+        id: "infected-spitter",
+        name: "Spitter",
+        faction: NpcFaction.Infected,
+        role: NpcRole.Spitter,
+        behavior: {
+          defaultState: NpcState.Infected,
+          fallbackState: NpcState.Infected,
+          preferredStates: [
+            NpcState.Infected,
+            NpcState.Investigate,
+            NpcState.Travel,
+          ],
+          caution: 0,
+          aggression: 1,
+          support: 0,
+        },
+        schedule: {
+          days: [...NPC_WEEK_DAYS],
+          timeSlice: NpcTimeSlice.Evening,
+          mapTags: ["suburban", "urban", "industrial"],
+          routeTriggers: ["raid", "alarm"],
+          minThreatLevel: 25,
+          maxThreatLevel: 100,
+        },
+        spawn: {
+          weight: 2,
+          rarity: NpcRarity.Rare,
+          mapTags: ["suburban", "urban", "industrial"],
+          routeTriggers: ["raid"],
+          requiresSafeZone: false,
+          requiredFaction: NpcFaction.Infected,
+        },
+        textureKey: "zombie-spitter",
+      };
+  }
 }
 
 function createZombie(

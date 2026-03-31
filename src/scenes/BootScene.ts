@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { NPC_PLACEHOLDER_TEXTURE_KEY } from "../entities/Npc";
 import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
 
 export class BootScene extends Phaser.Scene {
@@ -110,6 +111,9 @@ export class BootScene extends Phaser.Scene {
 
     // Newspaper projectile
     this.generateRect(g, "newspaper", 12, 8, 0xf5f0c0);
+
+    // NPC fallback placeholder — used when a specific NPC texture is missing
+    this.generateRect(g, NPC_PLACEHOLDER_TEXTURE_KEY, 28, 40, 0x6e6e6e);
 
     // Training elements
     this.generateTarget(g, "target", 40, 40);

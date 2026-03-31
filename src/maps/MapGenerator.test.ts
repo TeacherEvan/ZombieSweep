@@ -70,6 +70,16 @@ describe("MapGenerator", () => {
       expect(route.pickups.length).toBeGreaterThan(0);
     });
 
+    it("generates NPC spawn plans", () => {
+      const route = generateRoute(
+        MAPS[MapName.MapleGrove],
+        Difficulty.EasyStreet,
+        1,
+      );
+
+      expect(route.npcSpawns.length).toBeGreaterThan(0);
+    });
+
     it("subscriberCount param overrides default 10", () => {
       const route = generateRoute(
         MAPS[MapName.MapleGrove],
@@ -95,6 +105,21 @@ describe("MapGenerator", () => {
         1,
       );
       expect(r1.houses.length).toBe(r2.houses.length);
+    });
+
+    it("same inputs produce the same NPC spawn plans", () => {
+      const r1 = generateRoute(
+        MAPS[MapName.MapleGrove],
+        Difficulty.EasyStreet,
+        1,
+      );
+      const r2 = generateRoute(
+        MAPS[MapName.MapleGrove],
+        Difficulty.EasyStreet,
+        1,
+      );
+
+      expect(r1.npcSpawns).toEqual(r2.npcSpawns);
     });
 
     it("non-subscriber count is total minus subscribers", () => {
