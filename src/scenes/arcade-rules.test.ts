@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { Difficulty } from "../config/difficulty";
-import { DeliveryDifficulty, createRanchHouse, createVictorianHouse } from "../entities/House";
+import { createRanchHouse, createVictorianHouse } from "../entities/House";
 import { VehicleType } from "../config/vehicles";
 import {
   classifyDelivery,

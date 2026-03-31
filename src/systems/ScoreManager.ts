@@ -28,6 +28,10 @@ export class ScoreManager {
     this.gameState.addScore(POINTS.SPITTER_KILL);
   }
 
+  comboBonus(points: number): void {
+    this.gameState.addRawScore(points);
+  }
+
   windowBreak(): void {
     this.gameState.addScore(POINTS.NONSUB_WINDOW);
   }

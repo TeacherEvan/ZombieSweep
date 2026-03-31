@@ -75,11 +75,11 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
       },
       [WeaponSlot.Ranged]: {
         name: "Crossbow",
-        damage: 5,
+        damage: 4,
         speed: 2,
         range: 10,
         knockback: 2,
-        ammoPerPickup: 5,
+        ammoPerPickup: 6,
         piercing: true,
         spread: false,
       },
@@ -103,7 +103,7 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
       },
       [WeaponSlot.Ranged]: {
         name: "Shotgun",
-        damage: 8,
+        damage: 7,
         speed: 1,
         range: 4,
         knockback: 4,

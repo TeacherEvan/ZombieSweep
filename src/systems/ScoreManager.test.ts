@@ -54,6 +54,14 @@ describe("ScoreManager", () => {
     });
   });
 
+  describe("combo scoring", () => {
+    it("comboBonus() adds raw score without difficulty scaling", () => {
+      gameState.configure(Difficulty.HardWay, VehicleType.Bicycle);
+      scoreManager.comboBonus(30);
+      expect(gameState.score).toBe(30);
+    });
+  });
+
   describe("non-subscriber damage scoring", () => {
     it("windowBreak() awards 25 base points", () => {
       scoreManager.windowBreak();

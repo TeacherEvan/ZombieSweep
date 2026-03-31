@@ -22,6 +22,7 @@ import {
   ZombieType,
 } from "../entities/Zombie";
 import { MAPS } from "../maps/MapConfig";
+import { MapConfig } from "../maps/MapConfig";
 import { generateRoute, Route } from "../maps/MapGenerator";
 import { ComboTracker } from "../systems/ComboTracker";
 import { DayManager } from "../systems/DayManager";
@@ -67,11 +68,6 @@ interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
 
 interface HousePlacement {
   house: ReturnType<typeof generateRoute>["houses"][number];
-  sprite: Phaser.Physics.Arcade.StaticSprite;
-}
-
-interface CitizenPlacement {
-  citizen: Citizen;
   sprite: Phaser.Physics.Arcade.Sprite;
 }
 
@@ -79,6 +75,7 @@ export class GameScene extends Phaser.Scene {
   private gameState!: GameState;
   private scoreManager!: ScoreManager;
   private dayManager!: DayManager;
+  private mapConfig!: MapConfig;
   private route!: Route;
   private hud!: HUD;
   private pauseMenu!: PauseMenu;
@@ -116,6 +113,7 @@ export class GameScene extends Phaser.Scene {
 
     const mapName = this.dayManager.getMapForDay(this.gameState.day);
     const mapConfig = MAPS[mapName];
+    this.mapConfig = mapConfig;
     this.route = generateRoute(
       mapConfig,
       this.gameState.difficulty,
@@ -499,11 +497,13 @@ export class GameScene extends Phaser.Scene {
     const result = this.comboTracker.registerKill(this.time.now);
     if (result.isCombo) {
       const size = Math.min(12 + result.comboCount * 2, 24);
+      const bonus = result.comboCount * 10;
+      this.scoreManager.comboBonus(bonus);
       floatingText(
         this,
         x,
         y - 30,
-        `${result.comboCount}× COMBO!`,
+        `+${bonus} COMBO!`,
         BC.css.GOLD_GLOW,
         `${size}px`,
       );
@@ -716,8 +716,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onHazardHit(): void {
+    const stability = VEHICLE_STATS[this.gameState.vehicle].stability;
     this.gameState.loseLife();
-    screenShake(this, 0.012, 200);
+    screenShake(this, 0.009 + (3 - stability) * 0.003, 200);
     damageFlash(this, 180);
     headlineLifeLost();
     if (this.gameState.isGameOver() && !this.transitioning) {
@@ -726,7 +727,7 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Brief invincibility flash
       this.player.setAlpha(0.5);
-      this.time.delayedCall(1500, () => {
+      this.time.delayedCall(900 + (3 - stability) * 250, () => {
         this.player.setAlpha(1);
       });
     }
@@ -736,12 +737,13 @@ export class GameScene extends Phaser.Scene {
     _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
     zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
   ): void {
+    const stability = VEHICLE_STATS[this.gameState.vehicle].stability;
     const sprite = zombieObj as Phaser.Physics.Arcade.Sprite;
     const zombie = sprite.getData("zombie") as Zombie;
     if (!zombie || zombie.isDead()) return;
 
     this.gameState.loseLife();
-    screenShake(this, 0.015, 250);
+    screenShake(this, 0.011 + (3 - stability) * 0.003, 250);
     damageFlash(this, 200);
     headlineLifeLost();
     deathFlash(this, sprite);
@@ -773,9 +775,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnHouses(): void {
+    const leftX = 48 + this.mapConfig.streetWidth * 2;
+    const rightX = 912 - this.mapConfig.streetWidth * 2;
+    const houseSpacing = 20 + (5 - this.mapConfig.houseSeparation) * 1.5;
+
     this.route.houses.forEach((house, i) => {
-      const side = i % 2 === 0 ? 50 : 910;
-      const y = 80 + i * 25;
+      const side = i % 2 === 0 ? leftX : rightX;
+      const y = 68 + i * houseSpacing;
       const sprite = this.physics.add.staticSprite(
         side,
         y,

@@ -252,6 +252,22 @@ export class ScoreSummaryScene extends Phaser.Scene {
     if (missedDeliveries === 0 && subscriberHouses.length > 0) {
       const sm = new ScoreManager(this.gameState);
       sm.perfectDayBonus();
+
+      const bonusBanner = createAlertBanner(
+        this,
+        y,
+        `PERFECT DAY BONUS: +${POINTS.PERFECT_DAY_BONUS}`,
+        { bgColor: BC.GOLD, height: 30 },
+      );
+      bonusBanner.setAlpha(0);
+      this.tweens.add({
+        targets: bonusBanner,
+        alpha: 1,
+        duration: 400,
+        delay: 900,
+        ease: "Quart.easeOut",
+      });
+      y += 40;
     }
 
     // Navigation prompt
