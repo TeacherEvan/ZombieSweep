@@ -241,9 +241,20 @@ export function fadeToScene(
 }
 
 // ── Fade In on Scene Start ──
-// Call at the beginning of create() for a smooth entrance
+// Tween-based overlay fade instead of Camera.fadeIn for reliability.
+// Draws a full-screen black rectangle at max depth and tweens it to alpha 0.
 export function fadeIn(scene: Phaser.Scene, duration = 350): void {
-  scene.cameras.main.fadeIn(duration, 0, 0, 0);
+  const { width, height } = scene.cameras.main;
+  const overlay = scene.add.graphics().setDepth(9999);
+  overlay.fillStyle(0x000000, 1);
+  overlay.fillRect(0, 0, width, height);
+  scene.tweens.add({
+    targets: overlay,
+    alpha: 0,
+    duration,
+    ease: EASE_OUT_QUART,
+    onComplete: () => overlay.destroy(),
+  });
 }
 
 // ── Staggered Reveal ──
