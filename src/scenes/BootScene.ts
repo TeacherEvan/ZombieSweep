@@ -64,6 +64,8 @@ export class BootScene extends Phaser.Scene {
     if (overlay) {
       overlay.classList.add("hiding");
       overlay.addEventListener("animationend", () => overlay.remove());
+      // Fallback: remove overlay after 1s even if animationend doesn't fire
+      setTimeout(() => overlay.remove(), 1000);
     }
     this.scene.start("WelcomeScene");
   }
