@@ -2,7 +2,7 @@
 
 ## Summary
 
-Created the first milestone of the NPC town ecosystem plan on branch `feature/npc-town-ecosystem`. Added a shared NPC domain contract, a reusable archetype catalog, reputation rules, a deterministic scheduler, and route-level NPC spawn output so civilians, hostiles, responders, traders, and infected characters can be represented through one normalized model instead of scene-specific logic.
+Created the first milestone of the NPC town ecosystem plan on branch `feature/npc-town-ecosystem`. Added a shared NPC domain contract, a reusable archetype catalog, reputation rules, a deterministic scheduler, route-level NPC spawn output, legacy entity adapters, and safe NPC texture resolution so civilians, hostiles, responders, traders, and infected characters can be represented through one normalized model instead of scene-specific logic.
 
 ## Phases Completed
 
@@ -23,6 +23,11 @@ Created the first milestone of the NPC town ecosystem plan on branch `feature/np
 - ✅ Phase 15 — Implemented route-level NPC spawn generation in `MapGenerator`
 - ✅ Phase 16 — Verified targeted route tests
 - ✅ Phase 17 — Re-ran the full test suite and production build
+- ✅ Phase 18 — Wrote legacy adapter and asset tests
+- ✅ Phase 19 — Implemented citizen/zombie adapters and NPC asset resolver
+- ✅ Phase 20 — Wired `BootScene` and `GameScene` to the NPC route plans
+- ✅ Phase 21 — Verified targeted adapter/asset tests
+- ✅ Phase 22 — Re-ran the full test suite and production build
 
 ## Files Changed
 
@@ -38,6 +43,14 @@ Created the first milestone of the NPC town ecosystem plan on branch `feature/np
 - `src/systems/NpcScheduler.ts` — deterministic scheduler and spawn-plan builder
 - `src/maps/MapGenerator.test.ts` — route tests now covering `npcSpawns`
 - `src/maps/MapGenerator.ts` — route generation now emits NPC spawn plans
+- `src/systems/NpcAssets.test.ts` — texture fallback and legacy texture resolution tests
+- `src/systems/NpcAssets.ts` — NPC texture fallback and legacy texture resolution helpers
+- `src/entities/Citizen.test.ts` — citizen adapter assertions
+- `src/entities/Citizen.ts` — citizen adapter to shared NPC definitions
+- `src/entities/Zombie.test.ts` — zombie adapter assertions
+- `src/entities/Zombie.ts` — zombie adapter to shared NPC definitions
+- `src/scenes/BootScene.ts` — now creates the `npc-placeholder` texture
+- `src/scenes/GameScene.ts` — now consumes route NPC spawn plans and resolves NPC textures safely
 
 ## Test Results
 
@@ -45,14 +58,15 @@ Created the first milestone of the NPC town ecosystem plan on branch `feature/np
 - Targeted tests: `npm test -- src/systems/TownReputation.test.ts src/systems/NpcRules.test.ts` — ✅ pass
 - Targeted test: `npm test -- src/systems/NpcScheduler.test.ts` — ✅ pass
 - Targeted test: `npm test -- src/maps/MapGenerator.test.ts` — ✅ pass
-- Full suite: `npm test` — ✅ pass (24 files, 323 tests)
+- Targeted tests: `npm test -- src/entities/Citizen.test.ts src/entities/Zombie.test.ts src/systems/NpcAssets.test.ts` — ✅ pass
+- Full suite: `npm test` — ✅ pass (25 files, 333 tests)
 - Production build: `npm run build` — ✅ pass
 
 ## Next Steps
 
-- Implement Task 5: legacy entity adapters and scene wiring
-- Keep `Citizen`/`Zombie` APIs working while introducing the shared NPC model into runtime
+- Perform a browser smoke check of the updated scene wiring
 - Keep the NPC logic pure so scene wiring can stay thin and testable
+- Move on to any remaining balancing or polish once the browser pass is clean
 
 ## Recommendations
 

@@ -1,12 +1,13 @@
 import { CITIZEN_PENALTY } from "../config/constants";
 import {
   NPC_WEEK_DAYS,
-  NpcDefinitionInput,
+  NpcDefinition,
   NpcFaction,
   NpcRarity,
   NpcRole,
   NpcState,
   NpcTimeSlice,
+  createNpcDefinition,
 } from "./Npc";
 
 export enum CitizenType {
@@ -25,10 +26,10 @@ export interface Citizen {
   retaliates: boolean;
 }
 
-export function toNpcDefinition(citizen: Citizen): NpcDefinitionInput {
+export function toNpcDefinition(citizen: Citizen): NpcDefinition {
   switch (citizen.type) {
     case CitizenType.FriendlyNeighbor:
-      return {
+      return createNpcDefinition({
         id: "citizen-friendly-neighbor",
         name: "Friendly Neighbor",
         faction: NpcFaction.Survivor,
@@ -58,10 +59,10 @@ export function toNpcDefinition(citizen: Citizen): NpcDefinitionInput {
           requiredFaction: NpcFaction.Survivor,
         },
         textureKey: "citizen-friendly",
-      };
+      });
 
     case CitizenType.PanickedRunner:
-      return {
+      return createNpcDefinition({
         id: "citizen-panicked-runner",
         name: "Panicked Runner",
         faction: NpcFaction.Survivor,
@@ -91,10 +92,10 @@ export function toNpcDefinition(citizen: Citizen): NpcDefinitionInput {
           requiredFaction: NpcFaction.Survivor,
         },
         textureKey: "citizen-panicked",
-      };
+      });
 
     case CitizenType.ArmedSurvivalist:
-      return {
+      return createNpcDefinition({
         id: "citizen-armed-survivalist",
         name: "Armed Survivalist",
         faction: NpcFaction.Survivor,
@@ -128,7 +129,7 @@ export function toNpcDefinition(citizen: Citizen): NpcDefinitionInput {
           requiredFaction: NpcFaction.Survivor,
         },
         textureKey: "citizen-armed",
-      };
+      });
   }
 }
 

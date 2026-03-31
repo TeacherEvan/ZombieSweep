@@ -6,12 +6,13 @@ import {
 } from "../config/constants";
 import {
   NPC_WEEK_DAYS,
-  NpcDefinitionInput,
+  NpcDefinition,
   NpcFaction,
   NpcRarity,
   NpcRole,
   NpcState,
   NpcTimeSlice,
+  createNpcDefinition,
 } from "./Npc";
 
 export enum ZombieType {
@@ -33,10 +34,10 @@ export interface Zombie {
   isDead(): boolean;
 }
 
-export function toNpcDefinition(zombie: Zombie): NpcDefinitionInput {
+export function toNpcDefinition(zombie: Zombie): NpcDefinition {
   switch (zombie.type) {
     case ZombieType.Shambler:
-      return {
+      return createNpcDefinition({
         id: "infected-shambler",
         name: "Shambler",
         faction: NpcFaction.Infected,
@@ -70,10 +71,10 @@ export function toNpcDefinition(zombie: Zombie): NpcDefinitionInput {
           requiredFaction: NpcFaction.Infected,
         },
         textureKey: "zombie-shambler",
-      };
+      });
 
     case ZombieType.Runner:
-      return {
+      return createNpcDefinition({
         id: "infected-runner",
         name: "Runner",
         faction: NpcFaction.Infected,
@@ -107,10 +108,10 @@ export function toNpcDefinition(zombie: Zombie): NpcDefinitionInput {
           requiredFaction: NpcFaction.Infected,
         },
         textureKey: "zombie-runner",
-      };
+      });
 
     case ZombieType.Spitter:
-      return {
+      return createNpcDefinition({
         id: "infected-spitter",
         name: "Spitter",
         faction: NpcFaction.Infected,
@@ -144,7 +145,7 @@ export function toNpcDefinition(zombie: Zombie): NpcDefinitionInput {
           requiredFaction: NpcFaction.Infected,
         },
         textureKey: "zombie-spitter",
-      };
+      });
   }
 }
 
