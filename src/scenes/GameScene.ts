@@ -243,7 +243,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.viewportContext.touchPrimary) {
-      this.touchControls = new TouchControls(this, width, height);
+      this.touchControls = new TouchControls(
+        this,
+        width,
+        height,
+        this.viewportContext.uiScale,
+      );
     }
 
     // HUD + Pause

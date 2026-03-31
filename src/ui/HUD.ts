@@ -27,6 +27,7 @@ export class HUD {
   private paperCount: number;
   private ammoCount: number;
   private compactLayout = false;
+  private viewportScale = 1;
   private hudHeight = 32;
   private labelFontSize = "10px";
   private valueFontSize = "14px";
@@ -62,17 +63,36 @@ export class HUD {
       window.innerHeight,
       isTouchPrimary(),
     );
+    this.viewportScale = viewport.uiScale;
     this.compactLayout = viewport.isCompact;
-    this.hudHeight = this.compactLayout ? 38 : 32;
-    this.labelFontSize = this.compactLayout ? "9px" : "10px";
-    this.valueFontSize = this.compactLayout ? "15px" : "14px";
+    this.hudHeight = Math.round(
+      (this.compactLayout ? 38 : 32) * this.viewportScale,
+    );
+    this.labelFontSize = this.compactLayout
+      ? `${Math.round(9 * this.viewportScale)}px`
+      : "10px";
+    this.valueFontSize = this.compactLayout
+      ? `${Math.round(15 * this.viewportScale)}px`
+      : "14px";
     this.labelSpacing = this.compactLayout ? 1.5 : 2;
-    this.lifeSpacing = this.compactLayout ? 12 : 14;
-    this.lifeRadius = this.compactLayout ? 4 : 5;
-    this.lifeY = this.compactLayout ? 24 : 23;
-    this.deliveryBarY = this.compactLayout ? 21 : 20;
-    this.deliveryBarWidth = this.compactLayout ? 72 : 80;
-    this.deliveryBarTextOffset = this.compactLayout ? 82 : 90;
+    this.lifeSpacing = Math.round(
+      (this.compactLayout ? 12 : 14) * this.viewportScale,
+    );
+    this.lifeRadius = Math.round(
+      (this.compactLayout ? 4 : 5) * this.viewportScale,
+    );
+    this.lifeY = Math.round(
+      (this.compactLayout ? 24 : 23) * this.viewportScale,
+    );
+    this.deliveryBarY = Math.round(
+      (this.compactLayout ? 21 : 20) * this.viewportScale,
+    );
+    this.deliveryBarWidth = Math.round(
+      (this.compactLayout ? 72 : 80) * this.viewportScale,
+    );
+    this.deliveryBarTextOffset = Math.round(
+      (this.compactLayout ? 82 : 90) * this.viewportScale,
+    );
     this.lastScore = gameState.score;
     this.lastLives = gameState.lives;
     this.lastPaperCount = paperCount;
@@ -117,7 +137,7 @@ export class HUD {
       color: BC.TEXT,
     };
 
-    let x = this.compactLayout ? 10 : 14;
+    let x = this.compactLayout ? Math.round(10 * this.viewportScale) : 14;
 
     // Day — static for the duration of the scene, set once
     this.scene.add
@@ -130,7 +150,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += this.compactLayout ? 104 : 120;
+    x += Math.round((this.compactLayout ? 104 : 120) * this.viewportScale);
 
     // Score
     this.scene.add
@@ -143,7 +163,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += this.compactLayout ? 90 : 100;
+    x += Math.round((this.compactLayout ? 90 : 100) * this.viewportScale);
 
     // Lives — Graphics-drawn circles
     this.scene.add
@@ -155,7 +175,7 @@ export class HUD {
     this.livesGfx = this.scene.add.graphics();
     this.livesGfx.setScrollFactor(0).setDepth(100);
     this.drawLives();
-    x += this.compactLayout ? 54 : 60;
+    x += Math.round((this.compactLayout ? 54 : 60) * this.viewportScale);
 
     // Papers
     this.scene.add
@@ -168,7 +188,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += this.compactLayout ? 72 : 80;
+    x += Math.round((this.compactLayout ? 72 : 80) * this.viewportScale);
 
     // Ammo (separate field)
     this.scene.add
@@ -181,7 +201,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += this.compactLayout ? 66 : 70;
+    x += Math.round((this.compactLayout ? 66 : 70) * this.viewportScale);
 
     // Subscribers
     this.scene.add
@@ -194,7 +214,7 @@ export class HUD {
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
-    x += this.compactLayout ? 66 : 70;
+    x += Math.round((this.compactLayout ? 66 : 70) * this.viewportScale);
 
     // Delivery progress bar (right-aligned area)
     this.scene.add
@@ -207,7 +227,9 @@ export class HUD {
     this.deliveryCountText = this.scene.add
       .text(x + this.deliveryBarTextOffset, cy + 7, "", {
         ...valueCfg,
-        fontSize: this.compactLayout ? "12px" : "11px",
+        fontSize: this.compactLayout
+          ? `${Math.round(12 * this.viewportScale)}px`
+          : "11px",
       })
       .setScrollFactor(0)
       .setDepth(100)

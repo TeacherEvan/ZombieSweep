@@ -26,6 +26,7 @@ interface TouchButtonConfig {
 export class TouchControls {
   private scene: Phaser.Scene;
   private container: Phaser.GameObjects.Container;
+  private viewportScale = 1;
   private movement: Record<TouchControlDirection, boolean> = {
     left: false,
     right: false,
@@ -34,8 +35,9 @@ export class TouchControls {
   };
   private queuedActions = new Set<TouchControlAction>();
 
-  constructor(scene: Phaser.Scene, width: number, height: number) {
+  constructor(scene: Phaser.Scene, width: number, height: number, scale = 1) {
     this.scene = scene;
+    this.viewportScale = scale;
     this.container = this.scene.add
       .container(0, 0)
       .setScrollFactor(0)
@@ -67,22 +69,27 @@ export class TouchControls {
 
   private build(width: number, height: number): void {
     const title = this.scene.add
-      .text(width / 2, height - 168, "FIELD CONTROLS", {
-        fontFamily: BROADCAST_FONT,
-        fontSize: "11px",
-        fontStyle: "800",
-        color: BC.TEXT_DIM,
-        letterSpacing: 3,
-      })
+      .text(
+        width / 2,
+        height - Math.round(168 * this.viewportScale),
+        "FIELD CONTROLS",
+        {
+          fontFamily: BROADCAST_FONT,
+          fontSize: `${Math.round(11 * this.viewportScale)}px`,
+          fontStyle: "800",
+          color: BC.TEXT_DIM,
+          letterSpacing: 3,
+        },
+      )
       .setOrigin(0.5, 1)
       .setAlpha(0.92);
 
     this.container.add(title);
 
-    const padCenterX = 92;
-    const padCenterY = height - 112;
-    const padSize = 56;
-    const padGap = 8;
+    const padCenterX = Math.round(92 * this.viewportScale);
+    const padCenterY = height - Math.round(112 * this.viewportScale);
+    const padSize = Math.round(56 * this.viewportScale);
+    const padGap = Math.round(8 * this.viewportScale);
 
     this.createButton({
       x: padCenterX,
@@ -93,7 +100,7 @@ export class TouchControls {
       kind: "hold",
       direction: "up",
       accentColor: BC.GREEN,
-      labelSize: "20px",
+      labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
     this.createButton({
       x: padCenterX - padSize - padGap,
@@ -104,7 +111,7 @@ export class TouchControls {
       kind: "hold",
       direction: "left",
       accentColor: BC.GREEN,
-      labelSize: "20px",
+      labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
     this.createButton({
       x: padCenterX + padSize + padGap,
@@ -115,7 +122,7 @@ export class TouchControls {
       kind: "hold",
       direction: "right",
       accentColor: BC.GREEN,
-      labelSize: "20px",
+      labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
     this.createButton({
       x: padCenterX,
@@ -126,14 +133,14 @@ export class TouchControls {
       kind: "hold",
       direction: "down",
       accentColor: BC.GREEN,
-      labelSize: "20px",
+      labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
 
-    const actionsStartX = width - 272;
-    const actionsStartY = height - 164;
-    const actionWidth = 114;
-    const actionHeight = 42;
-    const actionGap = 10;
+    const actionsStartX = width - Math.round(272 * this.viewportScale);
+    const actionsStartY = height - Math.round(164 * this.viewportScale);
+    const actionWidth = Math.round(114 * this.viewportScale);
+    const actionHeight = Math.round(42 * this.viewportScale);
+    const actionGap = Math.round(10 * this.viewportScale);
 
     this.createButton({
       x: actionsStartX,
@@ -144,6 +151,7 @@ export class TouchControls {
       kind: "tap",
       action: "throwLeft",
       accentColor: BC.RED,
+      labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
     this.createButton({
       x: actionsStartX + actionWidth + actionGap,
@@ -154,6 +162,7 @@ export class TouchControls {
       kind: "tap",
       action: "throwRight",
       accentColor: BC.RED,
+      labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
     this.createButton({
       x: actionsStartX,
@@ -164,6 +173,7 @@ export class TouchControls {
       kind: "tap",
       action: "melee",
       accentColor: BC.GOLD,
+      labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
     this.createButton({
       x: actionsStartX + actionWidth + actionGap,
@@ -174,18 +184,19 @@ export class TouchControls {
       kind: "tap",
       action: "ranged",
       accentColor: BC.GOLD,
+      labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
 
     this.createButton({
       x: width / 2,
-      y: height - 28,
-      width: 160,
-      height: 30,
+      y: height - Math.round(28 * this.viewportScale),
+      width: Math.round(160 * this.viewportScale),
+      height: Math.round(30 * this.viewportScale),
       label: "PAUSE",
       kind: "tap",
       action: "pause",
       accentColor: BC.AMBER,
-      labelSize: "12px",
+      labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
   }
 
