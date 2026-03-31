@@ -32,6 +32,7 @@ export class WelcomeScene extends Phaser.Scene {
       isTouchPrimary(),
     );
     const compact = viewport.isCompact;
+    const scale = viewport.uiScale;
     this.selectedIndex = 0;
     this.menuItems = [];
     this.reducedMotion = prefersReducedMotion();
@@ -81,10 +82,10 @@ export class WelcomeScene extends Phaser.Scene {
     // ── Chyron: title as breaking news slug ──
     const chyron = createChyron(
       this,
-      compact ? height * 0.5 : height * 0.58,
+      compact ? height * 0.48 : height * 0.58,
       "ZOMBIESWEEP",
       "COURIER DISPATCH OPERATION — TRI-COUNTY ZONE",
-      { titleSize: compact ? "48px" : "42px" },
+      { titleSize: compact ? `${Math.round(22 * scale)}px` : "42px" },
     );
     // Override title color to bc-red
     const titleText = chyron.getAt(2) as Phaser.GameObjects.Text;
@@ -108,21 +109,22 @@ export class WelcomeScene extends Phaser.Scene {
     ];
 
     const btnX = compact ? width / 2 : width * 0.08 + 140;
-    const btnWidth = compact ? 336 : 280;
-    const btnHeight = compact ? 54 : 48;
-    const btnStartY = compact ? height * 0.66 : height * 0.72;
-    const btnGap = compact ? 60 : 56;
+    const btnWidth = compact ? Math.round(336 * scale) : 280;
+    const btnHeight = compact ? Math.round(48 * scale) : 48;
+    const btnStartY = compact ? height * 0.46 : height * 0.72;
+    const btnGap = compact ? Math.round(48 * scale) : 56;
     menuDefs.forEach((item, i) => {
       const by = btnStartY + i * btnGap;
       const btn = createBroadcastButton(this, btnX, by, item.text, {
         width: btnWidth,
         height: btnHeight,
+        labelSize: compact ? `${Math.round(17 * scale)}px` : "17px",
       });
       this.menuItems.push(btn);
 
       // Staggered entrance from left
       btn.container.setAlpha(0);
-      btn.container.setX(btnX - (compact ? 90 : 60));
+      btn.container.setX(btnX - (compact ? Math.round(80 * scale) : 60));
       this.tweens.add({
         targets: btn.container,
         alpha: 1,
@@ -238,9 +240,9 @@ export class WelcomeScene extends Phaser.Scene {
 
     // ── Footer: version + prompt ──
     this.add
-      .text(14, height - (compact ? 16 : 14), "v0.1.0", {
+      .text(14, height - (compact ? Math.round(12 * scale) : 14), "v0.1.0", {
         fontFamily: BROADCAST_FONT,
-        fontSize: "10px",
+        fontSize: compact ? `${Math.round(10 * scale)}px` : "10px",
         fontStyle: "600",
         color: BC.TEXT_MUTED,
       })
@@ -250,11 +252,11 @@ export class WelcomeScene extends Phaser.Scene {
     const prompt = this.add
       .text(
         width - 14,
-        height - (compact ? 16 : 14),
+        height - (compact ? Math.round(12 * scale) : 14),
         touchMode ? "TAP TO BEGIN" : "PRESS ENTER TO BEGIN",
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: compact ? "12px" : "11px",
+          fontSize: compact ? `${Math.round(11 * scale)}px` : "11px",
           fontStyle: "600",
           color: BC.TEXT_MUTED,
           letterSpacing: 2,

@@ -16,6 +16,7 @@ export class VehicleSelectScene extends Phaser.Scene {
   private cards: Phaser.GameObjects.Container[] = [];
   private transitioning = false;
   private compactLayout = false;
+  private viewportScale = 1;
   private cardWidth = 250;
   private cardHeight = 310;
   private cardGap = 30;
@@ -31,6 +32,8 @@ export class VehicleSelectScene extends Phaser.Scene {
       window.innerHeight,
       isTouchPrimary(),
     );
+    const scale = viewport.uiScale;
+    this.viewportScale = scale;
     this.compactLayout = viewport.isCompact;
     this.cardWidth = this.compactLayout ? Math.min(680, width * 0.74) : 250;
     this.cardHeight = this.compactLayout ? 156 : 310;
@@ -58,6 +61,12 @@ export class VehicleSelectScene extends Phaser.Scene {
       48,
       "FLEET STATUS: AVAILABLE UNITS",
       "SELECT DISPATCH VEHICLE",
+      {
+        titleSize: this.compactLayout ? `${Math.round(20 * scale)}px` : "22px",
+        subtitleSize: this.compactLayout
+          ? `${Math.round(10 * scale)}px`
+          : "11px",
+      },
     );
     chyron.setX(-width);
     this.tweens.add({
@@ -76,7 +85,7 @@ export class VehicleSelectScene extends Phaser.Scene {
         touchMode ? "TAP TO SELECT" : "← →  SELECT  ·  ENTER  CONFIRM",
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? "12px" : "11px",
+          fontSize: this.compactLayout ? `${Math.round(11 * scale)}px` : "11px",
           fontStyle: "600",
           color: BC.TEXT_MUTED,
           letterSpacing: 2,
@@ -197,7 +206,7 @@ export class VehicleSelectScene extends Phaser.Scene {
     const nameText = this.add
       .text(0, compact ? -56 : -120, name, {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? "18px" : "20px",
+        fontSize: compact ? `${Math.round(18 * this.viewportScale)}px` : "20px",
         fontStyle: "800",
         color: BC.TEXT,
         letterSpacing: 1,
@@ -217,7 +226,9 @@ export class VehicleSelectScene extends Phaser.Scene {
       const labelText = this.add
         .text(-100, sy, label, {
           fontFamily: BROADCAST_FONT,
-          fontSize: compact ? "9px" : "10px",
+          fontSize: compact
+            ? `${Math.round(9 * this.viewportScale)}px`
+            : "10px",
           fontStyle: "600",
           color: BC.TEXT_DIM,
           letterSpacing: 2,
@@ -246,7 +257,7 @@ export class VehicleSelectScene extends Phaser.Scene {
     const meleeLabel = this.add
       .text(0, weaponY, `⚔ ${stats.weapons[WeaponSlot.Melee].name}`, {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? "11px" : "12px",
+        fontSize: compact ? `${Math.round(11 * this.viewportScale)}px` : "12px",
         fontStyle: "600",
         color: BC.css.GOLD_DIM,
       })
@@ -254,7 +265,7 @@ export class VehicleSelectScene extends Phaser.Scene {
     const rangedLabel = this.add
       .text(0, weaponY + 22, `🎯 ${stats.weapons[WeaponSlot.Ranged].name}`, {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? "11px" : "12px",
+        fontSize: compact ? `${Math.round(11 * this.viewportScale)}px` : "12px",
         fontStyle: "600",
         color: BC.css.GOLD_DIM,
       })
@@ -270,7 +281,9 @@ export class VehicleSelectScene extends Phaser.Scene {
           "★ CAN OLLIE OVER HOLES",
           {
             fontFamily: BROADCAST_FONT,
-            fontSize: compact ? "9px" : "10px",
+            fontSize: compact
+              ? `${Math.round(9 * this.viewportScale)}px`
+              : "10px",
             fontStyle: "700",
             color: BC.css.GOLD,
             letterSpacing: 1,
@@ -362,7 +375,9 @@ export class VehicleSelectScene extends Phaser.Scene {
     const dispatchText = this.add
       .text(width / 2, height / 2, "DISPATCHING...", {
         fontFamily: BROADCAST_FONT,
-        fontSize: this.compactLayout ? "30px" : "28px",
+        fontSize: this.compactLayout
+          ? `${Math.round(24 * this.viewportScale)}px`
+          : "28px",
         fontStyle: "800",
         color: BC.TEXT,
         letterSpacing: 3,

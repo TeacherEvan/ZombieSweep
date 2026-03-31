@@ -73,6 +73,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       window.innerHeight,
       isTouchPrimary(),
     );
+    const scale = viewport.uiScale;
     this.compactLayout = viewport.isCompact;
     this.rowWidth = this.compactLayout ? Math.min(700, width * 0.82) : 520;
     this.rowHeight = this.compactLayout ? 88 : 76;
@@ -101,7 +102,12 @@ export class DifficultySelectScene extends Phaser.Scene {
       48,
       "ZOMBIE THREAT ADVISORY",
       "WZMB 13 EMERGENCY BROADCAST SYSTEM",
-      { titleSize: this.compactLayout ? "20px" : "22px" },
+      {
+        titleSize: this.compactLayout ? `${Math.round(20 * scale)}px` : "22px",
+        subtitleSize: this.compactLayout
+          ? `${Math.round(10 * scale)}px`
+          : "11px",
+      },
     );
     chyron.setX(-width);
     this.tweens.add({
@@ -120,7 +126,7 @@ export class DifficultySelectScene extends Phaser.Scene {
         touchMode ? "TAP TO SELECT" : "↑ ↓  SELECT  ·  ENTER  CONFIRM",
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? "12px" : "11px",
+          fontSize: this.compactLayout ? `${Math.round(11 * scale)}px` : "11px",
           fontStyle: "600",
           color: BC.TEXT_MUTED,
           letterSpacing: 2,
@@ -164,7 +170,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       const threatText = this.add
         .text(width / 2 - this.rowWidth / 2 + 24, y - 14, info.threat, {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? "14px" : "13px",
+          fontSize: this.compactLayout ? `${Math.round(14 * scale)}px` : "13px",
           fontStyle: "800",
           color: info.cssColor,
           letterSpacing: 2,
@@ -175,7 +181,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       const label = this.add
         .text(width / 2 - 40, y - 14, info.label, {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? "26px" : "24px",
+          fontSize: this.compactLayout ? `${Math.round(26 * scale)}px` : "24px",
           fontStyle: "800",
           color: BC.TEXT_DIM,
         })
@@ -185,7 +191,7 @@ export class DifficultySelectScene extends Phaser.Scene {
       const desc = this.add
         .text(width / 2 - 40, y + 14, info.desc, {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? "13px" : "12px",
+          fontSize: this.compactLayout ? `${Math.round(13 * scale)}px` : "12px",
           fontStyle: "600",
           color: BC.TEXT_MUTED,
           letterSpacing: 1,

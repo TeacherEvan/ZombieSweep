@@ -45,9 +45,9 @@ export function resolveBroadcastViewportContext(
           : "desktop";
 
   const uiScale = clamp(
-    mode === "desktop" ? 1 : mode === "tablet" ? 1.06 : 1.16,
+    Math.max(960 / Math.max(width, 1), 540 / Math.max(height, 1)),
     1,
-    1.2,
+    2,
   );
 
   return {

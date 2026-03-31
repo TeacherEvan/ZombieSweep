@@ -46,6 +46,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
       window.innerHeight,
       isTouchPrimary(),
     );
+    const scale = viewport.uiScale;
     const compact = viewport.isCompact;
 
     // Background glow
@@ -70,7 +71,10 @@ export class ScoreSummaryScene extends Phaser.Scene {
       38,
       `DAY ${this.gameState.day} REPORT`,
       `ROUTE STATUS — ${mapName.toUpperCase()}`,
-      { titleSize: compact ? "20px" : "22px" },
+      {
+        titleSize: compact ? `${Math.round(20 * scale)}px` : "22px",
+        subtitleSize: compact ? `${Math.round(10 * scale)}px` : "11px",
+      },
     );
     chyron.setX(-width);
     this.tweens.add({
@@ -110,7 +114,11 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         "★ PERFECT DELIVERY — ALL SUBSCRIBERS REACHED",
-        { bgColor: BC.GREEN, height: compact ? 28 : 30 },
+        {
+          bgColor: BC.GREEN,
+          height: compact ? 28 : 30,
+          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
+        },
       );
       perfectBanner.setAlpha(0);
       this.tweens.add({
@@ -134,8 +142,8 @@ export class ScoreSummaryScene extends Phaser.Scene {
       {
         valueColor: deliveryColor,
         width: compact ? 500 : 400,
-        labelSize: compact ? "11px" : "12px",
-        valueSize: compact ? "18px" : "20px",
+        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
+        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
       },
     );
     delRow.container.setAlpha(0);
@@ -169,7 +177,11 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         `+${subsGained} NEW SUBSCRIBER${subsGained > 1 ? "S" : ""}`,
-        { bgColor: BC.GREEN, height: compact ? 28 : 30 },
+        {
+          bgColor: BC.GREEN,
+          height: compact ? 28 : 30,
+          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
+        },
       );
       gainBanner.setAlpha(0);
       this.tweens.add({
@@ -189,7 +201,11 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         `-${subsLost} SUBSCRIBER${subsLost > 1 ? "S" : ""} CANCELLED`,
-        { bgColor: BC.RED, height: compact ? 28 : 30 },
+        {
+          bgColor: BC.RED,
+          height: compact ? 28 : 30,
+          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
+        },
       );
       lossBanner.setAlpha(0);
       this.tweens.add({
@@ -214,8 +230,8 @@ export class ScoreSummaryScene extends Phaser.Scene {
       {
         valueColor: BC.TEXT,
         width: compact ? 500 : 400,
-        labelSize: compact ? "11px" : "12px",
-        valueSize: compact ? "18px" : "20px",
+        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
+        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
       },
     );
     subRow.container.setAlpha(0);
@@ -238,8 +254,8 @@ export class ScoreSummaryScene extends Phaser.Scene {
       {
         valueColor: BC.css.GOLD,
         width: compact ? 500 : 400,
-        labelSize: compact ? "11px" : "12px",
-        valueSize: compact ? "18px" : "20px",
+        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
+        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
       },
     );
     scoreRow.container.setAlpha(0);
@@ -262,8 +278,8 @@ export class ScoreSummaryScene extends Phaser.Scene {
       {
         valueColor: BC.css.RED,
         width: compact ? 500 : 400,
-        labelSize: compact ? "11px" : "12px",
-        valueSize: compact ? "18px" : "20px",
+        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
+        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
       },
     );
     livesRow.container.setAlpha(0);
@@ -285,7 +301,11 @@ export class ScoreSummaryScene extends Phaser.Scene {
         this,
         y,
         `PERFECT DAY BONUS: +${POINTS.PERFECT_DAY_BONUS}`,
-        { bgColor: BC.GOLD, height: compact ? 28 : 30 },
+        {
+          bgColor: BC.GOLD,
+          height: compact ? 28 : 30,
+          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
+        },
       );
       bonusBanner.setAlpha(0);
       this.tweens.add({
@@ -315,7 +335,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
     const prompt = this.add
       .text(cx, height - 36, promptText, {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? "13px" : "12px",
+        fontSize: compact ? `${Math.round(11 * scale)}px` : "12px",
         fontStyle: "600",
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
