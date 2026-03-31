@@ -9,7 +9,7 @@ import { VehicleSelectScene } from "./scenes/VehicleSelectScene";
 import { WelcomeScene } from "./scenes/WelcomeScene";
 
 const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: Phaser.CANVAS,
   width: 960,
   height: 540,
   parent: "app",
