@@ -226,6 +226,98 @@ export function createBroadcastButton(
   return { container, bg, accent, label, hitArea, setSelected };
 }
 
+export function createBroadcastField(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  labelText: string,
+  initialValue: string,
+  options: {
+    width?: number;
+    height?: number;
+    labelSize?: string;
+    valueSize?: string;
+    placeholder?: string;
+  } = {},
+): {
+  container: Phaser.GameObjects.Container;
+  bg: Phaser.GameObjects.Graphics;
+  accent: Phaser.GameObjects.Graphics;
+  label: Phaser.GameObjects.Text;
+  value: Phaser.GameObjects.Text;
+  hitArea: Phaser.GameObjects.Rectangle;
+  setSelected: (selected: boolean) => void;
+  setValue: (value: string) => void;
+  getValue: () => string;
+} {
+  const w = options.width ?? 420;
+  const h = options.height ?? 54;
+  const placeholder = options.placeholder ?? "ENTER VALUE";
+  let currentValue = initialValue;
+
+  const container = scene.add.container(x, y);
+  const bg = scene.add.graphics();
+  const accent = scene.add.graphics();
+  const label = scene.add
+    .text(-w / 2 + 18, -12, labelText.toUpperCase(), {
+      fontFamily: BROADCAST_FONT,
+      fontSize: options.labelSize ?? "11px",
+      fontStyle: "700",
+      color: BC.TEXT_DIM,
+      letterSpacing: 2,
+    })
+    .setOrigin(0, 0.5);
+  const value = scene.add
+    .text(-w / 2 + 18, 10, initialValue || placeholder, {
+      fontFamily: BROADCAST_FONT,
+      fontSize: options.valueSize ?? "18px",
+      fontStyle: "700",
+      color: initialValue ? BC.TEXT : BC.TEXT_MUTED,
+      letterSpacing: 1,
+    })
+    .setOrigin(0, 0.5);
+  const hitArea = scene.add
+    .rectangle(0, 0, w, h, 0x000000, 0)
+    .setInteractive({ useHandCursor: true });
+
+  const redraw = (selected: boolean) => {
+    bg.clear();
+    accent.clear();
+    bg.fillStyle(selected ? BC.CHROME_LIT : BC.CHROME, selected ? 1 : 0.82);
+    bg.fillRect(-w / 2, -h / 2, w, h);
+    bg.lineStyle(1, selected ? BC.RED : BC.CHROME_EDGE, selected ? 0.9 : 0.6);
+    bg.strokeRect(-w / 2, -h / 2, w, h);
+    if (selected) {
+      accent.fillStyle(BC.RED, 1);
+      accent.fillRect(-w / 2, -h / 2, 3, h);
+      label.setColor(BC.TEXT);
+    } else {
+      label.setColor(BC.TEXT_DIM);
+    }
+  };
+
+  const setValue = (nextValue: string) => {
+    currentValue = nextValue;
+    value.setText(nextValue || placeholder);
+    value.setColor(nextValue ? BC.TEXT : BC.TEXT_MUTED);
+  };
+
+  container.add([bg, accent, label, value, hitArea]);
+  redraw(false);
+
+  return {
+    container,
+    bg,
+    accent,
+    label,
+    value,
+    hitArea,
+    setSelected: redraw,
+    setValue,
+    getValue: () => currentValue,
+  };
+}
+
 // ── Data Row ──
 // Label + value pair for stats and scores.
 export function createDataRow(

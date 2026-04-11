@@ -3,6 +3,7 @@ import { BootScene } from "./scenes/BootScene";
 import { DifficultySelectScene } from "./scenes/DifficultySelectScene";
 import { GameOverScene } from "./scenes/GameOverScene";
 import { GameScene } from "./scenes/GameScene";
+import { OnlineCoopScene } from "./scenes/OnlineCoopScene";
 import { ScoreSummaryScene } from "./scenes/ScoreSummaryScene";
 import { TrainingScene } from "./scenes/TrainingScene";
 import { VehicleSelectScene } from "./scenes/VehicleSelectScene";
@@ -33,6 +34,7 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [
     BootScene,
     WelcomeScene,
+    OnlineCoopScene,
     VehicleSelectScene,
     DifficultySelectScene,
     GameScene,

@@ -97,6 +97,19 @@ describe("GameState", () => {
     });
   });
 
+  describe("gainLife()", () => {
+    it("restores a lost life", () => {
+      state.loseLife();
+      state.gainLife();
+      expect(state.lives).toBe(3);
+    });
+
+    it("does not exceed the starting life cap", () => {
+      state.gainLife();
+      expect(state.lives).toBe(3);
+    });
+  });
+
   describe("subscribers", () => {
     it("cancelSubscription() decrements subscribers", () => {
       state.cancelSubscription();

@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { POINTS } from "../config/constants";
+import { mergeCoopRuntimeState } from "../network/runtime";
+import { VersusMatchResult } from "../network/protocol";
 import { GameState, getOrCreateGameState } from "../systems/GameState";
 import { ScoreManager } from "../systems/ScoreManager";
 import {
@@ -24,9 +26,14 @@ export class GameOverScene extends Phaser.Scene {
   private selectedIndex = 0;
   private buttons: ReturnType<typeof createBroadcastButton>[] = [];
   private transitioning = false;
+  private versusResult: VersusMatchResult | null = null;
 
   constructor() {
     super({ key: "GameOverScene" });
+  }
+
+  init(data: { versusResult?: VersusMatchResult }): void {
+    this.versusResult = data.versusResult ?? null;
   }
 
   create(): void {
@@ -38,6 +45,11 @@ export class GameOverScene extends Phaser.Scene {
 
     const { width, height } = this.cameras.main;
     const cx = width / 2;
+    if (this.versusResult) {
+      this.createVersusResolution(cx, width, height);
+      return;
+    }
+
     const reason = this.gameState.getGameOverReason();
     const isVictory = reason === "completed";
 
@@ -398,6 +410,159 @@ export class GameOverScene extends Phaser.Scene {
   private updateButtonSelection(): void {
     this.buttons.forEach((btn, i) => {
       btn.setSelected(i === this.selectedIndex);
+    });
+  }
+
+  private createVersusResolution(cx: number, width: number, height: number): void {
+    const result = this.versusResult;
+    if (!result) return;
+
+    const playerWon = result.winner === "driver";
+    const draw = result.winner === "draw";
+    const accentColor = draw ? BC.GOLD : playerWon ? BC.GREEN : BC.RED;
+    const accentCss = draw ? BC.css.GOLD_GLOW : playerWon ? BC.css.GREEN_BRIGHT : BC.css.RED_GLOW;
+
+    const bgGlow = this.add.graphics();
+    bgGlow.fillStyle(draw ? BC.GOLD_DIM : playerWon ? BC.GREEN : BC.RED_DIM, 0.2);
+    bgGlow.fillEllipse(cx, height * 0.3, width * 0.82, height * 0.6);
+
+    const borders = this.add.graphics();
+    borders.fillStyle(accentColor, 1);
+    borders.fillRect(0, 0, width, 3);
+    borders.fillRect(0, height - 3, width, 3);
+
+    const chyron = createChyron(
+      this,
+      38,
+      "VERSUS FINAL",
+      result.reason === "driver-down"
+        ? "MATCH ENDED — DRIVER DOWN"
+        : "MATCH ENDED — ROUTE COMPLETE",
+    );
+    chyron.setX(-width);
+    this.tweens.add({
+      targets: chyron,
+      x: cx,
+      duration: 350,
+      ease: "Quart.easeOut",
+    });
+
+    const verdict = draw ? "DRAW" : playerWon ? "DRIVER VICTORY" : "RIVAL VICTORY";
+    this.add
+      .text(cx, 118, verdict, {
+        fontFamily: BROADCAST_FONT,
+        fontSize: "34px",
+        fontStyle: "800",
+        color: accentCss,
+        letterSpacing: 2,
+      })
+      .setOrigin(0.5);
+
+    const driverRow = createDataRow(this, cx, 182, "DRIVER SCORE", `${result.driverScore}`, {
+      valueColor: BC.css.GOLD,
+      width: 420,
+    });
+    const rivalRow = createDataRow(this, cx, 222, "RIVAL SCORE", `${result.rivalScore}`, {
+      valueColor: accentCss,
+      width: 420,
+    });
+    driverRow.container.setAlpha(0);
+    rivalRow.container.setAlpha(0);
+    this.tweens.add({
+      targets: [driverRow.container, rivalRow.container],
+      alpha: 1,
+      duration: 350,
+      delay: 260,
+      ease: "Quart.easeOut",
+    });
+
+    const banner = createAlertBanner(
+      this,
+      284,
+      draw
+        ? "BOTH SIDES DEADLOCKED THE DISTRICT"
+        : playerWon
+          ? "THE DRIVER OWNS THE ROUTE"
+          : "THE RIVAL TOOK THE BOARD",
+      {
+        bgColor: accentColor,
+      },
+    );
+    banner.setAlpha(0);
+    this.tweens.add({
+      targets: banner,
+      alpha: 1,
+      duration: 300,
+      delay: 420,
+      ease: "Quart.easeOut",
+    });
+
+    const buttonDefs = [
+      { text: "RETURN TO RELAY", action: "relay" },
+      { text: "MAIN MENU", action: "menu" },
+    ];
+
+    buttonDefs.forEach((def, i) => {
+      const by = 360 + i * 52;
+      const btn = createBroadcastButton(this, cx, by, def.text, {
+        width: 300,
+        height: 44,
+      });
+      this.buttons.push(btn);
+      btn.container.setAlpha(0);
+      this.tweens.add({
+        targets: btn.container,
+        alpha: 1,
+        duration: 320,
+        delay: 520 + i * 90,
+        ease: "Quart.easeOut",
+      });
+      btn.hitArea.on("pointerover", () => {
+        this.selectedIndex = i;
+        this.updateButtonSelection();
+      });
+      btn.hitArea.on("pointerdown", () => {
+        if (this.transitioning) return;
+        this.transitioning = true;
+        if (def.action === "relay") {
+          mergeCoopRuntimeState(this.registry, {
+            phase: "linked",
+            statusMessage: "Versus round complete. Ready for another relay launch.",
+          });
+          fadeToScene(this, "OnlineCoopScene");
+          return;
+        }
+        this.gameState.reset();
+        fadeToScene(this, "WelcomeScene");
+      });
+    });
+
+    this.time.delayedCall(650, () => this.updateButtonSelection());
+    this.input.keyboard?.on("keydown-UP", () => {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.updateButtonSelection();
+    });
+    this.input.keyboard?.on("keydown-DOWN", () => {
+      this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
+      this.updateButtonSelection();
+    });
+    this.input.keyboard?.on("keydown-W", () => {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.updateButtonSelection();
+    });
+    this.input.keyboard?.on("keydown-S", () => {
+      this.selectedIndex = Math.min(buttonDefs.length - 1, this.selectedIndex + 1);
+      this.updateButtonSelection();
+    });
+    this.input.keyboard?.on("keydown-ENTER", () => {
+      this.buttons[this.selectedIndex]?.hitArea.emit("pointerdown");
+    });
+    this.input.keyboard?.on("keydown-SPACE", () => {
+      this.buttons[this.selectedIndex]?.hitArea.emit("pointerdown");
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.removeAllListeners();
     });
   }
 }

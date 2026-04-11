@@ -107,6 +107,7 @@ export class WelcomeScene extends Phaser.Scene {
     // ── Menu buttons: broadcast-style rows ──
     const menuDefs = [
       { text: "NEW GAME", scene: "VehicleSelectScene" },
+      { text: "ONLINE PLAY", scene: "OnlineCoopScene" },
       { text: "CONTROLS", action: "controls" },
       { text: "CREDITS", action: "credits" },
     ];

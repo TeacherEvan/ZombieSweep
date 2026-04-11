@@ -55,6 +55,10 @@ export class GameState {
     this.lives = Math.max(0, this.lives - 1);
   }
 
+  gainLife(): void {
+    this.lives = Math.min(GAME.STARTING_LIVES, this.lives + 1);
+  }
+
   cancelSubscription(): void {
     this.subscribers = Math.max(0, this.subscribers - 1);
   }

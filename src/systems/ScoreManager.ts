@@ -29,6 +29,10 @@ export class ScoreManager {
   }
 
   comboBonus(points: number): void {
+    this.bonus(points);
+  }
+
+  bonus(points: number): void {
     this.gameState.addRawScore(points);
   }
 

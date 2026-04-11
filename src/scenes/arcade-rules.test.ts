@@ -66,10 +66,13 @@ describe("arcade-rules", () => {
   describe("zombie wave settings", () => {
     it("increases pressure later in the week", () => {
       const early = getZombieWaveSettings(1, Difficulty.EasyStreet);
-      const late = getZombieWaveSettings(7, Difficulty.HardWay);
+      const late = getZombieWaveSettings(7, Difficulty.HardWay, 8, 18);
 
       expect(late.count).toBeGreaterThan(early.count);
       expect(late.interval).toBeLessThan(early.interval);
+      expect(late.eliteChance).toBeGreaterThan(early.eliteChance);
+      expect(late.pickupDropChance).toBeGreaterThan(early.pickupDropChance);
+      expect(late.surgeThreshold).toBeLessThanOrEqual(early.surgeThreshold);
     });
   });
 });

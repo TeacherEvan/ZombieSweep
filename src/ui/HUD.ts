@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { GAME } from "../config/constants";
 import { DayManager } from "../systems/DayManager";
 import { GameState } from "../systems/GameState";
+import { CombatAlertTone } from "../scenes/combat-authorship";
 import {
   isTouchPrimary,
   prefersReducedMotion,
@@ -23,6 +24,8 @@ export class HUD {
   private subscribersText!: Phaser.GameObjects.Text;
   private deliveryBar!: Phaser.GameObjects.Graphics;
   private deliveryCountText!: Phaser.GameObjects.Text;
+  private combatAlertBg!: Phaser.GameObjects.Graphics;
+  private combatAlertText!: Phaser.GameObjects.Text;
 
   private paperCount: number;
   private ammoCount: number;
@@ -48,6 +51,8 @@ export class HUD {
   private deliveryTotal = 0;
   private lastDeliveryCompleted = -1;
   private cachedDayString: string;
+  private combatAlertExpiresAt = 0;
+  private combatAlertTone: CombatAlertTone = "danger";
 
   constructor(
     scene: Phaser.Scene,
@@ -240,6 +245,24 @@ export class HUD {
       .setOrigin(0, 0.5);
     this.drawDeliveryBar(x);
 
+    this.combatAlertBg = this.scene.add.graphics();
+    this.combatAlertBg.setScrollFactor(0).setDepth(101).setVisible(false);
+    this.combatAlertText = this.scene.add
+      .text(width / 2, this.hudHeight + Math.round(16 * this.viewportScale), "", {
+        fontFamily: BROADCAST_FONT,
+        fontSize: this.compactLayout
+          ? `${Math.round(12 * this.viewportScale)}px`
+          : "13px",
+        fontStyle: "800",
+        color: BC.css.RED_GLOW,
+        letterSpacing: 1.4,
+        align: "center",
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(102)
+      .setVisible(false);
+
     // Set initial values (avoids empty text on first frame)
     this.scoreText.setText(`${this.gameState.score}`);
     this.papersText.setText(`${this.paperCount}`);
@@ -258,6 +281,22 @@ export class HUD {
   setDeliveryProgress(completed: number, total: number): void {
     this.deliveryCompleted = completed;
     this.deliveryTotal = total;
+  }
+
+  setCombatAlert(
+    message: string,
+    tone: CombatAlertTone = "danger",
+    durationMs = 1800,
+  ): void {
+    this.combatAlertTone = tone;
+    this.combatAlertExpiresAt = this.scene.time.now + durationMs;
+    this.combatAlertText.setText(message).setVisible(true).setAlpha(1);
+    this.combatAlertBg.setVisible(true).setAlpha(1);
+    this.redrawCombatAlert();
+
+    if (!prefersReducedMotion()) {
+      pulse(this.scene, this.combatAlertText, 1.08, 140);
+    }
   }
 
   update(): void {
@@ -337,6 +376,15 @@ export class HUD {
       }
       this.lastDeliveryCompleted = this.deliveryCompleted;
     }
+
+    if (
+      this.combatAlertExpiresAt > 0 &&
+      this.scene.time.now >= this.combatAlertExpiresAt
+    ) {
+      this.combatAlertExpiresAt = 0;
+      this.combatAlertBg.setVisible(false);
+      this.combatAlertText.setVisible(false);
+    }
   }
 
   private drawLives(): void {
@@ -386,5 +434,38 @@ export class HUD {
         `${this.deliveryCompleted}/${this.deliveryTotal}`,
       );
     }
+  }
+
+  private redrawCombatAlert(): void {
+    const color =
+      this.combatAlertTone === "success"
+        ? BC.GREEN
+        : this.combatAlertTone === "warning"
+          ? BC.GOLD
+          : BC.RED;
+    const cssColor =
+      this.combatAlertTone === "success"
+        ? BC.css.GREEN_BRIGHT
+        : this.combatAlertTone === "warning"
+          ? BC.css.GOLD_GLOW
+          : BC.css.RED_GLOW;
+    const width = Math.max(
+      Math.round(180 * this.viewportScale),
+      Math.round(this.combatAlertText.width + 28),
+    );
+    const height = Math.round((this.compactLayout ? 24 : 22) * this.viewportScale);
+    const x = this.scene.cameras.main.width / 2 - width / 2;
+    const y = this.hudHeight + Math.round(6 * this.viewportScale);
+
+    this.combatAlertBg.clear();
+    this.combatAlertBg.fillStyle(color, 0.16);
+    this.combatAlertBg.fillRoundedRect(x, y, width, height, 5);
+    this.combatAlertBg.lineStyle(1, color, 0.82);
+    this.combatAlertBg.strokeRoundedRect(x, y, width, height, 5);
+    this.combatAlertText.setColor(cssColor);
+    this.combatAlertText.setPosition(
+      this.scene.cameras.main.width / 2,
+      y + height / 2,
+    );
   }
 }

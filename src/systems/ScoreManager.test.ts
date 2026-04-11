@@ -60,6 +60,12 @@ describe("ScoreManager", () => {
       scoreManager.comboBonus(30);
       expect(gameState.score).toBe(30);
     });
+
+    it("bonus() adds raw score without difficulty scaling", () => {
+      gameState.configure(Difficulty.HardWay, VehicleType.Bicycle);
+      scoreManager.bonus(45);
+      expect(gameState.score).toBe(45);
+    });
   });
 
   describe("non-subscriber damage scoring", () => {

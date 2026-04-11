@@ -1,5 +1,7 @@
 import Phaser from "phaser";
+import { GAME } from "../config/constants";
 import { Difficulty } from "../config/difficulty";
+import { getCoopSession, getCoopRuntimeState } from "../network/runtime";
 import { VehicleType } from "../config/vehicles";
 import { getOrCreateGameState } from "../systems/GameState";
 import { BC, BROADCAST_FONT, createChyron } from "../ui/broadcast-styles";
@@ -331,13 +333,30 @@ export class DifficultySelectScene extends Phaser.Scene {
       .setAlpha(0)
       .setDepth(100);
 
+    const coopRuntime = getCoopRuntimeState(this.registry);
+    const coopSession = getCoopSession(this.registry);
     this.tweens.add({
       targets: confirmText,
       alpha: 1,
       duration: 200,
       yoyo: true,
       hold: 300,
-      onComplete: () => fadeToScene(this, "GameScene"),
+      onComplete: () => {
+        if (coopRuntime?.enabled && coopRuntime.role === "driver") {
+          coopSession?.send({
+            type: "host-game-config",
+            config: {
+              mode: coopRuntime.mode,
+              difficulty,
+              vehicle: this.vehicle,
+              day: 1,
+              subscribers: GAME.STARTING_SUBSCRIBERS,
+            },
+          });
+          coopSession?.send({ type: "host-start-game" });
+        }
+        fadeToScene(this, "GameScene");
+      },
     });
   }
 }
