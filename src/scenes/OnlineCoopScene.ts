@@ -1,15 +1,15 @@
-import Phaser from "phaser";
-import { getOrCreateGameState } from "../systems/GameState";
+import Phaser from 'phaser';
+import { getOrCreateGameState } from '../systems/GameState';
 import {
   BC,
   BROADCAST_FONT,
   createBroadcastButton,
   createBroadcastField,
   createChyron,
-} from "../ui/broadcast-styles";
-import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
-import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
-import { MultiplayerSession } from "../network/MultiplayerSession";
+} from '../ui/broadcast-styles';
+import { resolveBroadcastViewportContext } from '../ui/broadcast-viewport';
+import { fadeIn, fadeToScene, isTouchPrimary } from '../utils/animations';
+import { MultiplayerSession } from '../network/MultiplayerSession';
 import {
   clearCoopRuntime,
   getCoopRuntimeState,
@@ -17,17 +17,16 @@ import {
   mergeCoopRuntimeState,
   setCoopRuntimeState,
   setCoopSession,
-} from "../network/runtime";
-import { MultiplayerMode, ServerMessage } from "../network/protocol";
+} from '../network/runtime';
+import type { MultiplayerMode, ServerMessage } from '../network/protocol';
+import { isFeatureEnabled } from '../config/featureFlags';
 
-const DEFAULT_SERVER_URL = "ws://localhost:2567";
-const SERVER_URL_STORAGE_KEY = "zombiesweep.coopServerUrl";
+const DEFAULT_SERVER_URL = 'ws://localhost:2567';
+const SERVER_URL_STORAGE_KEY = 'zombiesweep.coopServerUrl';
 
-type FieldKey = "serverUrl" | "roomCode";
-type MenuAction = "mode" | "host" | "join" | "disconnect" | "back";
-type FocusableControl =
-  | { type: "field"; key: FieldKey }
-  | { type: "button"; action: MenuAction };
+type FieldKey = 'serverUrl' | 'roomCode';
+type MenuAction = 'mode' | 'host' | 'join' | 'disconnect' | 'back';
+type FocusableControl = { type: 'field'; key: FieldKey } | { type: 'button'; action: MenuAction };
 
 export class OnlineCoopScene extends Phaser.Scene {
   private selectedIndex = 0;
@@ -41,10 +40,10 @@ export class OnlineCoopScene extends Phaser.Scene {
   private unsubscribeMessage?: () => void;
   private unsubscribeClose?: () => void;
   private transitioning = false;
-  private sessionMode: MultiplayerMode = "coop";
+  private sessionMode: MultiplayerMode = 'coop';
 
   constructor() {
-    super({ key: "OnlineCoopScene" });
+    super({ key: 'OnlineCoopScene' });
   }
 
   create(): void {
@@ -52,7 +51,7 @@ export class OnlineCoopScene extends Phaser.Scene {
     const viewport = resolveBroadcastViewportContext(
       window.innerWidth,
       window.innerHeight,
-      isTouchPrimary(),
+      isTouchPrimary()
     );
     const compact = viewport.isCompact;
     const scale = viewport.uiScale;
@@ -63,7 +62,7 @@ export class OnlineCoopScene extends Phaser.Scene {
     this.focusOrder = [];
     this.editingField = null;
     this.transitioning = false;
-    this.sessionMode = "coop";
+    this.sessionMode = 'coop';
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
 
@@ -76,53 +75,47 @@ export class OnlineCoopScene extends Phaser.Scene {
     borders.fillRect(0, 0, width, 3);
     borders.fillRect(0, height - 3, width, 3);
 
-    createChyron(
-      this,
-      compact ? 44 : 48,
-      "ONLINE RELAY",
-      "DESKTOP CO-OP / VERSUS SESSION",
-      {
-        titleSize: compact ? `${Math.round(18 * scale)}px` : "22px",
-        subtitleSize: compact ? `${Math.round(10 * scale)}px` : "11px",
-      },
-    );
+    createChyron(this, compact ? 44 : 48, 'ONLINE RELAY', 'DESKTOP CO-OP / VERSUS SESSION', {
+      titleSize: compact ? `${Math.round(18 * scale)}px` : '22px',
+      subtitleSize: compact ? `${Math.round(10 * scale)}px` : '11px',
+    });
 
     this.add
-      .text(width / 2, compact ? 108 : 120, "HOST OR JOIN A RELAY ROOM", {
+      .text(width / 2, compact ? 108 : 120, 'HOST OR JOIN A RELAY ROOM', {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? `${Math.round(20 * scale)}px` : "24px",
-        fontStyle: "800",
+        fontSize: compact ? `${Math.round(20 * scale)}px` : '24px',
+        fontStyle: '800',
         color: BC.TEXT,
         letterSpacing: 2,
       })
       .setOrigin(0.5);
 
     this.statusText = this.add
-      .text(width / 2, compact ? 164 : 178, "Relay idle. Host a room or join one.", {
+      .text(width / 2, compact ? 164 : 178, 'Relay idle. Host a room or join one.', {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? `${Math.round(13 * scale)}px` : "14px",
-        fontStyle: "600",
+        fontSize: compact ? `${Math.round(13 * scale)}px` : '14px',
+        fontStyle: '600',
         color: BC.TEXT_DIM,
-        align: "center",
+        align: 'center',
         wordWrap: { width: compact ? 420 : 560 },
       })
       .setOrigin(0.5);
 
     this.roomText = this.add
-      .text(width / 2, compact ? 200 : 214, "----", {
+      .text(width / 2, compact ? 200 : 214, '----', {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? `${Math.round(24 * scale)}px` : "30px",
-        fontStyle: "800",
+        fontSize: compact ? `${Math.round(24 * scale)}px` : '30px',
+        fontStyle: '800',
         color: BC.css.GOLD,
         letterSpacing: 6,
       })
       .setOrigin(0.5);
 
     this.roleText = this.add
-      .text(width / 2, compact ? 228 : 246, "ROLE: STANDBY", {
+      .text(width / 2, compact ? 228 : 246, 'ROLE: STANDBY', {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? `${Math.round(10 * scale)}px` : "11px",
-        fontStyle: "700",
+        fontSize: compact ? `${Math.round(10 * scale)}px` : '11px',
+        fontStyle: '700',
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
       })
@@ -136,48 +129,41 @@ export class OnlineCoopScene extends Phaser.Scene {
       this,
       width / 2,
       fieldY,
-      "Relay URL",
+      'Relay URL',
       window.localStorage.getItem(SERVER_URL_STORAGE_KEY) ?? DEFAULT_SERVER_URL,
       {
         width: fieldWidth,
-        valueSize: compact ? `${Math.round(14 * scale)}px` : "16px",
+        valueSize: compact ? `${Math.round(14 * scale)}px` : '16px',
         placeholder: DEFAULT_SERVER_URL,
-      },
+      }
     );
-    const roomField = createBroadcastField(
-      this,
-      width / 2,
-      fieldY + fieldGap,
-      "Room Code",
-      "",
-      {
-        width: fieldWidth,
-        placeholder: "DRIVER CODE",
-      },
-    );
-
-    this.fields.set("serverUrl", serverField);
-    this.fields.set("roomCode", roomField);
-    this.focusOrder.push({ type: "field", key: "serverUrl" });
-    this.focusOrder.push({ type: "field", key: "roomCode" });
-
-    serverField.hitArea.on("pointerover", () => this.selectControl(0));
-    roomField.hitArea.on("pointerover", () => this.selectControl(1));
-    serverField.hitArea.on("pointerdown", () => {
-      this.selectControl(0);
-      this.beginFieldEdit("serverUrl");
+    const roomField = createBroadcastField(this, width / 2, fieldY + fieldGap, 'Room Code', '', {
+      width: fieldWidth,
+      placeholder: 'DRIVER CODE',
     });
-    roomField.hitArea.on("pointerdown", () => {
+
+    this.fields.set('serverUrl', serverField);
+    this.fields.set('roomCode', roomField);
+    this.focusOrder.push({ type: 'field', key: 'serverUrl' });
+    this.focusOrder.push({ type: 'field', key: 'roomCode' });
+
+    serverField.hitArea.on('pointerover', () => this.selectControl(0));
+    roomField.hitArea.on('pointerover', () => this.selectControl(1));
+    serverField.hitArea.on('pointerdown', () => {
+      this.selectControl(0);
+      this.beginFieldEdit('serverUrl');
+    });
+    roomField.hitArea.on('pointerdown', () => {
       this.selectControl(1);
-      this.beginFieldEdit("roomCode");
+      this.beginFieldEdit('roomCode');
     });
 
     const menuDefs: { text: string; action: MenuAction }[] = [
-      { text: this.getModeButtonLabel(), action: "mode" },
-      { text: "HOST SESSION", action: "host" },
-      { text: "JOIN SESSION", action: "join" },
-      { text: "DISCONNECT", action: "disconnect" },
-      { text: "BACK", action: "back" },
+      { text: this.getModeButtonLabel(), action: 'mode' },
+      { text: 'HOST SESSION', action: 'host' },
+      { text: 'JOIN SESSION', action: 'join' },
+      { text: 'DISCONNECT', action: 'disconnect' },
+      { text: 'BACK', action: 'back' },
     ];
     const btnWidth = compact ? Math.round(330 * scale) : 300;
     const btnHeight = compact ? Math.round(48 * scale) : 50;
@@ -185,41 +171,40 @@ export class OnlineCoopScene extends Phaser.Scene {
     const btnGap = compact ? Math.round(50 * scale) : 56;
 
     menuDefs.forEach((item, i) => {
-      const btn = createBroadcastButton(
-        this,
-        width / 2,
-        btnStartY + i * btnGap,
-        item.text,
-        {
-          width: btnWidth,
-          height: btnHeight,
-          labelSize: compact ? `${Math.round(17 * scale)}px` : "17px",
-        },
-      );
+      const btn = createBroadcastButton(this, width / 2, btnStartY + i * btnGap, item.text, {
+        width: btnWidth,
+        height: btnHeight,
+        labelSize: compact ? `${Math.round(17 * scale)}px` : '17px',
+      });
       this.buttons.set(item.action, btn);
-      this.focusOrder.push({ type: "button", action: item.action });
-      btn.hitArea.on("pointerover", () => this.selectControl(i + 2));
-      btn.hitArea.on("pointerdown", () => {
+      this.focusOrder.push({ type: 'button', action: item.action });
+      btn.hitArea.on('pointerover', () => this.selectControl(i + 2));
+      btn.hitArea.on('pointerdown', () => {
         this.selectControl(i + 2);
         void this.handleMenuAction(item.action);
       });
     });
 
     this.add
-      .text(width / 2, compact ? height - 34 : height - 40, "ARROWS TO NAVIGATE  •  ENTER TO EDIT OR ACTIVATE  •  ESC TO CANCEL EDIT", {
-        fontFamily: BROADCAST_FONT,
-        fontSize: compact ? `${Math.round(9 * scale)}px` : "10px",
-        fontStyle: "700",
-        color: BC.TEXT_MUTED,
-        letterSpacing: 1.2,
-      })
+      .text(
+        width / 2,
+        compact ? height - 34 : height - 40,
+        'ARROWS TO NAVIGATE  •  ENTER TO EDIT OR ACTIVATE  •  ESC TO CANCEL EDIT',
+        {
+          fontFamily: BROADCAST_FONT,
+          fontSize: compact ? `${Math.round(9 * scale)}px` : '10px',
+          fontStyle: '700',
+          color: BC.TEXT_MUTED,
+          letterSpacing: 1.2,
+        }
+      )
       .setOrigin(0.5);
 
     this.updateSelection();
     this.attachExistingSession();
     this.bindExistingSession();
 
-    this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       this.handleKeyboardInput(event);
     });
 
@@ -237,18 +222,18 @@ export class OnlineCoopScene extends Phaser.Scene {
     }
 
     switch (event.code) {
-      case "ArrowUp":
+      case 'ArrowUp':
         event.preventDefault();
         this.selectedIndex = Math.max(0, this.selectedIndex - 1);
         this.updateSelection();
         return;
-      case "ArrowDown":
+      case 'ArrowDown':
         event.preventDefault();
         this.selectedIndex = Math.min(this.focusOrder.length - 1, this.selectedIndex + 1);
         this.updateSelection();
         return;
-      case "Enter":
-      case "Space":
+      case 'Enter':
+      case 'Space':
         event.preventDefault();
         this.activateSelection();
         return;
@@ -257,7 +242,7 @@ export class OnlineCoopScene extends Phaser.Scene {
     }
 
     const selected = this.focusOrder[this.selectedIndex];
-    if (selected?.type === "field" && event.key.length === 1) {
+    if (selected?.type === 'field' && event.key.length === 1) {
       this.beginFieldEdit(selected.key);
       this.applyFieldCharacter(selected.key, event.key);
     }
@@ -268,17 +253,17 @@ export class OnlineCoopScene extends Phaser.Scene {
     if (!fieldKey) return;
 
     switch (event.code) {
-      case "Escape":
+      case 'Escape':
         event.preventDefault();
         this.editingField = null;
-        this.setStatus("Edit cancelled.");
+        this.setStatus('Edit cancelled.');
         this.updateSelection();
         return;
-      case "Enter":
+      case 'Enter':
         event.preventDefault();
         this.finishFieldEdit();
         return;
-      case "Backspace": {
+      case 'Backspace': {
         event.preventDefault();
         const field = this.fields.get(fieldKey);
         if (!field) return;
@@ -308,37 +293,40 @@ export class OnlineCoopScene extends Phaser.Scene {
     if (!fieldKey) return;
 
     const field = this.fields.get(fieldKey);
-    const normalized = this.sanitizeFieldValue(fieldKey, field?.getValue() ?? "");
+    const normalized = this.sanitizeFieldValue(fieldKey, field?.getValue() ?? '');
     field?.setValue(normalized);
     this.editingField = null;
 
-    if (fieldKey === "serverUrl" && normalized) {
+    if (fieldKey === 'serverUrl' && normalized) {
       window.localStorage.setItem(SERVER_URL_STORAGE_KEY, normalized);
     }
 
     this.setStatus(
-      fieldKey === "serverUrl"
-        ? "Relay URL updated."
+      fieldKey === 'serverUrl'
+        ? 'Relay URL updated.'
         : normalized
           ? `Room code staged: ${normalized}`
-          : "Room code cleared.",
+          : 'Room code cleared.'
     );
     this.updateSelection();
   }
 
   private sanitizeFieldValue(fieldKey: FieldKey, value: string): string {
-    if (fieldKey === "roomCode") {
-      return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    if (fieldKey === 'roomCode') {
+      return value
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .slice(0, 6);
     }
 
-    return value.replace(/\s+/g, "").slice(0, 120);
+    return value.replace(/\s+/g, '').slice(0, 120);
   }
 
   private activateSelection(): void {
     const selected = this.focusOrder[this.selectedIndex];
     if (!selected) return;
 
-    if (selected.type === "field") {
+    if (selected.type === 'field') {
       this.beginFieldEdit(selected.key);
       return;
     }
@@ -354,9 +342,9 @@ export class OnlineCoopScene extends Phaser.Scene {
   private beginFieldEdit(fieldKey: FieldKey): void {
     this.editingField = fieldKey;
     this.setStatus(
-      fieldKey === "serverUrl"
-        ? "Editing relay URL. Press Enter to apply."
-        : "Editing room code. Press Enter to apply.",
+      fieldKey === 'serverUrl'
+        ? 'Editing relay URL. Press Enter to apply.'
+        : 'Editing room code. Press Enter to apply.'
     );
     this.updateSelection();
   }
@@ -364,14 +352,10 @@ export class OnlineCoopScene extends Phaser.Scene {
   private updateSelection(): void {
     const selected = this.focusOrder[this.selectedIndex];
     this.fields.forEach((field, key) => {
-      field.setSelected(
-        selected?.type === "field" && selected.key === key,
-      );
+      field.setSelected(selected?.type === 'field' && selected.key === key);
     });
     this.buttons.forEach((button, action) => {
-      button.setSelected(
-        selected?.type === "button" && selected.action === action,
-      );
+      button.setSelected(selected?.type === 'button' && selected.action === action);
     });
   }
 
@@ -381,8 +365,8 @@ export class OnlineCoopScene extends Phaser.Scene {
 
     this.sessionMode = runtime.mode;
     this.updateModeButtonLabel();
-    this.fields.get("serverUrl")?.setValue(runtime.serverUrl);
-    this.fields.get("roomCode")?.setValue(runtime.roomCode);
+    this.fields.get('serverUrl')?.setValue(runtime.serverUrl);
+    this.fields.get('roomCode')?.setValue(runtime.roomCode);
     this.updateRoomDisplay(runtime.roomCode);
     this.roleText.setText(`ROLE: ${this.describeRole(runtime)}`);
     this.setStatus(runtime.statusMessage || this.describeRuntime(runtime), false);
@@ -395,35 +379,35 @@ export class OnlineCoopScene extends Phaser.Scene {
   }
 
   private async handleMenuAction(action: MenuAction): Promise<void> {
-    if (action === "mode") {
+    if (action === 'mode') {
       this.toggleMode();
       return;
     }
 
-    if (action === "back") {
+    if (action === 'back') {
       this.releaseSession(true);
-      fadeToScene(this, "WelcomeScene");
+      fadeToScene(this, 'WelcomeScene');
       return;
     }
 
-    if (action === "disconnect") {
+    if (action === 'disconnect') {
       this.releaseSession(true);
-      this.updateRoomDisplay("");
-      this.roleText.setText("ROLE: STANDBY");
-      this.setStatus("Session cleared. You can host or join another room.");
+      this.updateRoomDisplay('');
+      this.roleText.setText('ROLE: STANDBY');
+      this.setStatus('Session cleared. You can host or join another room.');
       return;
     }
 
     const serverUrl = this.getServerUrlValue();
     if (!serverUrl) {
-      this.setStatus("Enter a relay URL before connecting.");
-      this.beginFieldEdit("serverUrl");
+      this.setStatus('Enter a relay URL before connecting.');
+      this.beginFieldEdit('serverUrl');
       return;
     }
 
-    if (action === "join" && !this.getRoomCodeValue()) {
-      this.setStatus("Enter a driver room code before joining.");
-      this.beginFieldEdit("roomCode");
+    if (action === 'join' && !this.getRoomCodeValue()) {
+      this.setStatus('Enter a driver room code before joining.');
+      this.beginFieldEdit('roomCode');
       return;
     }
 
@@ -436,180 +420,176 @@ export class OnlineCoopScene extends Phaser.Scene {
       setCoopSession(this.registry, session);
       this.bindSession(session);
 
-      if (action === "host") {
+      if (action === 'host') {
         this.setStatus(
-          this.sessionMode === "versus"
-            ? "Establishing versus uplink..."
-            : "Establishing room uplink...",
+          this.sessionMode === 'versus'
+            ? 'Establishing versus uplink...'
+            : 'Establishing room uplink...'
         );
-        session.send({ type: "host-room", mode: this.sessionMode });
+        session.send({ type: 'host-room', mode: this.sessionMode });
         return;
       }
 
       this.setStatus(`Joining room ${this.getRoomCodeValue()}...`);
-      session.send({ type: "join-room", roomCode: this.getRoomCodeValue() });
+      session.send({ type: 'join-room', roomCode: this.getRoomCodeValue() });
     } catch (error) {
-      this.setStatus(
-        error instanceof Error ? error.message : "Unable to reach the relay.",
-      );
+      this.setStatus(error instanceof Error ? error.message : 'Unable to reach the relay.');
     }
   }
 
   private bindSession(session: MultiplayerSession): void {
     this.unsubscribeMessage?.();
     this.unsubscribeClose?.();
-    this.unsubscribeMessage = session.onMessage((message) => {
+    this.unsubscribeMessage = session.onMessage(message => {
       this.handleServerMessage(message);
     });
     this.unsubscribeClose = session.onClose(() => {
       setCoopSession(this.registry, null);
       const runtime = mergeCoopRuntimeState(this.registry, {
         peerConnected: false,
-        phase: "disconnected",
-        statusMessage: "Relay disconnected. You can reconnect from this screen.",
+        phase: 'disconnected',
+        statusMessage: 'Relay disconnected. You can reconnect from this screen.',
       });
       if (!this.transitioning) {
-        this.roleText.setText(`ROLE: ${runtime ? this.describeRole(runtime) : "STANDBY"}`);
-        this.setStatus("Relay disconnected. You can reconnect from this screen.", false);
+        this.roleText.setText(`ROLE: ${runtime ? this.describeRole(runtime) : 'STANDBY'}`);
+        this.setStatus('Relay disconnected. You can reconnect from this screen.', false);
       }
     });
   }
 
   private handleServerMessage(message: ServerMessage): void {
     switch (message.type) {
-      case "room-hosted": {
+      case 'room-hosted': {
         const serverUrl = this.getServerUrlValue();
         this.sessionMode = message.mode;
         this.updateModeButtonLabel();
         setCoopRuntimeState(this.registry, {
           enabled: true,
           mode: message.mode,
-          role: "driver",
+          role: 'driver',
           roomCode: message.roomCode,
           serverUrl,
           peerConnected: false,
-          phase: "waiting",
+          phase: 'waiting',
           statusMessage:
-            message.mode === "versus"
-              ? "Versus room live. Share the code and wait for your rival."
-              : "Room live. Share the code and wait for a gunner.",
+            message.mode === 'versus'
+              ? 'Versus room live. Share the code and wait for your rival.'
+              : 'Room live. Share the code and wait for a gunner.',
         });
-        this.fields.get("roomCode")?.setValue(message.roomCode);
+        this.fields.get('roomCode')?.setValue(message.roomCode);
         this.updateRoomDisplay(message.roomCode);
-        this.roleText.setText("ROLE: DRIVER");
+        this.roleText.setText('ROLE: DRIVER');
         this.setStatus(
-          message.mode === "versus"
-            ? "Versus room live. Share the code and wait for your rival."
-            : "Room live. Share the code and wait for a gunner.",
-          false,
+          message.mode === 'versus'
+            ? 'Versus room live. Share the code and wait for your rival.'
+            : 'Room live. Share the code and wait for a gunner.',
+          false
         );
         break;
       }
-      case "room-joined": {
+      case 'room-joined': {
         const serverUrl = this.getServerUrlValue();
         this.sessionMode = message.mode;
         this.updateModeButtonLabel();
         setCoopRuntimeState(this.registry, {
           enabled: true,
           mode: message.mode,
-          role: "gunner",
+          role: 'gunner',
           roomCode: message.roomCode,
           serverUrl,
           peerConnected: true,
-          phase: "linked",
+          phase: 'linked',
           statusMessage:
-            message.mode === "versus"
-              ? "Linked as rival. Waiting for the driver loadout."
-              : "Linked as gunner. Waiting for the driver loadout.",
+            message.mode === 'versus'
+              ? 'Linked as rival. Waiting for the driver loadout.'
+              : 'Linked as gunner. Waiting for the driver loadout.',
         });
-        this.fields.get("roomCode")?.setValue(message.roomCode);
+        this.fields.get('roomCode')?.setValue(message.roomCode);
         this.updateRoomDisplay(message.roomCode);
-        this.roleText.setText(
-          `ROLE: ${message.mode === "versus" ? "RIVAL" : "GUNNER"}`,
-        );
+        this.roleText.setText(`ROLE: ${message.mode === 'versus' ? 'RIVAL' : 'GUNNER'}`);
         this.setStatus(
-          message.mode === "versus"
-            ? "Linked as rival. Waiting for the driver loadout."
-            : "Linked as gunner. Waiting for the driver loadout.",
-          false,
+          message.mode === 'versus'
+            ? 'Linked as rival. Waiting for the driver loadout.'
+            : 'Linked as gunner. Waiting for the driver loadout.',
+          false
         );
         break;
       }
-      case "peer-status": {
+      case 'peer-status': {
         const runtime = mergeCoopRuntimeState(this.registry, {
           peerConnected: message.connected,
-          phase: message.connected ? "linked" : "waiting",
+          phase: message.connected ? 'linked' : 'waiting',
           statusMessage: message.connected
-            ? this.sessionMode === "versus"
-              ? "Rival linked. Opening dispatch controls..."
-              : "Gunner linked. Opening dispatch controls..."
-            : this.sessionMode === "versus"
-              ? "Rival disconnected. Waiting for reconnection."
-              : "Gunner disconnected. Waiting for reconnection.",
+            ? this.sessionMode === 'versus'
+              ? 'Rival linked. Opening dispatch controls...'
+              : 'Gunner linked. Opening dispatch controls...'
+            : this.sessionMode === 'versus'
+              ? 'Rival disconnected. Waiting for reconnection.'
+              : 'Gunner disconnected. Waiting for reconnection.',
         });
         if (!runtime) break;
         this.roleText.setText(`ROLE: ${this.describeRole(runtime)}`);
         this.setStatus(runtime.statusMessage, false);
-        if (runtime.role === "driver" && message.connected && !this.transitioning) {
+        if (runtime.role === 'driver' && message.connected && !this.transitioning) {
           this.transitioning = true;
           this.time.delayedCall(300, () => {
-            fadeToScene(this, "VehicleSelectScene");
+            fadeToScene(this, 'VehicleSelectScene');
           });
         }
         break;
       }
-      case "game-config": {
+      case 'game-config': {
         const gameState = getOrCreateGameState(this.registry);
         gameState.reset();
         gameState.day = message.config.day;
         gameState.subscribers = message.config.subscribers;
         gameState.configure(message.config.difficulty, message.config.vehicle);
-        this.registry.set("gameState", gameState);
+        this.registry.set('gameState', gameState);
         mergeCoopRuntimeState(this.registry, {
           mode: message.config.mode,
-          phase: "launching",
+          phase: 'launching',
           statusMessage:
-            message.config.mode === "versus"
-              ? "Versus loadout locked. Awaiting launch..."
-              : "Driver locked a loadout. Awaiting launch...",
+            message.config.mode === 'versus'
+              ? 'Versus loadout locked. Awaiting launch...'
+              : 'Driver locked a loadout. Awaiting launch...',
         });
         this.sessionMode = message.config.mode;
         this.updateModeButtonLabel();
         this.setStatus(
-          message.config.mode === "versus"
-            ? "Versus loadout locked. Awaiting launch..."
-            : "Driver locked a loadout. Awaiting launch...",
-          false,
+          message.config.mode === 'versus'
+            ? 'Versus loadout locked. Awaiting launch...'
+            : 'Driver locked a loadout. Awaiting launch...',
+          false
         );
         break;
       }
-      case "start-game":
+      case 'start-game':
         mergeCoopRuntimeState(this.registry, {
-          phase: "in-match",
-          statusMessage: "Match live. Syncing driver route data.",
+          phase: 'in-match',
+          statusMessage: 'Match live. Syncing driver route data.',
         });
         if (!this.transitioning) {
           this.transitioning = true;
-          fadeToScene(this, "GameScene");
+          fadeToScene(this, 'GameScene');
         }
         break;
-      case "session-ended":
+      case 'session-ended':
         this.releaseSession(true);
-        this.updateRoomDisplay("");
-        this.roleText.setText("ROLE: STANDBY");
+        this.updateRoomDisplay('');
+        this.roleText.setText('ROLE: STANDBY');
         this.setStatus(message.reason);
         break;
-      case "match-result":
+      case 'match-result':
         break;
-      case "error":
+      case 'error':
         mergeCoopRuntimeState(this.registry, {
-          phase: "error",
+          phase: 'error',
           statusMessage: message.message,
         });
         this.setStatus(message.message, false);
         break;
-      case "snapshot":
-      case "gunner-action":
+      case 'snapshot':
+      case 'gunner-action':
         break;
     }
   }
@@ -630,39 +610,31 @@ export class OnlineCoopScene extends Phaser.Scene {
   }
 
   private getServerUrlValue(): string {
-    return this.sanitizeFieldValue(
-      "serverUrl",
-      this.fields.get("serverUrl")?.getValue() ?? "",
-    );
+    return this.sanitizeFieldValue('serverUrl', this.fields.get('serverUrl')?.getValue() ?? '');
   }
 
   private getRoomCodeValue(): string {
-    return this.sanitizeFieldValue(
-      "roomCode",
-      this.fields.get("roomCode")?.getValue() ?? "",
-    );
+    return this.sanitizeFieldValue('roomCode', this.fields.get('roomCode')?.getValue() ?? '');
   }
 
   private updateRoomDisplay(roomCode: string): void {
-    this.roomText.setText(roomCode || "----");
+    this.roomText.setText(roomCode || '----');
   }
 
-  private describeRuntime(
-    runtime: NonNullable<ReturnType<typeof getCoopRuntimeState>>,
-  ): string {
-    if (runtime.role === "driver") {
+  private describeRuntime(runtime: NonNullable<ReturnType<typeof getCoopRuntimeState>>): string {
+    if (runtime.role === 'driver') {
       return runtime.peerConnected
-        ? runtime.mode === "versus"
-          ? "Rival linked. Choose a loadout to start the match."
-          : "Gunner linked. Choosing a loadout now."
-        : runtime.mode === "versus"
-          ? "Versus room open. Waiting for a rival to join."
-          : "Room open. Waiting for a gunner to join.";
+        ? runtime.mode === 'versus'
+          ? 'Rival linked. Choose a loadout to start the match.'
+          : 'Gunner linked. Choosing a loadout now.'
+        : runtime.mode === 'versus'
+          ? 'Versus room open. Waiting for a rival to join.'
+          : 'Room open. Waiting for a gunner to join.';
     }
 
-    return runtime.mode === "versus"
-      ? "Linked as rival. Waiting for the driver to dispatch."
-      : "Linked as gunner. Waiting for the driver to dispatch.";
+    return runtime.mode === 'versus'
+      ? 'Linked as rival. Waiting for the driver to dispatch.'
+      : 'Linked as gunner. Waiting for the driver to dispatch.';
   }
 
   private setStatus(message: string, persist = true): void {
@@ -675,28 +647,33 @@ export class OnlineCoopScene extends Phaser.Scene {
   }
 
   private toggleMode(): void {
-    this.sessionMode = this.sessionMode === "coop" ? "versus" : "coop";
+    const versusEnabled = isFeatureEnabled('onlineVersus');
+
+    if (versusEnabled) {
+      this.sessionMode = this.sessionMode === 'coop' ? 'versus' : 'coop';
+    } else {
+      this.sessionMode = 'coop';
+    }
+
     this.updateModeButtonLabel();
     this.setStatus(
-      this.sessionMode === "versus"
-        ? "Versus mode armed. Driver and rival will compete on one route."
-        : "Co-op mode armed. Driver and gunner will share the route fight.",
-      false,
+      this.sessionMode === 'versus'
+        ? 'Versus mode armed. Driver and rival will compete on one route.'
+        : 'Co-op mode armed. Driver and gunner will share the route fight.',
+      false
     );
   }
 
   private getModeButtonLabel(): string {
-    return `MODE: ${this.sessionMode === "versus" ? "VERSUS" : "CO-OP"}`;
+    return `MODE: ${this.sessionMode === 'versus' ? 'VERSUS' : 'CO-OP'}`;
   }
 
   private updateModeButtonLabel(): void {
-    this.buttons.get("mode")?.label.setText(this.getModeButtonLabel());
+    this.buttons.get('mode')?.label.setText(this.getModeButtonLabel());
   }
 
-  private describeRole(
-    runtime: NonNullable<ReturnType<typeof getCoopRuntimeState>>,
-  ): string {
-    if (runtime.role === "driver") return "DRIVER";
-    return runtime.mode === "versus" ? "RIVAL" : "GUNNER";
+  private describeRole(runtime: NonNullable<ReturnType<typeof getCoopRuntimeState>>): string {
+    if (runtime.role === 'driver') return 'DRIVER';
+    return runtime.mode === 'versus' ? 'RIVAL' : 'GUNNER';
   }
 }

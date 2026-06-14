@@ -1,18 +1,14 @@
-import Phaser from "phaser";
-import {
-  BC,
-  BROADCAST_FONT,
-  createBroadcastButton,
-  createChyron,
-} from "../ui/broadcast-styles";
-import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
+import Phaser from 'phaser';
+import { BC, BROADCAST_FONT, createBroadcastButton, createChyron } from '../ui/broadcast-styles';
+import { resolveBroadcastViewportContext } from '../ui/broadcast-viewport';
 import {
   fadeIn,
   fadeToScene,
   isTouchPrimary,
   prefersReducedMotion,
   pulse,
-} from "../utils/animations";
+} from '../utils/animations';
+import { isFeatureEnabled, type FeatureFlag } from '../config/featureFlags';
 
 export class WelcomeScene extends Phaser.Scene {
   private selectedIndex = 0;
@@ -21,7 +17,7 @@ export class WelcomeScene extends Phaser.Scene {
   private transitioning = false;
 
   constructor() {
-    super({ key: "WelcomeScene" });
+    super({ key: 'WelcomeScene' });
   }
 
   create(): void {
@@ -29,7 +25,7 @@ export class WelcomeScene extends Phaser.Scene {
     const viewport = resolveBroadcastViewportContext(
       window.innerWidth,
       window.innerHeight,
-      isTouchPrimary(),
+      isTouchPrimary()
     );
     const compact = viewport.isCompact;
     const scale = viewport.uiScale;
@@ -75,7 +71,7 @@ export class WelcomeScene extends Phaser.Scene {
         duration: 4800,
         delay: 750,
         repeat: -1,
-        ease: "Linear",
+        ease: 'Linear',
       });
     }
 
@@ -83,15 +79,15 @@ export class WelcomeScene extends Phaser.Scene {
     const chyron = createChyron(
       this,
       compact ? height * 0.48 : height * 0.58,
-      "ZOMBIESWEEP",
-      "COURIER DISPATCH OPERATION — TRI-COUNTY ZONE",
+      'ZOMBIESWEEP',
+      'COURIER DISPATCH OPERATION — TRI-COUNTY ZONE',
       {
-        titleSize: compact ? `${Math.round(22 * scale)}px` : "42px",
-        subtitleSize: compact ? `${Math.round(10 * scale)}px` : "11px",
-      },
+        titleSize: compact ? `${Math.round(22 * scale)}px` : '42px',
+        subtitleSize: compact ? `${Math.round(10 * scale)}px` : '11px',
+      }
     );
     // Override title color to bc-red
-    const titleText = chyron.getAt(2) as Phaser.GameObjects.Text;
+    const titleText = chyron.getAt(2) as unknown as Phaser.GameObjects.Text;
     titleText.setColor(BC.css.RED);
     titleText.setShadow(0, 0, BC.css.RED_GLOW, 16, true, true);
 
@@ -101,28 +97,36 @@ export class WelcomeScene extends Phaser.Scene {
       targets: chyron,
       x: width / 2,
       duration: 400,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
 
     // ── Menu buttons: broadcast-style rows ──
-    const menuDefs = [
-      { text: "NEW GAME", scene: "VehicleSelectScene" },
-      { text: "ONLINE PLAY", scene: "OnlineCoopScene" },
-      { text: "CONTROLS", action: "controls" },
-      { text: "CREDITS", action: "credits" },
+    const menuDefs: Array<{
+      text: string;
+      scene?: string;
+      action?: string;
+      featureFlag?: FeatureFlag;
+    }> = [
+      { text: 'NEW GAME', scene: 'VehicleSelectScene' },
+      { text: 'ONLINE PLAY', scene: 'OnlineCoopScene', featureFlag: 'onlineCoop' },
+      { text: 'CONTROLS', action: 'controls' },
+      { text: 'CREDITS', action: 'credits' },
     ];
 
+    const filteredDefs = menuDefs.filter(
+      item => !item.featureFlag || isFeatureEnabled(item.featureFlag)
+    );
     const btnX = compact ? width / 2 : width * 0.08 + 140;
     const btnWidth = compact ? Math.round(336 * scale) : 280;
     const btnHeight = compact ? Math.round(48 * scale) : 48;
     const btnStartY = compact ? height * 0.46 : height * 0.72;
     const btnGap = compact ? Math.round(48 * scale) : 56;
-    menuDefs.forEach((item, i) => {
+    filteredDefs.forEach((item, i) => {
       const by = btnStartY + i * btnGap;
       const btn = createBroadcastButton(this, btnX, by, item.text, {
         width: btnWidth,
         height: btnHeight,
-        labelSize: compact ? `${Math.round(17 * scale)}px` : "17px",
+        labelSize: compact ? `${Math.round(17 * scale)}px` : '17px',
       });
       this.menuItems.push(btn);
 
@@ -135,58 +139,50 @@ export class WelcomeScene extends Phaser.Scene {
         x: btnX,
         duration: 350,
         delay: 500 + i * 120,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
 
-      btn.hitArea.on("pointerover", () => {
+      btn.hitArea.on('pointerover', () => {
         this.selectedIndex = i;
         this.updateMenuSelection(true);
       });
-      btn.hitArea.on("pointerdown", () => {
+      btn.hitArea.on('pointerdown', () => {
         if (item.scene) {
           if (this.transitioning) return;
           this.transitioning = true;
           fadeToScene(this, item.scene);
-        } else if (item.action === "controls") {
+        } else if (item.action === 'controls') {
           this.showControls(width, height);
-        } else if (item.action === "credits") {
+        } else if (item.action === 'credits') {
           this.showCredits(width, height);
         }
       });
     });
 
-    this.time.delayedCall(compact ? 450 : 600, () =>
-      this.updateMenuSelection(true),
-    );
+    this.time.delayedCall(compact ? 450 : 600, () => this.updateMenuSelection(true));
 
     // ── Keyboard navigation ──
-    this.input.keyboard?.on("keydown-UP", () => {
+    this.input.keyboard?.on('keydown-UP', () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateMenuSelection(true);
     });
-    this.input.keyboard?.on("keydown-DOWN", () => {
-      this.selectedIndex = Math.min(
-        menuDefs.length - 1,
-        this.selectedIndex + 1,
-      );
+    this.input.keyboard?.on('keydown-DOWN', () => {
+      this.selectedIndex = Math.min(menuDefs.length - 1, this.selectedIndex + 1);
       this.updateMenuSelection(true);
     });
-    this.input.keyboard?.on("keydown-W", () => {
+    this.input.keyboard?.on('keydown-W', () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateMenuSelection(true);
     });
-    this.input.keyboard?.on("keydown-S", () => {
-      this.selectedIndex = Math.min(
-        menuDefs.length - 1,
-        this.selectedIndex + 1,
-      );
+    this.input.keyboard?.on('keydown-S', () => {
+      this.selectedIndex = Math.min(menuDefs.length - 1, this.selectedIndex + 1);
       this.updateMenuSelection(true);
     });
-    this.input.keyboard?.on("keydown-ENTER", () => {
-      this.menuItems[this.selectedIndex]?.hitArea.emit("pointerdown");
+    this.input.keyboard?.on('keydown-ENTER', () => {
+      this.menuItems[this.selectedIndex]?.hitArea.emit('pointerdown');
     });
-    this.input.keyboard?.on("keydown-SPACE", () => {
-      this.menuItems[this.selectedIndex]?.hitArea.emit("pointerdown");
+    this.input.keyboard?.on('keydown-SPACE', () => {
+      this.menuItems[this.selectedIndex]?.hitArea.emit('pointerdown');
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -197,10 +193,10 @@ export class WelcomeScene extends Phaser.Scene {
     const zombieY = height - 28;
 
     this.add
-      .text(14, zombieY - 26, "LIVE FIELD CAM", {
+      .text(14, zombieY - 26, 'LIVE FIELD CAM', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "10px",
-        fontStyle: "600",
+        fontSize: '10px',
+        fontStyle: '600',
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
       })
@@ -223,7 +219,7 @@ export class WelcomeScene extends Phaser.Scene {
         duration: 12000 + z * 400,
         repeat: -1,
         delay: z * 200,
-        ease: "Linear",
+        ease: 'Linear',
       });
       this.tweens.add({
         targets: zombieGfx,
@@ -231,7 +227,7 @@ export class WelcomeScene extends Phaser.Scene {
         duration: 400 + z * 50,
         yoyo: true,
         repeat: -1,
-        ease: "Sine.easeInOut",
+        ease: 'Sine.easeInOut',
       });
     }
 
@@ -244,10 +240,10 @@ export class WelcomeScene extends Phaser.Scene {
 
     // ── Footer: version + prompt ──
     this.add
-      .text(14, height - (compact ? Math.round(12 * scale) : 14), "v0.1.0", {
+      .text(14, height - (compact ? Math.round(12 * scale) : 14), 'v0.1.0', {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? `${Math.round(10 * scale)}px` : "10px",
-        fontStyle: "600",
+        fontSize: compact ? `${Math.round(10 * scale)}px` : '10px',
+        fontStyle: '600',
         color: BC.TEXT_MUTED,
       })
       .setOrigin(0, 1);
@@ -257,14 +253,14 @@ export class WelcomeScene extends Phaser.Scene {
       .text(
         width - 14,
         height - (compact ? Math.round(12 * scale) : 14),
-        touchMode ? "TAP TO BEGIN" : "PRESS ENTER TO BEGIN",
+        touchMode ? 'TAP TO BEGIN' : 'PRESS ENTER TO BEGIN',
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: compact ? `${Math.round(11 * scale)}px` : "11px",
-          fontStyle: "600",
+          fontSize: compact ? `${Math.round(11 * scale)}px` : '11px',
+          fontStyle: '600',
           color: BC.TEXT_MUTED,
           letterSpacing: 2,
-        },
+        }
       )
       .setOrigin(1, 1);
 
@@ -296,10 +292,10 @@ export class WelcomeScene extends Phaser.Scene {
       .setInteractive();
 
     const headerText = this.add
-      .text(width / 2, height * 0.12, "CONTROLS", {
+      .text(width / 2, height * 0.12, 'CONTROLS', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "32px",
-        fontStyle: "800",
+        fontSize: '32px',
+        fontStyle: '800',
         color: BC.css.RED,
         letterSpacing: 2,
       })
@@ -307,12 +303,12 @@ export class WelcomeScene extends Phaser.Scene {
       .setAlpha(0);
 
     const controls = [
-      ["WASD / ARROWS", "Move"],
-      ["Q", "Throw Paper Left"],
-      ["E", "Throw Paper Right"],
-      ["SPACE", "Melee Attack"],
-      ["F", "Ranged Attack"],
-      ["ESC", "Pause"],
+      ['WASD / ARROWS', 'Move'],
+      ['Q', 'Throw Paper Left'],
+      ['E', 'Throw Paper Right'],
+      ['SPACE', 'Melee Attack'],
+      ['F', 'Ranged Attack'],
+      ['ESC', 'Pause'],
     ];
 
     const startY = height * 0.3;
@@ -322,8 +318,8 @@ export class WelcomeScene extends Phaser.Scene {
       const keyText = this.add
         .text(width / 2 - 100, y, key, {
           fontFamily: BROADCAST_FONT,
-          fontSize: "15px",
-          fontStyle: "700",
+          fontSize: '15px',
+          fontStyle: '700',
           color: BC.css.GOLD,
         })
         .setOrigin(1, 0.5)
@@ -331,8 +327,8 @@ export class WelcomeScene extends Phaser.Scene {
       const actionText = this.add
         .text(width / 2 - 70, y, action, {
           fontFamily: BROADCAST_FONT,
-          fontSize: "14px",
-          fontStyle: "600",
+          fontSize: '14px',
+          fontStyle: '600',
           color: BC.TEXT_DIM,
         })
         .setOrigin(0, 0.5)
@@ -341,10 +337,10 @@ export class WelcomeScene extends Phaser.Scene {
     });
 
     const closeHint = this.add
-      .text(width / 2, height * 0.85, "ESC OR CLICK TO CLOSE", {
+      .text(width / 2, height * 0.85, 'ESC OR CLICK TO CLOSE', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "12px",
-        fontStyle: "600",
+        fontSize: '12px',
+        fontStyle: '600',
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
       })
@@ -357,14 +353,14 @@ export class WelcomeScene extends Phaser.Scene {
       targets: overlay,
       fillAlpha: 0.92,
       duration: 200,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
     this.tweens.add({
       targets: [headerText, ...controlTexts, closeHint],
       alpha: 1,
       duration: 300,
       delay: 100,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
 
     this.tweens.add({
@@ -377,12 +373,12 @@ export class WelcomeScene extends Phaser.Scene {
     });
 
     const closeOverlay = () => {
-      this.input.keyboard?.off("keydown-ESC", closeOverlay);
-      allElements.forEach((el) => el.destroy());
+      this.input.keyboard?.off('keydown-ESC', closeOverlay);
+      allElements.forEach(el => el.destroy());
     };
 
-    overlay.on("pointerdown", closeOverlay);
-    this.input.keyboard?.on("keydown-ESC", closeOverlay);
+    overlay.on('pointerdown', closeOverlay);
+    this.input.keyboard?.on('keydown-ESC', closeOverlay);
   }
 
   private showCredits(width: number, height: number): void {
@@ -391,10 +387,10 @@ export class WelcomeScene extends Phaser.Scene {
       .setInteractive();
 
     const title = this.add
-      .text(width / 2, height * 0.35, "ZOMBIESWEEP", {
+      .text(width / 2, height * 0.35, 'ZOMBIESWEEP', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "36px",
-        fontStyle: "800",
+        fontSize: '36px',
+        fontStyle: '800',
         color: BC.css.RED,
       })
       .setOrigin(0.5)
@@ -404,24 +400,24 @@ export class WelcomeScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.52,
-        "Inspired by Paperboy (1985)\n\nBuilt with Phaser 3 + TypeScript",
+        'Inspired by Paperboy (1985)\n\nBuilt with Phaser 3 + TypeScript',
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: "14px",
-          fontStyle: "600",
+          fontSize: '14px',
+          fontStyle: '600',
           color: BC.TEXT_DIM,
-          align: "center",
+          align: 'center',
           lineSpacing: 6,
-        },
+        }
       )
       .setOrigin(0.5)
       .setAlpha(0);
 
     const closeHint = this.add
-      .text(width / 2, height * 0.85, "ESC OR CLICK TO CLOSE", {
+      .text(width / 2, height * 0.85, 'ESC OR CLICK TO CLOSE', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "12px",
-        fontStyle: "600",
+        fontSize: '12px',
+        fontStyle: '600',
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
       })
@@ -434,22 +430,22 @@ export class WelcomeScene extends Phaser.Scene {
       targets: overlay,
       fillAlpha: 0.92,
       duration: 200,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
     this.tweens.add({
       targets: [title, credits, closeHint],
       alpha: 1,
       duration: 300,
       delay: 100,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
 
     const closeOverlay = () => {
-      this.input.keyboard?.off("keydown-ESC", closeOverlay);
-      allElements.forEach((el) => el.destroy());
+      this.input.keyboard?.off('keydown-ESC', closeOverlay);
+      allElements.forEach(el => el.destroy());
     };
 
-    overlay.on("pointerdown", closeOverlay);
-    this.input.keyboard?.on("keydown-ESC", closeOverlay);
+    overlay.on('pointerdown', closeOverlay);
+    this.input.keyboard?.on('keydown-ESC', closeOverlay);
   }
 }
