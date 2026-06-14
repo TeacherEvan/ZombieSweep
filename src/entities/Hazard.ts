@@ -1,9 +1,9 @@
-import { HAZARD } from "../config/constants";
+import { HAZARD } from '../config/constants';
 
 export enum HazardType {
-  Hole = "Hole",
-  Log = "Log",
-  IcePatch = "IcePatch",
+  Hole = 'Hole',
+  Log = 'Log',
+  IcePatch = 'IcePatch',
 }
 
 export interface BaseHazard {

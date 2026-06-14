@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import type Phaser from 'phaser';
 
 // ── Broadcast Color Palette ──
 // Mirrors the CSS custom properties in index.html for visual continuity.
@@ -19,36 +19,35 @@ export const BC = {
   AMBER: 0xcc8822,
 
   // Phaser text colors (CSS strings)
-  TEXT: "#d8d0c4",
-  TEXT_DIM: "#6a645c",
-  TEXT_MUTED: "#3a3630",
+  TEXT: '#d8d0c4',
+  TEXT_DIM: '#6a645c',
+  TEXT_MUTED: '#3a3630',
 
   // CSS hex strings for fill colors (used in text style color fields)
   css: {
-    RED: "#cc1100",
-    RED_GLOW: "#ff2a10",
-    RED_DIM: "#6b0a00",
-    GOLD: "#d4a828",
-    GOLD_DIM: "#7a6218",
-    GOLD_GLOW: "#ffcc44",
-    GREEN: "#22aa44",
-    GREEN_BRIGHT: "#22ee66",
-    AMBER: "#cc8822",
+    RED: '#cc1100',
+    RED_GLOW: '#ff2a10',
+    RED_DIM: '#6b0a00',
+    GOLD: '#d4a828',
+    GOLD_DIM: '#7a6218',
+    GOLD_GLOW: '#ffcc44',
+    GREEN: '#22aa44',
+    GREEN_BRIGHT: '#22ee66',
+    AMBER: '#cc8822',
   },
 } as const;
 
-export const BROADCAST_FONT =
-  "'Barlow Condensed', 'Arial Narrow', sans-serif" as const;
+export const BROADCAST_FONT = "'Barlow Condensed', 'Arial Narrow', sans-serif" as const;
 
 // ── Shared Text Styles ──
 
 export function labelStyle(
-  overrides: Partial<Phaser.Types.GameObjects.Text.TextStyle> = {},
+  overrides: Partial<Phaser.Types.GameObjects.Text.TextStyle> = {}
 ): Phaser.Types.GameObjects.Text.TextStyle {
   return {
     fontFamily: BROADCAST_FONT,
-    fontSize: "12px",
-    fontStyle: "600",
+    fontSize: '12px',
+    fontStyle: '600',
     color: BC.TEXT_DIM,
     letterSpacing: 2,
     ...overrides,
@@ -56,12 +55,12 @@ export function labelStyle(
 }
 
 export function valueStyle(
-  overrides: Partial<Phaser.Types.GameObjects.Text.TextStyle> = {},
+  overrides: Partial<Phaser.Types.GameObjects.Text.TextStyle> = {}
 ): Phaser.Types.GameObjects.Text.TextStyle {
   return {
     fontFamily: BROADCAST_FONT,
-    fontSize: "20px",
-    fontStyle: "bold",
+    fontSize: '20px',
+    fontStyle: 'bold',
     color: BC.TEXT,
     ...overrides,
   };
@@ -79,12 +78,12 @@ export function createChyron(
     x?: number;
     titleSize?: string;
     subtitleSize?: string;
-  } = {},
+  } = {}
 ): Phaser.GameObjects.Container {
   const { width: cw } = scene.cameras.main;
   const w = options.width ?? cw * 0.88;
   const x = options.x ?? cw / 2;
-  const titleSize = options.titleSize ?? "22px";
+  const titleSize = options.titleSize ?? '22px';
 
   const container = scene.add.container(x, y);
 
@@ -103,7 +102,7 @@ export function createChyron(
     .text(-w / 2 + 18, -12, title.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
       fontSize: titleSize,
-      fontStyle: "800",
+      fontStyle: '800',
       color: BC.TEXT,
       letterSpacing: 1,
     })
@@ -113,8 +112,8 @@ export function createChyron(
   const subtitleText = scene.add
     .text(-w / 2 + 18, 14, subtitle.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
-      fontSize: options.subtitleSize ?? "11px",
-      fontStyle: "600",
+      fontSize: options.subtitleSize ?? '11px',
+      fontStyle: '600',
       color: BC.TEXT_DIM,
       letterSpacing: 2,
     })
@@ -136,7 +135,7 @@ export function createBroadcastButton(
     height?: number;
     selected?: boolean;
     labelSize?: string;
-  } = {},
+  } = {}
 ): {
   container: Phaser.GameObjects.Container;
   bg: Phaser.GameObjects.Graphics;
@@ -155,8 +154,8 @@ export function createBroadcastButton(
   const label = scene.add
     .text(-w / 2 + 18, 0, text.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
-      fontSize: options.labelSize ?? "17px",
-      fontStyle: "700",
+      fontSize: options.labelSize ?? '17px',
+      fontStyle: '700',
       color: BC.TEXT_DIM,
       letterSpacing: 1,
     })
@@ -187,7 +186,7 @@ export function createBroadcastButton(
         scaleX: 1.02,
         scaleY: 1.02,
         duration: 120,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
     } else {
       bg.fillStyle(BC.CHROME, 0.6);
@@ -203,20 +202,20 @@ export function createBroadcastButton(
         scaleX: 1,
         scaleY: 1,
         duration: 100,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
     }
   };
 
   // Press-down feel on click
-  hitArea.on("pointerdown", () => {
+  hitArea.on('pointerdown', () => {
     scene.tweens.add({
       targets: container,
       scaleX: 0.97,
       scaleY: 0.97,
       duration: 60,
       yoyo: true,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
   });
 
@@ -224,6 +223,98 @@ export function createBroadcastButton(
   setSelected(options.selected ?? false);
 
   return { container, bg, accent, label, hitArea, setSelected };
+}
+
+export function createBroadcastField(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  labelText: string,
+  initialValue: string,
+  options: {
+    width?: number;
+    height?: number;
+    labelSize?: string;
+    valueSize?: string;
+    placeholder?: string;
+  } = {}
+): {
+  container: Phaser.GameObjects.Container;
+  bg: Phaser.GameObjects.Graphics;
+  accent: Phaser.GameObjects.Graphics;
+  label: Phaser.GameObjects.Text;
+  value: Phaser.GameObjects.Text;
+  hitArea: Phaser.GameObjects.Rectangle;
+  setSelected: (selected: boolean) => void;
+  setValue: (value: string) => void;
+  getValue: () => string;
+} {
+  const w = options.width ?? 420;
+  const h = options.height ?? 54;
+  const placeholder = options.placeholder ?? 'ENTER VALUE';
+  let currentValue = initialValue;
+
+  const container = scene.add.container(x, y);
+  const bg = scene.add.graphics();
+  const accent = scene.add.graphics();
+  const label = scene.add
+    .text(-w / 2 + 18, -12, labelText.toUpperCase(), {
+      fontFamily: BROADCAST_FONT,
+      fontSize: options.labelSize ?? '11px',
+      fontStyle: '700',
+      color: BC.TEXT_DIM,
+      letterSpacing: 2,
+    })
+    .setOrigin(0, 0.5);
+  const value = scene.add
+    .text(-w / 2 + 18, 10, initialValue || placeholder, {
+      fontFamily: BROADCAST_FONT,
+      fontSize: options.valueSize ?? '18px',
+      fontStyle: '700',
+      color: initialValue ? BC.TEXT : BC.TEXT_MUTED,
+      letterSpacing: 1,
+    })
+    .setOrigin(0, 0.5);
+  const hitArea = scene.add
+    .rectangle(0, 0, w, h, 0x000000, 0)
+    .setInteractive({ useHandCursor: true });
+
+  const redraw = (selected: boolean) => {
+    bg.clear();
+    accent.clear();
+    bg.fillStyle(selected ? BC.CHROME_LIT : BC.CHROME, selected ? 1 : 0.82);
+    bg.fillRect(-w / 2, -h / 2, w, h);
+    bg.lineStyle(1, selected ? BC.RED : BC.CHROME_EDGE, selected ? 0.9 : 0.6);
+    bg.strokeRect(-w / 2, -h / 2, w, h);
+    if (selected) {
+      accent.fillStyle(BC.RED, 1);
+      accent.fillRect(-w / 2, -h / 2, 3, h);
+      label.setColor(BC.TEXT);
+    } else {
+      label.setColor(BC.TEXT_DIM);
+    }
+  };
+
+  const setValue = (nextValue: string) => {
+    currentValue = nextValue;
+    value.setText(nextValue || placeholder);
+    value.setColor(nextValue ? BC.TEXT : BC.TEXT_MUTED);
+  };
+
+  container.add([bg, accent, label, value, hitArea]);
+  redraw(false);
+
+  return {
+    container,
+    bg,
+    accent,
+    label,
+    value,
+    hitArea,
+    setSelected: redraw,
+    setValue,
+    getValue: () => currentValue,
+  };
 }
 
 // ── Data Row ──
@@ -239,7 +330,7 @@ export function createDataRow(
     valueColor?: string;
     labelSize?: string;
     valueSize?: string;
-  } = {},
+  } = {}
 ): {
   container: Phaser.GameObjects.Container;
   labelText: Phaser.GameObjects.Text;
@@ -247,8 +338,8 @@ export function createDataRow(
 } {
   const w = options.width ?? 400;
   const valueColor = options.valueColor ?? BC.TEXT;
-  const labelSize = options.labelSize ?? "12px";
-  const valueSize = options.valueSize ?? "20px";
+  const labelSize = options.labelSize ?? '12px';
+  const valueSize = options.valueSize ?? '20px';
 
   const container = scene.add.container(x, y);
 
@@ -256,7 +347,7 @@ export function createDataRow(
     .text(-w / 2, 0, label.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
       fontSize: labelSize,
-      fontStyle: "600",
+      fontStyle: '600',
       color: BC.TEXT_DIM,
       letterSpacing: 2,
     })
@@ -266,7 +357,7 @@ export function createDataRow(
     .text(w / 2, 0, value, {
       fontFamily: BROADCAST_FONT,
       fontSize: valueSize,
-      fontStyle: "800",
+      fontStyle: '800',
       color: valueColor,
     })
     .setOrigin(1, 0.5);
@@ -287,13 +378,13 @@ export function createAlertBanner(
     width?: number;
     height?: number;
     fontSize?: string;
-  } = {},
+  } = {}
 ): Phaser.GameObjects.Container {
   const { width: cw } = scene.cameras.main;
   const w = options.width ?? cw * 0.88;
   const h = options.height ?? 36;
   const bgColor = options.bgColor ?? BC.RED;
-  const textColor = options.textColor ?? "#ffffff";
+  const textColor = options.textColor ?? '#ffffff';
 
   const container = scene.add.container(cw / 2, y);
 
@@ -304,8 +395,8 @@ export function createAlertBanner(
   const label = scene.add
     .text(0, 0, text.toUpperCase(), {
       fontFamily: BROADCAST_FONT,
-      fontSize: options.fontSize ?? "14px",
-      fontStyle: "800",
+      fontSize: options.fontSize ?? '14px',
+      fontStyle: '800',
       color: textColor,
       letterSpacing: 2,
     })

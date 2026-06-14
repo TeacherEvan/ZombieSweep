@@ -1,19 +1,19 @@
-import { NEWSPAPER } from "../config/constants";
+import { NEWSPAPER } from '../config/constants';
 
 export enum DayOfWeek {
-  Monday = "Monday",
-  Tuesday = "Tuesday",
-  Wednesday = "Wednesday",
-  Thursday = "Thursday",
-  Friday = "Friday",
-  Saturday = "Saturday",
-  Sunday = "Sunday",
+  Monday = 'Monday',
+  Tuesday = 'Tuesday',
+  Wednesday = 'Wednesday',
+  Thursday = 'Thursday',
+  Friday = 'Friday',
+  Saturday = 'Saturday',
+  Sunday = 'Sunday',
 }
 
 export enum MapName {
-  MapleGrove = "MapleGrove",
-  DowntownDeadwood = "DowntownDeadwood",
-  RustCreek = "RustCreek",
+  MapleGrove = 'MapleGrove',
+  DowntownDeadwood = 'DowntownDeadwood',
+  RustCreek = 'RustCreek',
 }
 
 const DAY_TO_WEEKDAY: Record<number, DayOfWeek> = {
@@ -38,11 +38,7 @@ const DAY_TO_MAP: Record<number, MapName> = {
 
 export class DayManager {
   getDayOfWeek(day: number): DayOfWeek {
-    return (
-      DAY_TO_WEEKDAY[day] ??
-      DAY_TO_WEEKDAY[((day - 1) % 7) + 1] ??
-      DayOfWeek.Monday
-    );
+    return DAY_TO_WEEKDAY[day] ?? DAY_TO_WEEKDAY[((day - 1) % 7) + 1] ?? DayOfWeek.Monday;
   }
 
   getMapForDay(day: number): MapName {

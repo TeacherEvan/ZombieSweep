@@ -1,7 +1,7 @@
-import Phaser from "phaser";
-import { fadeToScene, isTouchPrimary } from "../utils/animations";
-import { BC, BROADCAST_FONT, createBroadcastButton } from "./broadcast-styles";
-import { resolveBroadcastViewportContext } from "./broadcast-viewport";
+import type Phaser from 'phaser';
+import { fadeToScene, isTouchPrimary } from '../utils/animations';
+import { BC, BROADCAST_FONT, createBroadcastButton } from './broadcast-styles';
+import { resolveBroadcastViewportContext } from './broadcast-viewport';
 
 export class PauseMenu {
   private scene: Phaser.Scene;
@@ -24,28 +24,18 @@ export class PauseMenu {
     const viewport = resolveBroadcastViewportContext(
       window.innerWidth,
       window.innerHeight,
-      isTouchPrimary(),
+      isTouchPrimary()
     );
     const scale = viewport.uiScale;
 
-    this.container = this.scene.add
-      .container(0, 0)
-      .setScrollFactor(0)
-      .setDepth(200);
+    this.container = this.scene.add.container(0, 0).setScrollFactor(0).setDepth(200);
 
     // Dark overlay
-    const overlay = this.scene.add.rectangle(
-      cx,
-      cy,
-      width,
-      height,
-      BC.BG,
-      0.88,
-    );
+    const overlay = this.scene.add.rectangle(cx, cy, width, height, BC.BG, 0.88);
 
     // Scan lines effect — generate a small tileable texture instead of
     // drawing 135 individual lines with lineBetween() calls.
-    const scanKey = "__pause_scanlines__";
+    const scanKey = '__pause_scanlines__';
     if (!this.scene.textures.exists(scanKey)) {
       const sg = this.scene.add.graphics();
       sg.fillStyle(0xffffff, 0.03);
@@ -63,10 +53,10 @@ export class PauseMenu {
 
     // "PLEASE STAND BY" title
     const standByText = this.scene.add
-      .text(cx, cy - 70, "PLEASE STAND BY", {
+      .text(cx, cy - 70, 'PLEASE STAND BY', {
         fontFamily: BROADCAST_FONT,
         fontSize: `${Math.round(32 * scale)}px`,
-        fontStyle: "800",
+        fontStyle: '800',
         color: BC.css.RED,
         letterSpacing: 4,
       })
@@ -79,60 +69,54 @@ export class PauseMenu {
       duration: 1200,
       yoyo: true,
       repeat: -1,
-      ease: "Sine.easeInOut",
+      ease: 'Sine.easeInOut',
     });
 
     // Subtitle
     const subtitle = this.scene.add
-      .text(cx, cy - 40, "TECHNICAL DIFFICULTIES", {
+      .text(cx, cy - 40, 'TECHNICAL DIFFICULTIES', {
         fontFamily: BROADCAST_FONT,
         fontSize: `${Math.round(14 * scale)}px`,
-        fontStyle: "600",
+        fontStyle: '600',
         color: BC.TEXT_DIM,
         letterSpacing: 3,
       })
       .setOrigin(0.5, 0.5);
 
     // Buttons
-    const resumeBtn = createBroadcastButton(
-      this.scene,
-      cx,
-      cy + 20,
-      "RESUME BROADCAST",
-      {
-        width: Math.round(280 * scale),
-        height: Math.round(42 * scale),
-        labelSize: `${Math.round(17 * scale)}px`,
-      },
-    );
-    resumeBtn.hitArea.on("pointerover", () => {
+    const resumeBtn = createBroadcastButton(this.scene, cx, cy + 20, 'RESUME BROADCAST', {
+      width: Math.round(280 * scale),
+      height: Math.round(42 * scale),
+      labelSize: `${Math.round(17 * scale)}px`,
+    });
+    resumeBtn.hitArea.on('pointerover', () => {
       this.selectedIndex = 0;
       this.updateSelection();
     });
-    resumeBtn.hitArea.on("pointerdown", () => this.hide());
+    resumeBtn.hitArea.on('pointerdown', () => this.hide());
 
     const quitBtn = createBroadcastButton(
       this.scene,
       cx,
       cy + Math.round(72 * scale),
-      "END TRANSMISSION",
+      'END TRANSMISSION',
       {
         width: Math.round(280 * scale),
         height: Math.round(42 * scale),
         labelSize: `${Math.round(17 * scale)}px`,
-      },
+      }
     );
     this.quitBtn = quitBtn;
-    quitBtn.hitArea.on("pointerover", () => {
+    quitBtn.hitArea.on('pointerover', () => {
       this.selectedIndex = 1;
       this.updateSelection();
     });
-    quitBtn.hitArea.on("pointerdown", () => {
+    quitBtn.hitArea.on('pointerdown', () => {
       if (this.confirmingQuit) {
-        fadeToScene(this.scene, "WelcomeScene");
+        fadeToScene(this.scene, 'WelcomeScene');
       } else {
         this.confirmingQuit = true;
-        quitBtn.label.setText("ARE YOU SURE?");
+        quitBtn.label.setText('ARE YOU SURE?');
         quitBtn.label.setColor(BC.css.RED);
       }
     });
@@ -170,7 +154,7 @@ export class PauseMenu {
     this.isVisible = true;
     this.selectedIndex = 0;
     this.confirmingQuit = false;
-    this.quitBtn.label.setText("END TRANSMISSION");
+    this.quitBtn.label.setText('END TRANSMISSION');
     this.quitBtn.label.setColor(BC.TEXT_DIM);
     this.updateSelection();
     this.container.setVisible(true);
@@ -179,37 +163,37 @@ export class PauseMenu {
       targets: this.container,
       alpha: 1,
       duration: 200,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
     this.scene.physics.pause();
 
     // Keyboard nav
-    this.scene.input.keyboard?.on("keydown-UP", this.navUp, this);
-    this.scene.input.keyboard?.on("keydown-DOWN", this.navDown, this);
-    this.scene.input.keyboard?.on("keydown-W", this.navUp, this);
-    this.scene.input.keyboard?.on("keydown-S", this.navDown, this);
-    this.scene.input.keyboard?.on("keydown-ENTER", this.confirm, this);
-    this.scene.input.keyboard?.on("keydown-SPACE", this.confirm, this);
+    this.scene.input.keyboard?.on('keydown-UP', this.navUp, this);
+    this.scene.input.keyboard?.on('keydown-DOWN', this.navDown, this);
+    this.scene.input.keyboard?.on('keydown-W', this.navUp, this);
+    this.scene.input.keyboard?.on('keydown-S', this.navDown, this);
+    this.scene.input.keyboard?.on('keydown-ENTER', this.confirm, this);
+    this.scene.input.keyboard?.on('keydown-SPACE', this.confirm, this);
   }
 
   hide(): void {
     if (!this.isVisible) return;
     this.confirmingQuit = false;
-    this.quitBtn.label.setText("END TRANSMISSION");
+    this.quitBtn.label.setText('END TRANSMISSION');
     this.quitBtn.label.setColor(BC.TEXT_DIM);
     // Remove keyboard listeners
-    this.scene.input.keyboard?.off("keydown-UP", this.navUp, this);
-    this.scene.input.keyboard?.off("keydown-DOWN", this.navDown, this);
-    this.scene.input.keyboard?.off("keydown-W", this.navUp, this);
-    this.scene.input.keyboard?.off("keydown-S", this.navDown, this);
-    this.scene.input.keyboard?.off("keydown-ENTER", this.confirm, this);
-    this.scene.input.keyboard?.off("keydown-SPACE", this.confirm, this);
+    this.scene.input.keyboard?.off('keydown-UP', this.navUp, this);
+    this.scene.input.keyboard?.off('keydown-DOWN', this.navDown, this);
+    this.scene.input.keyboard?.off('keydown-W', this.navUp, this);
+    this.scene.input.keyboard?.off('keydown-S', this.navDown, this);
+    this.scene.input.keyboard?.off('keydown-ENTER', this.confirm, this);
+    this.scene.input.keyboard?.off('keydown-SPACE', this.confirm, this);
 
     this.scene.tweens.add({
       targets: this.container,
       alpha: 0,
       duration: 150,
-      ease: "Quart.easeIn",
+      ease: 'Quart.easeIn',
       onComplete: () => {
         this.isVisible = false;
         this.container.setVisible(false);
@@ -228,14 +212,11 @@ export class PauseMenu {
   };
 
   private navDown = (): void => {
-    this.selectedIndex = Math.min(
-      this.buttons.length - 1,
-      this.selectedIndex + 1,
-    );
+    this.selectedIndex = Math.min(this.buttons.length - 1, this.selectedIndex + 1);
     this.updateSelection();
   };
 
   private confirm = (): void => {
-    this.buttons[this.selectedIndex]?.hitArea.emit("pointerdown");
+    this.buttons[this.selectedIndex]?.hitArea.emit('pointerdown');
   };
 }

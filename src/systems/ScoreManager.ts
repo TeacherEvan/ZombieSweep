@@ -1,5 +1,5 @@
-import { CITIZEN_PENALTY, POINTS } from "../config/constants";
-import { GameState } from "./GameState";
+import { CITIZEN_PENALTY, POINTS } from '../config/constants';
+import type { GameState } from './GameState';
 
 export class ScoreManager {
   private gameState: GameState;
@@ -29,6 +29,10 @@ export class ScoreManager {
   }
 
   comboBonus(points: number): void {
+    this.bonus(points);
+  }
+
+  bonus(points: number): void {
     this.gameState.addRawScore(points);
   }
 

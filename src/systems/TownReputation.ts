@@ -13,11 +13,7 @@ const DEFAULT_TOWN_REPUTATION: TownReputation = {
 };
 
 function coerceNumber(value: unknown, fallback: number): number {
-  if (
-    typeof value !== "number" ||
-    Number.isNaN(value) ||
-    !Number.isFinite(value)
-  ) {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
     return fallback;
   }
 
@@ -36,7 +32,7 @@ function shiftTownReputation(
   reputation: TownReputation,
   trustDelta: number,
   collateralDelta: number,
-  alertnessDelta: number,
+  alertnessDelta: number
 ): TownReputation {
   return normalizeTownReputation({
     trust: reputation.trust + trustDelta,
@@ -45,53 +41,29 @@ function shiftTownReputation(
   });
 }
 
-export function normalizeTownReputation(
-  reputation?: TownReputationInput | null,
-): TownReputation {
+export function normalizeTownReputation(reputation?: TownReputationInput | null): TownReputation {
   return {
     trust: normalizeValue(reputation?.trust, DEFAULT_TOWN_REPUTATION.trust),
-    collateral: normalizeValue(
-      reputation?.collateral,
-      DEFAULT_TOWN_REPUTATION.collateral,
-    ),
-    alertness: normalizeValue(
-      reputation?.alertness,
-      DEFAULT_TOWN_REPUTATION.alertness,
-    ),
+    collateral: normalizeValue(reputation?.collateral, DEFAULT_TOWN_REPUTATION.collateral),
+    alertness: normalizeValue(reputation?.alertness, DEFAULT_TOWN_REPUTATION.alertness),
   };
 }
 
-export function createTownReputation(
-  reputation?: TownReputationInput,
-): TownReputation {
+export function createTownReputation(reputation?: TownReputationInput): TownReputation {
   return normalizeTownReputation(reputation);
 }
 
-export function recordDeliverySuccess(
-  reputation: TownReputation,
-  amount = 1,
-): TownReputation {
+export function recordDeliverySuccess(reputation: TownReputation, amount = 1): TownReputation {
   const safeAmount = Math.max(1, Math.trunc(amount));
   return shiftTownReputation(reputation, safeAmount * 8, 0, safeAmount * -4);
 }
 
-export function recordCollateralDamage(
-  reputation: TownReputation,
-  amount = 1,
-): TownReputation {
+export function recordCollateralDamage(reputation: TownReputation, amount = 1): TownReputation {
   const safeAmount = Math.max(1, Math.trunc(amount));
-  return shiftTownReputation(
-    reputation,
-    safeAmount * -12,
-    safeAmount * 10,
-    safeAmount * 8,
-  );
+  return shiftTownReputation(reputation, safeAmount * -12, safeAmount * 10, safeAmount * 8);
 }
 
-export function recordThreatSighting(
-  reputation: TownReputation,
-  amount = 1,
-): TownReputation {
+export function recordThreatSighting(reputation: TownReputation, amount = 1): TownReputation {
   const safeAmount = Math.max(1, Math.trunc(amount));
   return shiftTownReputation(reputation, 0, 0, safeAmount * 10);
 }

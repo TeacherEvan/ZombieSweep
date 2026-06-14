@@ -1,14 +1,11 @@
-import Phaser from "phaser";
-import { GAME } from "../config/constants";
-import { DayManager } from "../systems/DayManager";
-import { GameState } from "../systems/GameState";
-import {
-  isTouchPrimary,
-  prefersReducedMotion,
-  pulse,
-} from "../utils/animations";
-import { BC, BROADCAST_FONT } from "./broadcast-styles";
-import { resolveBroadcastViewportContext } from "./broadcast-viewport";
+import type Phaser from 'phaser';
+import { GAME } from '../config/constants';
+import { DayManager } from '../systems/DayManager';
+import type { GameState } from '../systems/GameState';
+import type { CombatAlertTone } from '../scenes/combat-authorship';
+import { isTouchPrimary, prefersReducedMotion, pulse } from '../utils/animations';
+import { BC, BROADCAST_FONT } from './broadcast-styles';
+import { resolveBroadcastViewportContext } from './broadcast-viewport';
 
 export class HUD {
   private scene: Phaser.Scene;
@@ -23,6 +20,8 @@ export class HUD {
   private subscribersText!: Phaser.GameObjects.Text;
   private deliveryBar!: Phaser.GameObjects.Graphics;
   private deliveryCountText!: Phaser.GameObjects.Text;
+  private combatAlertBg!: Phaser.GameObjects.Graphics;
+  private combatAlertText!: Phaser.GameObjects.Text;
 
   private paperCount: number;
   private ammoCount: number;
@@ -30,8 +29,8 @@ export class HUD {
   private viewportScale = 1;
   private spacingScale = 1;
   private hudHeight = 32;
-  private labelFontSize = "10px";
-  private valueFontSize = "14px";
+  private labelFontSize = '10px';
+  private valueFontSize = '14px';
   private labelSpacing = 2;
   private lifeSpacing = 14;
   private lifeRadius = 5;
@@ -48,13 +47,10 @@ export class HUD {
   private deliveryTotal = 0;
   private lastDeliveryCompleted = -1;
   private cachedDayString: string;
+  private combatAlertExpiresAt = 0;
+  private combatAlertTone: CombatAlertTone = 'danger';
 
-  constructor(
-    scene: Phaser.Scene,
-    gameState: GameState,
-    paperCount: number,
-    ammoCount: number,
-  ) {
+  constructor(scene: Phaser.Scene, gameState: GameState, paperCount: number, ammoCount: number) {
     this.scene = scene;
     this.gameState = gameState;
     this.paperCount = paperCount;
@@ -62,41 +58,21 @@ export class HUD {
     const viewport = resolveBroadcastViewportContext(
       window.innerWidth,
       window.innerHeight,
-      isTouchPrimary(),
+      isTouchPrimary()
     );
     this.viewportScale = viewport.uiScale;
     this.compactLayout = viewport.isCompact;
-    this.spacingScale = this.compactLayout
-      ? Math.min(this.viewportScale, 1.15)
-      : 1;
-    this.hudHeight = Math.round(
-      (this.compactLayout ? 38 : 32) * this.viewportScale,
-    );
-    this.labelFontSize = this.compactLayout
-      ? `${Math.round(9 * this.viewportScale)}px`
-      : "10px";
-    this.valueFontSize = this.compactLayout
-      ? `${Math.round(15 * this.viewportScale)}px`
-      : "14px";
+    this.spacingScale = this.compactLayout ? Math.min(this.viewportScale, 1.15) : 1;
+    this.hudHeight = Math.round((this.compactLayout ? 38 : 32) * this.viewportScale);
+    this.labelFontSize = this.compactLayout ? `${Math.round(9 * this.viewportScale)}px` : '10px';
+    this.valueFontSize = this.compactLayout ? `${Math.round(15 * this.viewportScale)}px` : '14px';
     this.labelSpacing = this.compactLayout ? 1.5 : 2;
-    this.lifeSpacing = Math.round(
-      (this.compactLayout ? 12 : 14) * this.viewportScale,
-    );
-    this.lifeRadius = Math.round(
-      (this.compactLayout ? 4 : 5) * this.viewportScale,
-    );
-    this.lifeY = Math.round(
-      (this.compactLayout ? 24 : 23) * this.viewportScale,
-    );
-    this.deliveryBarY = Math.round(
-      (this.compactLayout ? 21 : 20) * this.viewportScale,
-    );
-    this.deliveryBarWidth = Math.round(
-      (this.compactLayout ? 72 : 80) * this.viewportScale,
-    );
-    this.deliveryBarTextOffset = Math.round(
-      (this.compactLayout ? 82 : 90) * this.viewportScale,
-    );
+    this.lifeSpacing = Math.round((this.compactLayout ? 12 : 14) * this.viewportScale);
+    this.lifeRadius = Math.round((this.compactLayout ? 4 : 5) * this.viewportScale);
+    this.lifeY = Math.round((this.compactLayout ? 24 : 23) * this.viewportScale);
+    this.deliveryBarY = Math.round((this.compactLayout ? 21 : 20) * this.viewportScale);
+    this.deliveryBarWidth = Math.round((this.compactLayout ? 72 : 80) * this.viewportScale);
+    this.deliveryBarTextOffset = Math.round((this.compactLayout ? 82 : 90) * this.viewportScale);
     this.lastScore = gameState.score;
     this.lastLives = gameState.lives;
     this.lastPaperCount = paperCount;
@@ -130,14 +106,14 @@ export class HUD {
     const labelCfg: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: BROADCAST_FONT,
       fontSize: this.labelFontSize,
-      fontStyle: "600",
+      fontStyle: '600',
       color: BC.TEXT_DIM,
       letterSpacing: this.labelSpacing,
     };
     const valueCfg: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: BROADCAST_FONT,
       fontSize: this.valueFontSize,
-      fontStyle: "700",
+      fontStyle: '700',
       color: BC.TEXT,
     };
 
@@ -145,7 +121,7 @@ export class HUD {
 
     // Day — static for the duration of the scene, set once
     this.scene.add
-      .text(x, cy - 5, "DAY", labelCfg)
+      .text(x, cy - 5, 'DAY', labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -158,12 +134,12 @@ export class HUD {
 
     // Score
     this.scene.add
-      .text(x, cy - 5, "SCORE", labelCfg)
+      .text(x, cy - 5, 'SCORE', labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
     this.scoreText = this.scene.add
-      .text(x, cy + 7, "", { ...valueCfg, color: BC.css.GOLD })
+      .text(x, cy + 7, '', { ...valueCfg, color: BC.css.GOLD })
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -171,7 +147,7 @@ export class HUD {
 
     // Lives — Graphics-drawn circles
     this.scene.add
-      .text(x, cy - 5, "LIVES", labelCfg)
+      .text(x, cy - 5, 'LIVES', labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -183,12 +159,12 @@ export class HUD {
 
     // Papers
     this.scene.add
-      .text(x, cy - 5, "PAPERS", labelCfg)
+      .text(x, cy - 5, 'PAPERS', labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
     this.papersText = this.scene.add
-      .text(x, cy + 7, "", valueCfg)
+      .text(x, cy + 7, '', valueCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -196,12 +172,12 @@ export class HUD {
 
     // Ammo (separate field)
     this.scene.add
-      .text(x, cy - 5, "AMMO", labelCfg)
+      .text(x, cy - 5, 'AMMO', labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
     this.ammoText = this.scene.add
-      .text(x, cy + 7, "", valueCfg)
+      .text(x, cy + 7, '', valueCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -209,12 +185,12 @@ export class HUD {
 
     // Subscribers
     this.scene.add
-      .text(x, cy - 5, "SUBS", labelCfg)
+      .text(x, cy - 5, 'SUBS', labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
     this.subscribersText = this.scene.add
-      .text(x, cy + 7, "", valueCfg)
+      .text(x, cy + 7, '', valueCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -222,23 +198,37 @@ export class HUD {
 
     // Delivery progress bar (right-aligned area)
     this.scene.add
-      .text(x, cy - 5, "ROUTE", labelCfg)
+      .text(x, cy - 5, 'ROUTE', labelCfg)
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
     this.deliveryBar = this.scene.add.graphics();
     this.deliveryBar.setScrollFactor(0).setDepth(100);
     this.deliveryCountText = this.scene.add
-      .text(x + this.deliveryBarTextOffset, cy + 7, "", {
+      .text(x + this.deliveryBarTextOffset, cy + 7, '', {
         ...valueCfg,
-        fontSize: this.compactLayout
-          ? `${Math.round(12 * this.viewportScale)}px`
-          : "11px",
+        fontSize: this.compactLayout ? `${Math.round(12 * this.viewportScale)}px` : '11px',
       })
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
     this.drawDeliveryBar(x);
+
+    this.combatAlertBg = this.scene.add.graphics();
+    this.combatAlertBg.setScrollFactor(0).setDepth(101).setVisible(false);
+    this.combatAlertText = this.scene.add
+      .text(width / 2, this.hudHeight + Math.round(16 * this.viewportScale), '', {
+        fontFamily: BROADCAST_FONT,
+        fontSize: this.compactLayout ? `${Math.round(12 * this.viewportScale)}px` : '13px',
+        fontStyle: '800',
+        color: BC.css.RED_GLOW,
+        letterSpacing: 1.4,
+        align: 'center',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(102)
+      .setVisible(false);
 
     // Set initial values (avoids empty text on first frame)
     this.scoreText.setText(`${this.gameState.score}`);
@@ -258,6 +248,18 @@ export class HUD {
   setDeliveryProgress(completed: number, total: number): void {
     this.deliveryCompleted = completed;
     this.deliveryTotal = total;
+  }
+
+  setCombatAlert(message: string, tone: CombatAlertTone = 'danger', durationMs = 1800): void {
+    this.combatAlertTone = tone;
+    this.combatAlertExpiresAt = this.scene.time.now + durationMs;
+    this.combatAlertText.setText(message).setVisible(true).setAlpha(1);
+    this.combatAlertBg.setVisible(true).setAlpha(1);
+    this.redrawCombatAlert();
+
+    if (!prefersReducedMotion()) {
+      pulse(this.scene, this.combatAlertText, 1.08, 140);
+    }
   }
 
   update(): void {
@@ -281,7 +283,7 @@ export class HUD {
           alpha: 0.3,
           duration: 150,
           yoyo: true,
-          ease: "Quart.easeOut",
+          ease: 'Quart.easeOut',
           onComplete: () => {
             this.livesGfx.setAlpha(1);
           },
@@ -329,13 +331,16 @@ export class HUD {
     // Delivery progress bar
     if (this.deliveryCompleted !== this.lastDeliveryCompleted) {
       this.drawDeliveryBar(this.deliveryBarX);
-      if (
-        this.deliveryCompleted > this.lastDeliveryCompleted &&
-        this.lastDeliveryCompleted >= 0
-      ) {
+      if (this.deliveryCompleted > this.lastDeliveryCompleted && this.lastDeliveryCompleted >= 0) {
         pulse(this.scene, this.deliveryBar, 1.1, 120);
       }
       this.lastDeliveryCompleted = this.deliveryCompleted;
+    }
+
+    if (this.combatAlertExpiresAt > 0 && this.scene.time.now >= this.combatAlertExpiresAt) {
+      this.combatAlertExpiresAt = 0;
+      this.combatAlertBg.setVisible(false);
+      this.combatAlertText.setVisible(false);
     }
   }
 
@@ -344,15 +349,8 @@ export class HUD {
     const maxLives = GAME.STARTING_LIVES;
     for (let i = 0; i < maxLives; i++) {
       const active = i < this.gameState.lives;
-      this.livesGfx.fillStyle(
-        active ? BC.RED : BC.CHROME_EDGE,
-        active ? 1 : 0.3,
-      );
-      this.livesGfx.fillCircle(
-        this.livesX + i * this.lifeSpacing,
-        this.lifeY,
-        this.lifeRadius,
-      );
+      this.livesGfx.fillStyle(active ? BC.RED : BC.CHROME_EDGE, active ? 1 : 0.3);
+      this.livesGfx.fillCircle(this.livesX + i * this.lifeSpacing, this.lifeY, this.lifeRadius);
     }
   }
 
@@ -382,9 +380,37 @@ export class HUD {
 
     // Count text
     if (this.deliveryTotal > 0) {
-      this.deliveryCountText.setText(
-        `${this.deliveryCompleted}/${this.deliveryTotal}`,
-      );
+      this.deliveryCountText.setText(`${this.deliveryCompleted}/${this.deliveryTotal}`);
     }
+  }
+
+  private redrawCombatAlert(): void {
+    const color =
+      this.combatAlertTone === 'success'
+        ? BC.GREEN
+        : this.combatAlertTone === 'warning'
+          ? BC.GOLD
+          : BC.RED;
+    const cssColor =
+      this.combatAlertTone === 'success'
+        ? BC.css.GREEN_BRIGHT
+        : this.combatAlertTone === 'warning'
+          ? BC.css.GOLD_GLOW
+          : BC.css.RED_GLOW;
+    const width = Math.max(
+      Math.round(180 * this.viewportScale),
+      Math.round(this.combatAlertText.width + 28)
+    );
+    const height = Math.round((this.compactLayout ? 24 : 22) * this.viewportScale);
+    const x = this.scene.cameras.main.width / 2 - width / 2;
+    const y = this.hudHeight + Math.round(6 * this.viewportScale);
+
+    this.combatAlertBg.clear();
+    this.combatAlertBg.fillStyle(color, 0.16);
+    this.combatAlertBg.fillRoundedRect(x, y, width, height, 5);
+    this.combatAlertBg.lineStyle(1, color, 0.82);
+    this.combatAlertBg.strokeRoundedRect(x, y, width, height, 5);
+    this.combatAlertText.setColor(cssColor);
+    this.combatAlertText.setPosition(this.scene.cameras.main.width / 2, y + height / 2);
   }
 }

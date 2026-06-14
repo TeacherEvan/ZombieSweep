@@ -1,14 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import {
   createTownReputation,
   normalizeTownReputation,
   recordCollateralDamage,
   recordDeliverySuccess,
   recordThreatSighting,
-} from "./TownReputation";
+} from './TownReputation';
 
-describe("TownReputation", () => {
-  it("starts at a calm baseline", () => {
+describe('TownReputation', () => {
+  it('starts at a calm baseline', () => {
     expect(createTownReputation()).toEqual({
       trust: 50,
       collateral: 0,
@@ -16,7 +16,7 @@ describe("TownReputation", () => {
     });
   });
 
-  it("delivery success increases trust", () => {
+  it('delivery success increases trust', () => {
     const before = createTownReputation();
     const after = recordDeliverySuccess(before, 2);
 
@@ -25,7 +25,7 @@ describe("TownReputation", () => {
     expect(after.alertness).toBeLessThanOrEqual(before.alertness);
   });
 
-  it("collateral damage lowers trust and raises collateral", () => {
+  it('collateral damage lowers trust and raises collateral', () => {
     const before = createTownReputation();
     const after = recordCollateralDamage(before, 3);
 
@@ -34,14 +34,14 @@ describe("TownReputation", () => {
     expect(after.alertness).toBeGreaterThanOrEqual(before.alertness);
   });
 
-  it("threat sightings raise alertness", () => {
+  it('threat sightings raise alertness', () => {
     const before = createTownReputation();
     const after = recordThreatSighting(before, 4);
 
     expect(after.alertness).toBeGreaterThan(before.alertness);
   });
 
-  it("normalizes invalid reputation values into safe bounds", () => {
+  it('normalizes invalid reputation values into safe bounds', () => {
     const rep = normalizeTownReputation({
       trust: 999,
       collateral: -12,

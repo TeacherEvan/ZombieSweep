@@ -1,7 +1,7 @@
 export enum PickupType {
-  NewspaperBundle = "NewspaperBundle",
-  AmmoCrate = "AmmoCrate",
-  HealthKit = "HealthKit",
+  NewspaperBundle = 'NewspaperBundle',
+  AmmoCrate = 'AmmoCrate',
+  HealthKit = 'HealthKit',
 }
 
 const PICKUP_QUANTITIES: Record<PickupType, number> = {

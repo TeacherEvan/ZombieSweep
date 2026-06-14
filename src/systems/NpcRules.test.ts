@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { NpcFaction, NpcRole, NpcState, NpcTimeSlice } from "../entities/Npc";
-import { resolveNpcState } from "./NpcRules";
-import { createTownReputation } from "./TownReputation";
+import { describe, expect, it } from 'vitest';
+import { NpcFaction, NpcRole, NpcState, NpcTimeSlice } from '../entities/Npc';
+import { resolveNpcState } from './NpcRules';
+import { createTownReputation } from './TownReputation';
 
 function makeBehavior(
   defaultState: NpcState,
   fallbackState: NpcState,
-  preferredStates: NpcState[],
+  preferredStates: NpcState[]
 ) {
   return {
     defaultState,
@@ -18,8 +18,8 @@ function makeBehavior(
   };
 }
 
-describe("NpcRules", () => {
-  it("falls back to Idle or Flee when behavior data is missing", () => {
+describe('NpcRules', () => {
+  it('falls back to Idle or Flee when behavior data is missing', () => {
     const calmContext = {
       faction: NpcFaction.Survivor,
       role: NpcRole.Civilian,
@@ -30,7 +30,7 @@ describe("NpcRules", () => {
       nearbyZombies: 0,
       playerProximity: 80,
       isSafeZone: true,
-      scriptedEvent: "none" as const,
+      scriptedEvent: 'none' as const,
     };
 
     const dangerContext = {
@@ -43,7 +43,7 @@ describe("NpcRules", () => {
     expect(resolveNpcState(undefined, dangerContext)).toBe(NpcState.Flee);
   });
 
-  it("makes civilians flee under heavy pressure", () => {
+  it('makes civilians flee under heavy pressure', () => {
     const state = resolveNpcState(
       makeBehavior(NpcState.Idle, NpcState.Flee, [
         NpcState.Idle,
@@ -60,14 +60,14 @@ describe("NpcRules", () => {
         nearbyZombies: 4,
         playerProximity: 18,
         isSafeZone: false,
-        scriptedEvent: "none" as const,
-      },
+        scriptedEvent: 'none' as const,
+      }
     );
 
     expect(state).toBe(NpcState.Flee);
   });
 
-  it("makes traders trade in safe pockets", () => {
+  it('makes traders trade in safe pockets', () => {
     const state = resolveNpcState(
       makeBehavior(NpcState.Trade, NpcState.Flee, [
         NpcState.Trade,
@@ -84,14 +84,14 @@ describe("NpcRules", () => {
         nearbyZombies: 0,
         playerProximity: 12,
         isSafeZone: true,
-        scriptedEvent: "market" as const,
-      },
+        scriptedEvent: 'market' as const,
+      }
     );
 
     expect(state).toBe(NpcState.Trade);
   });
 
-  it("makes responders investigate route pressure", () => {
+  it('makes responders investigate route pressure', () => {
     const state = resolveNpcState(
       makeBehavior(NpcState.Travel, NpcState.Flee, [
         NpcState.Travel,
@@ -108,14 +108,14 @@ describe("NpcRules", () => {
         nearbyZombies: 1,
         playerProximity: 42,
         isSafeZone: false,
-        scriptedEvent: "rescue" as const,
-      },
+        scriptedEvent: 'rescue' as const,
+      }
     );
 
     expect(state).toBe(NpcState.Investigate);
   });
 
-  it("makes hostile humans defend blockades", () => {
+  it('makes hostile humans defend blockades', () => {
     const state = resolveNpcState(
       makeBehavior(NpcState.Investigate, NpcState.Flee, [
         NpcState.Investigate,
@@ -132,14 +132,14 @@ describe("NpcRules", () => {
         nearbyZombies: 2,
         playerProximity: 10,
         isSafeZone: false,
-        scriptedEvent: "blockade" as const,
-      },
+        scriptedEvent: 'blockade' as const,
+      }
     );
 
     expect(state).toBe(NpcState.Defend);
   });
 
-  it("keeps infected in the infected state", () => {
+  it('keeps infected in the infected state', () => {
     const state = resolveNpcState(
       makeBehavior(NpcState.Infected, NpcState.Infected, [
         NpcState.Infected,
@@ -156,8 +156,8 @@ describe("NpcRules", () => {
         nearbyZombies: 5,
         playerProximity: 5,
         isSafeZone: false,
-        scriptedEvent: "alert" as const,
-      },
+        scriptedEvent: 'alert' as const,
+      }
     );
 
     expect(state).toBe(NpcState.Infected);

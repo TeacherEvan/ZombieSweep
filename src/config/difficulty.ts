@@ -1,7 +1,7 @@
 export enum Difficulty {
-  EasyStreet = "EasyStreet",
-  MiddleRoad = "MiddleRoad",
-  HardWay = "HardWay",
+  EasyStreet = 'EasyStreet',
+  MiddleRoad = 'MiddleRoad',
+  HardWay = 'HardWay',
 }
 
 export const DIFFICULTY_MULTIPLIERS: Record<Difficulty, number> = {

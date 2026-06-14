@@ -1,9 +1,4 @@
-import {
-  NPC_PLACEHOLDER_TEXTURE_KEY,
-  NpcFaction,
-  NpcRole,
-  NpcState,
-} from "../entities/Npc";
+import { NPC_PLACEHOLDER_TEXTURE_KEY, NpcFaction, NpcRole, NpcState } from '../entities/Npc';
 
 export interface TextureLookup {
   exists(key: string): boolean;
@@ -17,8 +12,8 @@ export interface NpcSpriteTextureSource {
 }
 
 function normalizeTextureKey(textureKey: unknown): string {
-  if (typeof textureKey !== "string") {
-    return "";
+  if (typeof textureKey !== 'string') {
+    return '';
   }
 
   return textureKey.trim();
@@ -27,23 +22,23 @@ function normalizeTextureKey(textureKey: unknown): string {
 function getLegacyCitizenTextureKey(state: NpcState): string {
   switch (state) {
     case NpcState.Flee:
-      return "citizen-panicked";
+      return 'citizen-panicked';
     case NpcState.Defend:
-      return "citizen-armed";
+      return 'citizen-armed';
     default:
-      return "citizen-friendly";
+      return 'citizen-friendly';
   }
 }
 
 function getLegacyZombieTextureKey(role: NpcRole): string {
   switch (role) {
     case NpcRole.Runner:
-      return "zombie-runner";
+      return 'zombie-runner';
     case NpcRole.Spitter:
-      return "zombie-spitter";
+      return 'zombie-spitter';
     case NpcRole.Shambler:
     default:
-      return "zombie-shambler";
+      return 'zombie-shambler';
   }
 }
 
@@ -53,7 +48,7 @@ export function getFallbackNpcTextureKey(): string {
 
 export function resolveNpcTextureKey(
   textureKey: string | null | undefined,
-  textures?: TextureLookup,
+  textures?: TextureLookup
 ): string {
   const normalized = normalizeTextureKey(textureKey);
   if (normalized.length === 0) {
@@ -69,7 +64,7 @@ export function resolveNpcTextureKey(
 
 export function resolveNpcSpriteTextureKey(
   source: NpcSpriteTextureSource,
-  textures?: TextureLookup,
+  textures?: TextureLookup
 ): string {
   const directKey = resolveNpcTextureKey(source.textureKey, textures);
   if (directKey !== NPC_PLACEHOLDER_TEXTURE_KEY) {

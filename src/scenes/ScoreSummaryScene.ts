@@ -1,19 +1,20 @@
-import Phaser from "phaser";
-import { GAME, POINTS } from "../config/constants";
-import { MAPS } from "../maps/MapConfig";
-import { DayManager } from "../systems/DayManager";
-import { GameState, getOrCreateGameState } from "../systems/GameState";
-import { ScoreManager } from "../systems/ScoreManager";
+import Phaser from 'phaser';
+import { GAME, POINTS } from '../config/constants';
+import { MAPS } from '../maps/MapConfig';
+import { DayManager } from '../systems/DayManager';
+import type { GameState } from '../systems/GameState';
+import { getOrCreateGameState } from '../systems/GameState';
+import { ScoreManager } from '../systems/ScoreManager';
 import {
   BC,
   BROADCAST_FONT,
   createAlertBanner,
   createChyron,
   createDataRow,
-} from "../ui/broadcast-styles";
-import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
-import { headlinePerfectDay } from "../ui/ticker-bridge";
-import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
+} from '../ui/broadcast-styles';
+import { resolveBroadcastViewportContext } from '../ui/broadcast-viewport';
+import { headlinePerfectDay } from '../ui/ticker-bridge';
+import { fadeIn, fadeToScene, isTouchPrimary } from '../utils/animations';
 
 interface DeliveryData {
   house: { isSubscriber: boolean };
@@ -26,7 +27,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
   private transitioning = false;
 
   constructor() {
-    super({ key: "ScoreSummaryScene" });
+    super({ key: 'ScoreSummaryScene' });
   }
 
   init(data: { deliveryData: DeliveryData[] }): void {
@@ -44,7 +45,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
     const viewport = resolveBroadcastViewportContext(
       window.innerWidth,
       window.innerHeight,
-      isTouchPrimary(),
+      isTouchPrimary()
     );
     const scale = viewport.uiScale;
     const compact = viewport.isCompact;
@@ -63,7 +64,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
     // Route name for subtitle
     const dayManager = new DayManager();
     const mapKey = dayManager.getMapForDay(this.gameState.day);
-    const mapName = MAPS[mapKey]?.name ?? "UNKNOWN DISTRICT";
+    const mapName = MAPS[mapKey]?.name ?? 'UNKNOWN DISTRICT';
 
     // Chyron
     const chyron = createChyron(
@@ -72,53 +73,41 @@ export class ScoreSummaryScene extends Phaser.Scene {
       `DAY ${this.gameState.day} REPORT`,
       `ROUTE STATUS — ${mapName.toUpperCase()}`,
       {
-        titleSize: compact ? `${Math.round(20 * scale)}px` : "22px",
-        subtitleSize: compact ? `${Math.round(10 * scale)}px` : "11px",
-      },
+        titleSize: compact ? `${Math.round(20 * scale)}px` : '22px',
+        subtitleSize: compact ? `${Math.round(10 * scale)}px` : '11px',
+      }
     );
     chyron.setX(-width);
     this.tweens.add({
       targets: chyron,
       x: cx,
       duration: 350,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
 
     let y = compact ? 80 : 88;
 
     // Calculate delivery stats
-    const subscriberHouses = this.deliveryData.filter(
-      (d) => d.house.isSubscriber,
-    );
-    const successfulDeliveries = subscriberHouses.filter(
-      (d) => d.delivered,
-    ).length;
-    const missedDeliveries = subscriberHouses.filter(
-      (d) => !d.delivered,
-    ).length;
+    const subscriberHouses = this.deliveryData.filter(d => d.house.isSubscriber);
+    const successfulDeliveries = subscriberHouses.filter(d => d.delivered).length;
+    const missedDeliveries = subscriberHouses.filter(d => !d.delivered).length;
 
     const deliveryRatio =
-      subscriberHouses.length > 0
-        ? successfulDeliveries / subscriberHouses.length
-        : 0;
+      subscriberHouses.length > 0 ? successfulDeliveries / subscriberHouses.length : 0;
     const deliveryColor =
-      deliveryRatio >= 1
-        ? BC.css.GREEN
-        : deliveryRatio >= 0.5
-          ? BC.css.GOLD
-          : BC.css.RED;
+      deliveryRatio >= 1 ? BC.css.GREEN : deliveryRatio >= 0.5 ? BC.css.GOLD : BC.css.RED;
 
     // Perfect day banner
     if (missedDeliveries === 0 && subscriberHouses.length > 0) {
       const perfectBanner = createAlertBanner(
         this,
         y,
-        "★ PERFECT DELIVERY — ALL SUBSCRIBERS REACHED",
+        '★ PERFECT DELIVERY — ALL SUBSCRIBERS REACHED',
         {
           bgColor: BC.GREEN,
           height: compact ? 28 : 30,
-          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
-        },
+          fontSize: compact ? `${Math.round(12 * scale)}px` : '14px',
+        }
       );
       perfectBanner.setAlpha(0);
       this.tweens.add({
@@ -126,7 +115,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         alpha: 1,
         duration: 500,
         delay: 300,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
       headlinePerfectDay();
       y += 48;
@@ -137,14 +126,14 @@ export class ScoreSummaryScene extends Phaser.Scene {
       this,
       cx,
       y,
-      "DELIVERIES",
+      'DELIVERIES',
       `${successfulDeliveries} / ${subscriberHouses.length}`,
       {
         valueColor: deliveryColor,
         width: compact ? 500 : 400,
-        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
-        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
-      },
+        labelSize: compact ? `${Math.round(11 * scale)}px` : '12px',
+        valueSize: compact ? `${Math.round(18 * scale)}px` : '20px',
+      }
     );
     delRow.container.setAlpha(0);
     this.tweens.add({
@@ -152,7 +141,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
       alpha: 1,
       duration: 350,
       delay: 400,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
     y += 38;
 
@@ -176,12 +165,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
       const gainBanner = createAlertBanner(
         this,
         y,
-        `+${subsGained} NEW SUBSCRIBER${subsGained > 1 ? "S" : ""}`,
+        `+${subsGained} NEW SUBSCRIBER${subsGained > 1 ? 'S' : ''}`,
         {
           bgColor: BC.GREEN,
           height: compact ? 28 : 30,
-          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
-        },
+          fontSize: compact ? `${Math.round(12 * scale)}px` : '14px',
+        }
       );
       gainBanner.setAlpha(0);
       this.tweens.add({
@@ -191,7 +180,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         scaleY: { from: 0.8, to: 1 },
         duration: 400,
         delay: 500,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
       y += 40;
     }
@@ -200,12 +189,12 @@ export class ScoreSummaryScene extends Phaser.Scene {
       const lossBanner = createAlertBanner(
         this,
         y,
-        `-${subsLost} SUBSCRIBER${subsLost > 1 ? "S" : ""} CANCELLED`,
+        `-${subsLost} SUBSCRIBER${subsLost > 1 ? 'S' : ''} CANCELLED`,
         {
           bgColor: BC.RED,
           height: compact ? 28 : 30,
-          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
-        },
+          fontSize: compact ? `${Math.round(12 * scale)}px` : '14px',
+        }
       );
       lossBanner.setAlpha(0);
       this.tweens.add({
@@ -213,7 +202,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         alpha: 1,
         duration: 400,
         delay: 500,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
       y += 40;
     }
@@ -221,74 +210,53 @@ export class ScoreSummaryScene extends Phaser.Scene {
     y += 8;
 
     // Subscriber count
-    const subRow = createDataRow(
-      this,
-      cx,
-      y,
-      "SUBSCRIBERS",
-      `${this.gameState.subscribers}`,
-      {
-        valueColor: BC.TEXT,
-        width: compact ? 500 : 400,
-        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
-        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
-      },
-    );
+    const subRow = createDataRow(this, cx, y, 'SUBSCRIBERS', `${this.gameState.subscribers}`, {
+      valueColor: BC.TEXT,
+      width: compact ? 500 : 400,
+      labelSize: compact ? `${Math.round(11 * scale)}px` : '12px',
+      valueSize: compact ? `${Math.round(18 * scale)}px` : '20px',
+    });
     subRow.container.setAlpha(0);
     this.tweens.add({
       targets: subRow.container,
       alpha: 1,
       duration: 350,
       delay: 600,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
     y += 38;
 
     // Score
-    const scoreRow = createDataRow(
-      this,
-      cx,
-      y,
-      "SCORE",
-      `${this.gameState.score}`,
-      {
-        valueColor: BC.css.GOLD,
-        width: compact ? 500 : 400,
-        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
-        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
-      },
-    );
+    const scoreRow = createDataRow(this, cx, y, 'SCORE', `${this.gameState.score}`, {
+      valueColor: BC.css.GOLD,
+      width: compact ? 500 : 400,
+      labelSize: compact ? `${Math.round(11 * scale)}px` : '12px',
+      valueSize: compact ? `${Math.round(18 * scale)}px` : '20px',
+    });
     scoreRow.container.setAlpha(0);
     this.tweens.add({
       targets: scoreRow.container,
       alpha: 1,
       duration: 350,
       delay: 700,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
     y += 38;
 
     // Lives
-    const livesRow = createDataRow(
-      this,
-      cx,
-      y,
-      "LIVES",
-      "●".repeat(this.gameState.lives),
-      {
-        valueColor: BC.css.RED,
-        width: compact ? 500 : 400,
-        labelSize: compact ? `${Math.round(11 * scale)}px` : "12px",
-        valueSize: compact ? `${Math.round(18 * scale)}px` : "20px",
-      },
-    );
+    const livesRow = createDataRow(this, cx, y, 'LIVES', '●'.repeat(this.gameState.lives), {
+      valueColor: BC.css.RED,
+      width: compact ? 500 : 400,
+      labelSize: compact ? `${Math.round(11 * scale)}px` : '12px',
+      valueSize: compact ? `${Math.round(18 * scale)}px` : '20px',
+    });
     livesRow.container.setAlpha(0);
     this.tweens.add({
       targets: livesRow.container,
       alpha: 1,
       duration: 350,
       delay: 800,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
     y += 42;
 
@@ -304,8 +272,8 @@ export class ScoreSummaryScene extends Phaser.Scene {
         {
           bgColor: BC.GOLD,
           height: compact ? 28 : 30,
-          fontSize: compact ? `${Math.round(12 * scale)}px` : "14px",
-        },
+          fontSize: compact ? `${Math.round(12 * scale)}px` : '14px',
+        }
       );
       bonusBanner.setAlpha(0);
       this.tweens.add({
@@ -313,7 +281,7 @@ export class ScoreSummaryScene extends Phaser.Scene {
         alpha: 1,
         duration: 400,
         delay: 900,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
       y += 40;
     }
@@ -326,17 +294,17 @@ export class ScoreSummaryScene extends Phaser.Scene {
     const promptText =
       isLastDay || isSubsGone || this.gameState.isGameOver()
         ? touchMode
-          ? "TAP FOR FINAL RESULTS"
-          : "PRESS ENTER FOR FINAL RESULTS"
+          ? 'TAP FOR FINAL RESULTS'
+          : 'PRESS ENTER FOR FINAL RESULTS'
         : touchMode
-          ? "TAP TO CONTINUE COVERAGE"
-          : "PRESS ENTER TO CONTINUE COVERAGE";
+          ? 'TAP TO CONTINUE COVERAGE'
+          : 'PRESS ENTER TO CONTINUE COVERAGE';
 
     const prompt = this.add
       .text(cx, height - 36, promptText, {
         fontFamily: BROADCAST_FONT,
-        fontSize: compact ? `${Math.round(11 * scale)}px` : "12px",
-        fontStyle: "600",
+        fontSize: compact ? `${Math.round(11 * scale)}px` : '12px',
+        fontStyle: '600',
         color: BC.TEXT_MUTED,
         letterSpacing: 2,
       })
@@ -360,14 +328,14 @@ export class ScoreSummaryScene extends Phaser.Scene {
       if (this.transitioning) return;
       this.transitioning = true;
       if (goToGameOver) {
-        fadeToScene(this, "GameOverScene");
+        fadeToScene(this, 'GameOverScene');
       } else {
-        fadeToScene(this, "GameScene");
+        fadeToScene(this, 'GameScene');
       }
     };
 
-    this.input.keyboard?.once("keydown-ENTER", advance);
-    this.input.once("pointerdown", advance);
+    this.input.keyboard?.once('keydown-ENTER', advance);
+    this.input.once('pointerdown', advance);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.removeAllListeners();

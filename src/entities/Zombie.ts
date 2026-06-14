@@ -1,24 +1,19 @@
-import {
-  POINTS,
-  ZOMBIE_DAMAGE,
-  ZOMBIE_HP,
-  ZOMBIE_SPEED,
-} from "../config/constants";
+import { POINTS, ZOMBIE_DAMAGE, ZOMBIE_HP, ZOMBIE_SPEED } from '../config/constants';
+import type { NpcDefinition } from './Npc';
 import {
   NPC_WEEK_DAYS,
-  NpcDefinition,
   NpcFaction,
   NpcRarity,
   NpcRole,
   NpcState,
   NpcTimeSlice,
   createNpcDefinition,
-} from "./Npc";
+} from './Npc';
 
 export enum ZombieType {
-  Shambler = "Shambler",
-  Runner = "Runner",
-  Spitter = "Spitter",
+  Shambler = 'Shambler',
+  Runner = 'Runner',
+  Spitter = 'Spitter',
 }
 
 export interface Zombie {
@@ -38,18 +33,14 @@ export function toNpcDefinition(zombie: Zombie): NpcDefinition {
   switch (zombie.type) {
     case ZombieType.Shambler:
       return createNpcDefinition({
-        id: "infected-shambler",
-        name: "Shambler",
+        id: 'infected-shambler',
+        name: 'Shambler',
         faction: NpcFaction.Infected,
         role: NpcRole.Shambler,
         behavior: {
           defaultState: NpcState.Infected,
           fallbackState: NpcState.Infected,
-          preferredStates: [
-            NpcState.Infected,
-            NpcState.Travel,
-            NpcState.Investigate,
-          ],
+          preferredStates: [NpcState.Infected, NpcState.Travel, NpcState.Investigate],
           caution: 0,
           aggression: 1,
           support: 0,
@@ -57,36 +48,32 @@ export function toNpcDefinition(zombie: Zombie): NpcDefinition {
         schedule: {
           days: [...NPC_WEEK_DAYS],
           timeSlice: NpcTimeSlice.Night,
-          mapTags: ["suburban", "urban", "industrial"],
-          routeTriggers: ["noise"],
+          mapTags: ['suburban', 'urban', 'industrial'],
+          routeTriggers: ['noise'],
           minThreatLevel: 10,
           maxThreatLevel: 100,
         },
         spawn: {
           weight: 6,
           rarity: NpcRarity.Common,
-          mapTags: ["suburban", "urban", "industrial"],
-          routeTriggers: ["noise"],
+          mapTags: ['suburban', 'urban', 'industrial'],
+          routeTriggers: ['noise'],
           requiresSafeZone: false,
           requiredFaction: NpcFaction.Infected,
         },
-        textureKey: "zombie-shambler",
+        textureKey: 'zombie-shambler',
       });
 
     case ZombieType.Runner:
       return createNpcDefinition({
-        id: "infected-runner",
-        name: "Runner",
+        id: 'infected-runner',
+        name: 'Runner',
         faction: NpcFaction.Infected,
         role: NpcRole.Runner,
         behavior: {
           defaultState: NpcState.Infected,
           fallbackState: NpcState.Infected,
-          preferredStates: [
-            NpcState.Infected,
-            NpcState.Travel,
-            NpcState.Investigate,
-          ],
+          preferredStates: [NpcState.Infected, NpcState.Travel, NpcState.Investigate],
           caution: 0,
           aggression: 1,
           support: 0,
@@ -94,36 +81,32 @@ export function toNpcDefinition(zombie: Zombie): NpcDefinition {
         schedule: {
           days: [...NPC_WEEK_DAYS],
           timeSlice: NpcTimeSlice.Night,
-          mapTags: ["suburban", "urban", "industrial"],
-          routeTriggers: ["alarm", "panic"],
+          mapTags: ['suburban', 'urban', 'industrial'],
+          routeTriggers: ['alarm', 'panic'],
           minThreatLevel: 20,
           maxThreatLevel: 100,
         },
         spawn: {
           weight: 4,
           rarity: NpcRarity.Uncommon,
-          mapTags: ["suburban", "urban", "industrial"],
-          routeTriggers: ["alarm"],
+          mapTags: ['suburban', 'urban', 'industrial'],
+          routeTriggers: ['alarm'],
           requiresSafeZone: false,
           requiredFaction: NpcFaction.Infected,
         },
-        textureKey: "zombie-runner",
+        textureKey: 'zombie-runner',
       });
 
     case ZombieType.Spitter:
       return createNpcDefinition({
-        id: "infected-spitter",
-        name: "Spitter",
+        id: 'infected-spitter',
+        name: 'Spitter',
         faction: NpcFaction.Infected,
         role: NpcRole.Spitter,
         behavior: {
           defaultState: NpcState.Infected,
           fallbackState: NpcState.Infected,
-          preferredStates: [
-            NpcState.Infected,
-            NpcState.Investigate,
-            NpcState.Travel,
-          ],
+          preferredStates: [NpcState.Infected, NpcState.Investigate, NpcState.Travel],
           caution: 0,
           aggression: 1,
           support: 0,
@@ -131,20 +114,20 @@ export function toNpcDefinition(zombie: Zombie): NpcDefinition {
         schedule: {
           days: [...NPC_WEEK_DAYS],
           timeSlice: NpcTimeSlice.Evening,
-          mapTags: ["suburban", "urban", "industrial"],
-          routeTriggers: ["raid", "alarm"],
+          mapTags: ['suburban', 'urban', 'industrial'],
+          routeTriggers: ['raid', 'alarm'],
           minThreatLevel: 25,
           maxThreatLevel: 100,
         },
         spawn: {
           weight: 2,
           rarity: NpcRarity.Rare,
-          mapTags: ["suburban", "urban", "industrial"],
-          routeTriggers: ["raid"],
+          mapTags: ['suburban', 'urban', 'industrial'],
+          routeTriggers: ['raid'],
           requiresSafeZone: false,
           requiredFaction: NpcFaction.Infected,
         },
-        textureKey: "zombie-spitter",
+        textureKey: 'zombie-spitter',
       });
   }
 }
@@ -157,7 +140,7 @@ function createZombie(
   speed: number,
   damage: number,
   basePoints: number,
-  isRanged: boolean,
+  isRanged: boolean
 ): Zombie {
   return {
     type,
@@ -186,7 +169,7 @@ export function createShambler(x: number, y: number): Zombie {
     ZOMBIE_SPEED.SHAMBLER,
     ZOMBIE_DAMAGE.SHAMBLER,
     POINTS.SHAMBLER_KILL,
-    false,
+    false
   );
 }
 
@@ -199,7 +182,7 @@ export function createRunner(x: number, y: number): Zombie {
     ZOMBIE_SPEED.RUNNER,
     ZOMBIE_DAMAGE.RUNNER,
     POINTS.RUNNER_KILL,
-    false,
+    false
   );
 }
 
@@ -212,6 +195,6 @@ export function createSpitter(x: number, y: number): Zombie {
     ZOMBIE_SPEED.SPITTER,
     ZOMBIE_DAMAGE.SPITTER,
     POINTS.SPITTER_KILL,
-    true,
+    true
   );
 }

@@ -1,46 +1,46 @@
 export enum NpcFaction {
-  Survivor = "Survivor",
-  HostileHuman = "HostileHuman",
-  Responder = "Responder",
-  Trader = "Trader",
-  Infected = "Infected",
+  Survivor = 'Survivor',
+  HostileHuman = 'HostileHuman',
+  Responder = 'Responder',
+  Trader = 'Trader',
+  Infected = 'Infected',
 }
 
 export enum NpcRole {
-  Civilian = "Civilian",
-  Guard = "Guard",
-  Merchant = "Merchant",
-  Scavenger = "Scavenger",
-  Medic = "Medic",
-  Raider = "Raider",
-  Shambler = "Shambler",
-  Runner = "Runner",
-  Spitter = "Spitter",
+  Civilian = 'Civilian',
+  Guard = 'Guard',
+  Merchant = 'Merchant',
+  Scavenger = 'Scavenger',
+  Medic = 'Medic',
+  Raider = 'Raider',
+  Shambler = 'Shambler',
+  Runner = 'Runner',
+  Spitter = 'Spitter',
 }
 
 export enum NpcState {
-  Idle = "Idle",
-  Travel = "Travel",
-  Interact = "Interact",
-  Flee = "Flee",
-  Defend = "Defend",
-  Trade = "Trade",
-  Investigate = "Investigate",
-  Infected = "Infected",
+  Idle = 'Idle',
+  Travel = 'Travel',
+  Interact = 'Interact',
+  Flee = 'Flee',
+  Defend = 'Defend',
+  Trade = 'Trade',
+  Investigate = 'Investigate',
+  Infected = 'Infected',
 }
 
 export enum NpcTimeSlice {
-  Morning = "Morning",
-  Daytime = "Daytime",
-  Evening = "Evening",
-  Night = "Night",
+  Morning = 'Morning',
+  Daytime = 'Daytime',
+  Evening = 'Evening',
+  Night = 'Night',
 }
 
 export enum NpcRarity {
-  Common = "Common",
-  Uncommon = "Uncommon",
-  Rare = "Rare",
-  Unique = "Unique",
+  Common = 'Common',
+  Uncommon = 'Uncommon',
+  Rare = 'Rare',
+  Unique = 'Unique',
 }
 
 export interface NpcBehaviorProfile {
@@ -92,15 +92,13 @@ export interface NpcDefinitionInput {
   textureKey?: string;
 }
 
-export const NPC_PLACEHOLDER_TEXTURE_KEY = "npc-placeholder" as const;
+export const NPC_PLACEHOLDER_TEXTURE_KEY = 'npc-placeholder' as const;
 export const NPC_WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const VALID_FACTIONS = new Set(Object.values(NpcFaction) as NpcFaction[]);
 const VALID_ROLES = new Set(Object.values(NpcRole) as NpcRole[]);
 const VALID_STATES = new Set(Object.values(NpcState) as NpcState[]);
-const VALID_TIME_SLICES = new Set(
-  Object.values(NpcTimeSlice) as NpcTimeSlice[],
-);
+const VALID_TIME_SLICES = new Set(Object.values(NpcTimeSlice) as NpcTimeSlice[]);
 const VALID_RARITIES = new Set(Object.values(NpcRarity) as NpcRarity[]);
 
 const DEFAULT_ROLE_BY_FACTION: Record<NpcFaction, NpcRole> = {
@@ -165,7 +163,7 @@ const DEFAULT_BEHAVIOR_BY_FACTION: Record<NpcFaction, NpcBehaviorProfile> = {
 const DEFAULT_SCHEDULE: NpcScheduleProfile = {
   days: [...NPC_WEEK_DAYS],
   timeSlice: NpcTimeSlice.Daytime,
-  mapTags: ["town"],
+  mapTags: ['town'],
   routeTriggers: [],
   minThreatLevel: 0,
   maxThreatLevel: 100,
@@ -181,7 +179,7 @@ const DEFAULT_SPAWN: NpcSpawnProfile = {
 };
 
 function isString(value: unknown): value is string {
-  return typeof value === "string";
+  return typeof value === 'string';
 }
 
 function isValidFaction(value: unknown): value is NpcFaction {
@@ -213,16 +211,8 @@ function normalizeText(value: unknown, fallback: string): string {
   return trimmed.length > 0 ? trimmed : fallback;
 }
 
-function normalizeNumber(
-  value: unknown,
-  fallback: number,
-  min?: number,
-): number {
-  if (
-    typeof value !== "number" ||
-    Number.isNaN(value) ||
-    !Number.isFinite(value)
-  ) {
+function normalizeNumber(value: unknown, fallback: number, min?: number): number {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
     return fallback;
   }
 
@@ -230,18 +220,15 @@ function normalizeNumber(
   return nextValue;
 }
 
-function normalizeStringArray(
-  value: unknown,
-  fallback: string[] = [],
-): string[] {
+function normalizeStringArray(value: unknown, fallback: string[] = []): string[] {
   if (!Array.isArray(value)) {
     return [...fallback];
   }
 
   const cleaned = value
     .filter(isString)
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
+    .map(entry => entry.trim())
+    .filter(entry => entry.length > 0);
 
   const unique = Array.from(new Set(cleaned));
   return unique.length > 0 ? unique : [...fallback];
@@ -253,11 +240,8 @@ function normalizeDays(value: unknown): number[] {
   }
 
   const cleaned = value
-    .filter(
-      (entry): entry is number =>
-        typeof entry === "number" && Number.isInteger(entry),
-    )
-    .filter((entry) => entry >= 1 && entry <= 7);
+    .filter((entry): entry is number => typeof entry === 'number' && Number.isInteger(entry))
+    .filter(entry => entry >= 1 && entry <= 7);
 
   const unique = Array.from(new Set(cleaned)).sort((a, b) => a - b);
   return unique.length > 0 ? unique : [...NPC_WEEK_DAYS];
@@ -324,17 +308,14 @@ function cloneSpawn(profile: NpcSpawnProfile): NpcSpawnProfile {
 
 function normalizeBehavior(
   value: Partial<NpcBehaviorProfile> | undefined,
-  faction: NpcFaction,
+  faction: NpcFaction
 ): NpcBehaviorProfile {
   const defaults = DEFAULT_BEHAVIOR_BY_FACTION[faction];
   if (!value) {
     return cloneBehavior(defaults);
   }
 
-  const preferredStates = normalizeStateArray(
-    value.preferredStates,
-    defaults.preferredStates,
-  );
+  const preferredStates = normalizeStateArray(value.preferredStates, defaults.preferredStates);
 
   return {
     defaultState: normalizeState(value.defaultState, defaults.defaultState),
@@ -356,23 +337,17 @@ function normalizeStateArray(value: unknown, fallback: NpcState[]): NpcState[] {
   return unique.length > 0 ? unique : [...fallback];
 }
 
-function normalizeSchedule(
-  value: Partial<NpcScheduleProfile> | undefined,
-): NpcScheduleProfile {
+function normalizeSchedule(value: Partial<NpcScheduleProfile> | undefined): NpcScheduleProfile {
   if (!value) {
     return cloneSchedule(DEFAULT_SCHEDULE);
   }
 
   const days = normalizeDays(value.days);
-  const minThreatLevel = normalizeNumber(
-    value.minThreatLevel,
-    DEFAULT_SCHEDULE.minThreatLevel,
-    0,
-  );
+  const minThreatLevel = normalizeNumber(value.minThreatLevel, DEFAULT_SCHEDULE.minThreatLevel, 0);
   const maxThreatLevelRaw = normalizeNumber(
     value.maxThreatLevel,
     DEFAULT_SCHEDULE.maxThreatLevel,
-    minThreatLevel,
+    minThreatLevel
   );
   const maxThreatLevel = Math.max(minThreatLevel, maxThreatLevelRaw);
 
@@ -380,10 +355,7 @@ function normalizeSchedule(
     days,
     timeSlice: normalizeTimeSlice(value.timeSlice),
     mapTags: normalizeStringArray(value.mapTags, DEFAULT_SCHEDULE.mapTags),
-    routeTriggers: normalizeStringArray(
-      value.routeTriggers,
-      DEFAULT_SCHEDULE.routeTriggers,
-    ),
+    routeTriggers: normalizeStringArray(value.routeTriggers, DEFAULT_SCHEDULE.routeTriggers),
     minThreatLevel,
     maxThreatLevel,
   };
@@ -391,7 +363,7 @@ function normalizeSchedule(
 
 function normalizeSpawn(
   value: Partial<NpcSpawnProfile> | undefined,
-  faction: NpcFaction,
+  faction: NpcFaction
 ): NpcSpawnProfile {
   if (!value) {
     return {
@@ -404,27 +376,20 @@ function normalizeSpawn(
     weight: normalizeNumber(value.weight, DEFAULT_SPAWN.weight, 1),
     rarity: normalizeRarity(value.rarity),
     mapTags: normalizeStringArray(value.mapTags, DEFAULT_SPAWN.mapTags),
-    routeTriggers: normalizeStringArray(
-      value.routeTriggers,
-      DEFAULT_SPAWN.routeTriggers,
-    ),
+    routeTriggers: normalizeStringArray(value.routeTriggers, DEFAULT_SPAWN.routeTriggers),
     requiresSafeZone:
-      typeof value.requiresSafeZone === "boolean"
+      typeof value.requiresSafeZone === 'boolean'
         ? value.requiresSafeZone
         : DEFAULT_SPAWN.requiresSafeZone,
     requiredFaction: normalizeFaction(value.requiredFaction),
   };
 }
 
-export function createNpcDefinition(
-  definition: NpcDefinitionInput,
-): NpcDefinition {
+export function createNpcDefinition(definition: NpcDefinitionInput): NpcDefinition {
   return normalizeNpcDefinition(definition);
 }
 
-export function normalizeNpcDefinition(
-  definition?: NpcDefinitionInput | null,
-): NpcDefinition {
+export function normalizeNpcDefinition(definition?: NpcDefinitionInput | null): NpcDefinition {
   const faction = normalizeFaction(definition?.faction);
   const role = normalizeRole(definition?.role, faction);
   const fallbackName = role;
@@ -438,17 +403,14 @@ export function normalizeNpcDefinition(
     behavior: normalizeBehavior(definition?.behavior, faction),
     schedule: normalizeSchedule(definition?.schedule),
     spawn: normalizeSpawn(definition?.spawn, faction),
-    textureKey: normalizeText(
-      definition?.textureKey,
-      NPC_PLACEHOLDER_TEXTURE_KEY,
-    ),
+    textureKey: normalizeText(definition?.textureKey, NPC_PLACEHOLDER_TEXTURE_KEY),
   };
 }
 
 export function getFallbackNpcDefinition(): NpcDefinition {
   return normalizeNpcDefinition({
-    id: "npc-fallback-civilian",
-    name: "Fallback Civilian",
+    id: 'npc-fallback-civilian',
+    name: 'Fallback Civilian',
     faction: NpcFaction.Survivor,
     role: NpcRole.Civilian,
     behavior: {
@@ -462,7 +424,7 @@ export function getFallbackNpcDefinition(): NpcDefinition {
     schedule: {
       days: [...NPC_WEEK_DAYS],
       timeSlice: NpcTimeSlice.Daytime,
-      mapTags: ["town"],
+      mapTags: ['town'],
       routeTriggers: [],
       minThreatLevel: 0,
       maxThreatLevel: 100,

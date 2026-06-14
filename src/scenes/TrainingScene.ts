@@ -1,11 +1,12 @@
-import Phaser from "phaser";
-import { createNewspaper } from "../entities/Newspaper";
-import { DayManager } from "../systems/DayManager";
-import { GameState, getOrCreateGameState } from "../systems/GameState";
-import { ScoreManager } from "../systems/ScoreManager";
-import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
-import { HUD } from "../ui/HUD";
-import { fadeIn, fadeToScene, floatingText } from "../utils/animations";
+import Phaser from 'phaser';
+import { createNewspaper } from '../entities/Newspaper';
+import { DayManager } from '../systems/DayManager';
+import type { GameState } from '../systems/GameState';
+import { getOrCreateGameState } from '../systems/GameState';
+import { ScoreManager } from '../systems/ScoreManager';
+import { BC, BROADCAST_FONT } from '../ui/broadcast-styles';
+import { HUD } from '../ui/HUD';
+import { fadeIn, fadeToScene, floatingText } from '../utils/animations';
 
 interface DeliveryData {
   house: { isSubscriber: boolean };
@@ -29,7 +30,7 @@ export class TrainingScene extends Phaser.Scene {
   private transitioning = false;
 
   constructor() {
-    super({ key: "TrainingScene" });
+    super({ key: 'TrainingScene' });
   }
 
   init(data: { deliveryData: DeliveryData[] }): void {
@@ -43,7 +44,7 @@ export class TrainingScene extends Phaser.Scene {
     this.dayManager = new DayManager();
     this.transitioning = false;
 
-    this.cameras.main.setBackgroundColor("#1a2a1a");
+    this.cameras.main.setBackgroundColor('#1a2a1a');
     fadeIn(this);
 
     // Training ground textures
@@ -69,21 +70,21 @@ export class TrainingScene extends Phaser.Scene {
 
     // Header with dramatic styling
     this.add
-      .text(482, 22, "TRAINING COURSE", {
+      .text(482, 22, 'TRAINING COURSE', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "34px",
-        fontStyle: "800",
-        color: "#000000",
+        fontSize: '34px',
+        fontStyle: '800',
+        color: '#000000',
       })
       .setOrigin(0.5, 0)
       .setAlpha(0.4)
       .setDepth(10);
 
     this.add
-      .text(480, 20, "TRAINING COURSE", {
+      .text(480, 20, 'TRAINING COURSE', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "34px",
-        fontStyle: "800",
+        fontSize: '34px',
+        fontStyle: '800',
         color: BC.css.GOLD,
         shadow: {
           offsetX: 0,
@@ -97,10 +98,10 @@ export class TrainingScene extends Phaser.Scene {
       .setDepth(10);
 
     this.add
-      .text(480, 58, "UNLIMITED PAPERS  ·  HIT TARGETS FOR BONUS", {
+      .text(480, 58, 'UNLIMITED PAPERS  ·  HIT TARGETS FOR BONUS', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "12px",
-        fontStyle: "600",
+        fontSize: '12px',
+        fontStyle: '600',
         color: BC.TEXT_DIM,
         letterSpacing: 2,
       })
@@ -121,16 +122,16 @@ export class TrainingScene extends Phaser.Scene {
     for (let i = 0; i < 6; i++) {
       const side = i % 2 === 0 ? 70 : 890;
       const y = 100 + i * 65;
-      const target = this.physics.add.staticSprite(side, y, "target");
-      target.setData("type", "target");
+      const target = this.physics.add.staticSprite(side, y, 'target');
+      target.setData('type', 'target');
       this.targets.add(target);
     }
 
     // Place ramps in the middle
     for (let i = 0; i < 3; i++) {
       const x = 300 + i * 180;
-      const ramp = this.physics.add.staticSprite(x, 200 + i * 80, "ramp");
-      ramp.setData("type", "ramp");
+      const ramp = this.physics.add.staticSprite(x, 200 + i * 80, 'ramp');
+      ramp.setData('type', 'ramp');
       this.ramps.add(ramp);
     }
 
@@ -138,43 +139,34 @@ export class TrainingScene extends Phaser.Scene {
     this.physics.add.overlap(
       this.papers,
       this.targets,
-      this
-        .onHitTarget as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      this.onHitTarget as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
       undefined,
-      this,
+      this
     );
     this.physics.add.overlap(
       this.papers,
       this.ramps,
-      this
-        .onHitRamp as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+      this.onHitRamp as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
       undefined,
-      this,
+      this
     );
 
     // Crash = collide with ramp
-    this.physics.add.overlap(
-      this.player,
-      this.ramps,
-      this
-        .onCrash as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
-      undefined,
-      this,
-    );
+    this.physics.add.overlap(this.player, this.ramps, this.onCrash, undefined, this);
 
     // Input (guard keyboard availability)
     const kb = this.input.keyboard;
     if (kb) {
       this.cursors = kb.createCursorKeys();
       this.wasd = {
-        W: kb.addKey("W"),
-        A: kb.addKey("A"),
-        S: kb.addKey("S"),
-        D: kb.addKey("D"),
+        W: kb.addKey('W'),
+        A: kb.addKey('A'),
+        S: kb.addKey('S'),
+        D: kb.addKey('D'),
       };
       this.keys = {
-        Q: kb.addKey("Q"),
-        E: kb.addKey("E"),
+        Q: kb.addKey('Q'),
+        E: kb.addKey('E'),
       };
     }
 
@@ -184,10 +176,10 @@ export class TrainingScene extends Phaser.Scene {
 
     // Countdown timer display
     const timerText = this.add
-      .text(920, 20, "15", {
+      .text(920, 20, '15', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "28px",
-        fontStyle: "800",
+        fontSize: '28px',
+        fontStyle: '800',
         color: BC.TEXT,
       })
       .setOrigin(1, 0)
@@ -210,7 +202,7 @@ export class TrainingScene extends Phaser.Scene {
             scaleY: 1.3,
             duration: 120,
             yoyo: true,
-            ease: "Quart.easeOut",
+            ease: 'Quart.easeOut',
           });
         }
       },
@@ -233,14 +225,14 @@ export class TrainingScene extends Phaser.Scene {
     this.player.setVelocity(vx, vy);
 
     if (this.keys?.Q && Phaser.Input.Keyboard.JustDown(this.keys.Q)) {
-      this.throwPaper("left");
+      this.throwPaper('left');
     }
     if (this.keys?.E && Phaser.Input.Keyboard.JustDown(this.keys.E)) {
-      this.throwPaper("right");
+      this.throwPaper('right');
     }
 
     // Remove out-of-bounds papers
-    this.papers.getChildren().forEach((obj) => {
+    this.papers.getChildren().forEach(obj => {
       const p = obj as Phaser.Physics.Arcade.Sprite;
       if (p.x < -50 || p.x > 1010 || p.y < -50 || p.y > 590) {
         this.consecutiveHits = 0;
@@ -251,29 +243,20 @@ export class TrainingScene extends Phaser.Scene {
     this.hud.update();
   }
 
-  private throwPaper(direction: "left" | "right"): void {
+  private throwPaper(direction: 'left' | 'right'): void {
     const isSunday = this.dayManager.isSunday(this.gameState.day);
-    const np = createNewspaper(
-      this.player.x,
-      this.player.y,
-      direction,
-      isSunday,
-    );
+    const np = createNewspaper(this.player.x, this.player.y, direction, isSunday);
 
-    const sprite = this.physics.add.sprite(
-      this.player.x,
-      this.player.y,
-      "newspaper",
-    );
-    sprite.setData("newspaper", np);
-    const vx = direction === "left" ? -np.speed * 40 : np.speed * 40;
+    const sprite = this.physics.add.sprite(this.player.x, this.player.y, 'newspaper');
+    sprite.setData('newspaper', np);
+    const vx = direction === 'left' ? -np.speed * 40 : np.speed * 40;
     sprite.setVelocity(vx, -20);
     this.papers.add(sprite);
   }
 
   private onHitTarget(
     _paperObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    _targetObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    _targetObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
     const paperSprite = _paperObj as Phaser.Physics.Arcade.Sprite;
     const targetSprite = _targetObj as Phaser.Physics.Arcade.Sprite;
@@ -298,19 +281,12 @@ export class TrainingScene extends Phaser.Scene {
         targetSprite.y - 10,
         `${this.consecutiveHits}× COMBO!`,
         BC.css.GOLD_GLOW,
-        "20px",
+        '20px',
         50,
-        900,
+        900
       );
     } else {
-      floatingText(
-        this,
-        targetSprite.x,
-        targetSprite.y - 10,
-        "HIT!",
-        BC.css.GREEN_BRIGHT,
-        "14px",
-      );
+      floatingText(this, targetSprite.x, targetSprite.y - 10, 'HIT!', BC.css.GREEN_BRIGHT, '14px');
     }
 
     paperSprite.destroy();
@@ -318,18 +294,11 @@ export class TrainingScene extends Phaser.Scene {
 
   private onHitRamp(
     _paperObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    _rampObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    _rampObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
     const paperSprite = _paperObj as Phaser.Physics.Arcade.Sprite;
     this.scoreManager.trainingRamp();
-    floatingText(
-      this,
-      paperSprite.x,
-      paperSprite.y - 10,
-      "RAMP!",
-      BC.css.AMBER,
-      "14px",
-    );
+    floatingText(this, paperSprite.x, paperSprite.y - 10, 'RAMP!', BC.css.AMBER, '14px');
     paperSprite.destroy();
   }
 
@@ -341,6 +310,6 @@ export class TrainingScene extends Phaser.Scene {
   private endTraining(): void {
     if (this.transitioning) return;
     this.transitioning = true;
-    fadeToScene(this, "ScoreSummaryScene", { deliveryData: this.deliveryData });
+    fadeToScene(this, 'ScoreSummaryScene', { deliveryData: this.deliveryData });
   }
 }

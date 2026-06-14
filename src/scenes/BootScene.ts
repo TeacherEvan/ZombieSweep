@@ -1,10 +1,10 @@
-import Phaser from "phaser";
-import { NPC_PLACEHOLDER_TEXTURE_KEY } from "../entities/Npc";
-import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
+import Phaser from 'phaser';
+import { NPC_PLACEHOLDER_TEXTURE_KEY } from '../entities/Npc';
+import { BC, BROADCAST_FONT } from '../ui/broadcast-styles';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
-    super({ key: "BootScene" });
+    super({ key: 'BootScene' });
   }
 
   preload(): void {
@@ -21,36 +21,25 @@ export class BootScene extends Phaser.Scene {
 
     const progressBar = this.add.graphics();
 
-    const loadingText = this.add.text(
-      width / 2,
-      height / 2 - 55,
-      "LOADING...",
-      {
-        fontFamily: BROADCAST_FONT,
-        fontSize: "22px",
-        fontStyle: "700",
-        color: BC.css.RED,
-        letterSpacing: 3,
-      },
-    );
+    const loadingText = this.add.text(width / 2, height / 2 - 55, 'LOADING...', {
+      fontFamily: BROADCAST_FONT,
+      fontSize: '22px',
+      fontStyle: '700',
+      color: BC.css.RED,
+      letterSpacing: 3,
+    });
     loadingText.setOrigin(0.5, 0.5);
 
-    this.load.on("progress", (value: number) => {
+    this.load.on('progress', (value: number) => {
       progressBar.clear();
       progressBar.fillStyle(BC.RED, 1);
-      progressBar.fillRoundedRect(
-        width / 2 - 155,
-        height / 2 - 12,
-        310 * value,
-        24,
-        3,
-      );
+      progressBar.fillRoundedRect(width / 2 - 155, height / 2 - 12, 310 * value, 24, 3);
       // Inner highlight
       progressBar.fillStyle(BC.RED_GLOW, 0.3);
       progressBar.fillRect(width / 2 - 155, height / 2 - 12, 310 * value, 8);
     });
 
-    this.load.on("complete", () => {
+    this.load.on('complete', () => {
       progressBar.destroy();
       progressBox.destroy();
       loadingText.destroy();
@@ -61,14 +50,14 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    const overlay = document.getElementById("loading-overlay");
+    const overlay = document.getElementById('loading-overlay');
     if (overlay) {
-      overlay.classList.add("hiding");
-      overlay.addEventListener("animationend", () => overlay.remove());
+      overlay.classList.add('hiding');
+      overlay.addEventListener('animationend', () => overlay.remove());
       // Fallback: remove overlay after 1s even if animationend doesn't fire
       setTimeout(() => overlay.remove(), 1000);
     }
-    this.scene.start("WelcomeScene");
+    this.scene.start('WelcomeScene');
   }
 
   private createPlaceholderTextures(): void {
@@ -77,50 +66,50 @@ export class BootScene extends Phaser.Scene {
     const g = this.add.graphics();
 
     // Player vehicles — distinctive shapes with outlines
-    this.generateVehicle(g, "player-bicycle", 32, 48, 0x22bb44, 0x115522);
-    this.generateVehicle(g, "player-rollerblades", 24, 48, 0x2299dd, 0x114466);
-    this.generateVehicle(g, "player-skateboard", 28, 44, 0xddaa22, 0x665511);
+    this.generateVehicle(g, 'player-bicycle', 32, 48, 0x22bb44, 0x115522);
+    this.generateVehicle(g, 'player-rollerblades', 24, 48, 0x2299dd, 0x114466);
+    this.generateVehicle(g, 'player-skateboard', 28, 44, 0xddaa22, 0x665511);
 
     // Zombies — dark greens and reds with menacing look
-    this.generateZombie(g, "zombie-shambler", 32, 40, 0x4a6a3a, 0x2a3a1a);
-    this.generateZombie(g, "zombie-runner", 28, 44, 0x8b2222, 0x551111);
-    this.generateZombie(g, "zombie-spitter", 32, 40, 0x6b8e33, 0x3a5511);
+    this.generateZombie(g, 'zombie-shambler', 32, 40, 0x4a6a3a, 0x2a3a1a);
+    this.generateZombie(g, 'zombie-runner', 28, 44, 0x8b2222, 0x551111);
+    this.generateZombie(g, 'zombie-spitter', 32, 40, 0x6b8e33, 0x3a5511);
 
     // Citizens
-    this.generateRect(g, "citizen-friendly", 24, 40, 0x4169e1);
-    this.generateRect(g, "citizen-panicked", 24, 40, 0xdd8833);
-    this.generateRect(g, "citizen-armed", 28, 44, 0x808080);
+    this.generateRect(g, 'citizen-friendly', 24, 40, 0x4169e1);
+    this.generateRect(g, 'citizen-panicked', 24, 40, 0xdd8833);
+    this.generateRect(g, 'citizen-armed', 28, 44, 0x808080);
 
     // Houses — subscriber vs non-subscriber with distinct styles
-    this.generateHouse(g, "house-ranch-sub", 80, 60, 0x44aa44, true);
-    this.generateHouse(g, "house-ranch-nonsub", 80, 60, 0x4a4a4a, false);
-    this.generateHouse(g, "house-colonial-sub", 70, 80, 0x4682b4, true);
-    this.generateHouse(g, "house-colonial-nonsub", 70, 80, 0x4a4a4a, false);
-    this.generateHouse(g, "house-victorian-sub", 75, 90, 0x8866aa, true);
-    this.generateHouse(g, "house-victorian-nonsub", 75, 90, 0x4a4a4a, false);
+    this.generateHouse(g, 'house-ranch-sub', 80, 60, 0x44aa44, true);
+    this.generateHouse(g, 'house-ranch-nonsub', 80, 60, 0x4a4a4a, false);
+    this.generateHouse(g, 'house-colonial-sub', 70, 80, 0x4682b4, true);
+    this.generateHouse(g, 'house-colonial-nonsub', 70, 80, 0x4a4a4a, false);
+    this.generateHouse(g, 'house-victorian-sub', 75, 90, 0x8866aa, true);
+    this.generateHouse(g, 'house-victorian-nonsub', 75, 90, 0x4a4a4a, false);
 
     // Hazards — clear danger markers
-    this.generateHazard(g, "hazard-hole", 64, 64, 0x1a1a1a, 0x333300);
-    this.generateHazard(g, "hazard-log", 192, 32, 0x6b4423, 0x4a3015);
-    this.generateHazard(g, "hazard-ice", 96, 96, 0x88bbdd, 0x6699bb);
+    this.generateHazard(g, 'hazard-hole', 64, 64, 0x1a1a1a, 0x333300);
+    this.generateHazard(g, 'hazard-log', 192, 32, 0x6b4423, 0x4a3015);
+    this.generateHazard(g, 'hazard-ice', 96, 96, 0x88bbdd, 0x6699bb);
 
     // Pickups — bright and noticeable
-    this.generatePickup(g, "pickup-newspaper", 20, 20, 0xf5f0d0);
-    this.generatePickup(g, "pickup-ammo", 20, 20, 0xff5500);
-    this.generatePickup(g, "pickup-health", 20, 20, 0xff3366);
+    this.generatePickup(g, 'pickup-newspaper', 20, 20, 0xf5f0d0);
+    this.generatePickup(g, 'pickup-ammo', 20, 20, 0xff5500);
+    this.generatePickup(g, 'pickup-health', 20, 20, 0xff3366);
 
     // Newspaper projectile
-    this.generateRect(g, "newspaper", 12, 8, 0xf5f0c0);
+    this.generateRect(g, 'newspaper', 12, 8, 0xf5f0c0);
 
     // NPC fallback placeholder — used when a specific NPC texture is missing
     this.generateRect(g, NPC_PLACEHOLDER_TEXTURE_KEY, 28, 40, 0x6e6e6e);
 
     // Training elements
-    this.generateTarget(g, "target", 40, 40);
-    this.generateRect(g, "ramp", 50, 20, 0xcc8844);
+    this.generateTarget(g, 'target', 40, 40);
+    this.generateRect(g, 'ramp', 50, 20, 0xcc8844);
 
     // UI
-    this.generateRect(g, "button", 200, 50, 0x1a1a1a);
+    this.generateRect(g, 'button', 200, 50, 0x1a1a1a);
 
     g.destroy();
   }
@@ -130,7 +119,7 @@ export class BootScene extends Phaser.Scene {
     key: string,
     width: number,
     height: number,
-    color: number,
+    color: number
   ): void {
     g.clear();
     g.fillStyle(color, 1);
@@ -144,7 +133,7 @@ export class BootScene extends Phaser.Scene {
     width: number,
     height: number,
     color: number,
-    outline: number,
+    outline: number
   ): void {
     g.clear();
     // Body
@@ -164,7 +153,7 @@ export class BootScene extends Phaser.Scene {
     width: number,
     height: number,
     color: number,
-    outline: number,
+    outline: number
   ): void {
     g.clear();
     // Body
@@ -188,7 +177,7 @@ export class BootScene extends Phaser.Scene {
     width: number,
     height: number,
     color: number,
-    isSubscriber: boolean,
+    isSubscriber: boolean
   ): void {
     g.clear();
     // Wall
@@ -217,7 +206,7 @@ export class BootScene extends Phaser.Scene {
     width: number,
     height: number,
     color: number,
-    border: number,
+    border: number
   ): void {
     g.clear();
     g.fillStyle(border, 1);
@@ -238,7 +227,7 @@ export class BootScene extends Phaser.Scene {
     key: string,
     width: number,
     height: number,
-    color: number,
+    color: number
   ): void {
     g.clear();
     // Glowing circle
@@ -256,7 +245,7 @@ export class BootScene extends Phaser.Scene {
     g: Phaser.GameObjects.Graphics,
     key: string,
     width: number,
-    height: number,
+    height: number
   ): void {
     g.clear();
     // Concentric rings

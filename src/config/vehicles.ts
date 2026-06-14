@@ -1,12 +1,12 @@
 export enum VehicleType {
-  Bicycle = "Bicycle",
-  RollerBlades = "RollerBlades",
-  Skateboard = "Skateboard",
+  Bicycle = 'Bicycle',
+  RollerBlades = 'RollerBlades',
+  Skateboard = 'Skateboard',
 }
 
 export enum WeaponSlot {
-  Melee = "Melee",
-  Ranged = "Ranged",
+  Melee = 'Melee',
+  Ranged = 'Ranged',
 }
 
 export interface WeaponConfig {
@@ -36,7 +36,7 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
     canOllie: false,
     weapons: {
       [WeaponSlot.Melee]: {
-        name: "Baseball Bat",
+        name: 'Baseball Bat',
         damage: 3,
         speed: 2,
         range: 2,
@@ -46,7 +46,7 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
         spread: false,
       },
       [WeaponSlot.Ranged]: {
-        name: "Slingshot",
+        name: 'Slingshot',
         damage: 1,
         speed: 6,
         range: 8,
@@ -64,7 +64,7 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
     canOllie: false,
     weapons: {
       [WeaponSlot.Melee]: {
-        name: "Hockey Stick",
+        name: 'Hockey Stick',
         damage: 3,
         speed: 3,
         range: 2,
@@ -74,7 +74,7 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
         spread: false,
       },
       [WeaponSlot.Ranged]: {
-        name: "Crossbow",
+        name: 'Crossbow',
         damage: 4,
         speed: 2,
         range: 10,
@@ -92,7 +92,7 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
     canOllie: true,
     weapons: {
       [WeaponSlot.Melee]: {
-        name: "Machete",
+        name: 'Machete',
         damage: 5,
         speed: 4,
         range: 1,
@@ -102,7 +102,7 @@ export const VEHICLE_STATS: Record<VehicleType, VehicleConfig> = {
         spread: false,
       },
       [WeaponSlot.Ranged]: {
-        name: "Shotgun",
+        name: 'Shotgun',
         damage: 7,
         speed: 1,
         range: 4,
