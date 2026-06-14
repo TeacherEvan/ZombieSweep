@@ -1,9 +1,6 @@
-import { DIFFICULTY_MULTIPLIERS, Difficulty } from "../config/difficulty";
-import {
-  VersusMatchReason,
-  VersusMatchResult,
-  VersusMatchWinner,
-} from "./protocol";
+import type { Difficulty } from '../config/difficulty';
+import { DIFFICULTY_MULTIPLIERS } from '../config/difficulty';
+import type { VersusMatchReason, VersusMatchResult, VersusMatchWinner } from './protocol';
 
 export function scoreRivalKill(
   basePoints: number,
@@ -11,7 +8,7 @@ export function scoreRivalKill(
   options: {
     elite: boolean;
     comboBonus?: number;
-  },
+  }
 ): number {
   const scaledBase = Math.round(basePoints * DIFFICULTY_MULTIPLIERS[difficulty] * 1.35);
   const eliteBonus = options.elite ? Math.max(30, Math.round(basePoints * 0.8)) : 0;
@@ -21,17 +18,17 @@ export function scoreRivalKill(
 export function createVersusMatchResult(
   driverScore: number,
   rivalScore: number,
-  reason: VersusMatchReason,
+  reason: VersusMatchReason
 ): VersusMatchResult {
-  let winner: VersusMatchWinner = "draw";
+  let winner: VersusMatchWinner = 'draw';
   if (driverScore > rivalScore) {
-    winner = "driver";
+    winner = 'driver';
   } else if (rivalScore > driverScore) {
-    winner = "rival";
+    winner = 'rival';
   }
 
   return {
-    mode: "versus",
+    mode: 'versus',
     reason,
     winner,
     driverScore,

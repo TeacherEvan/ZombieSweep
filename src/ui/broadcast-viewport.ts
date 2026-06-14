@@ -1,8 +1,4 @@
-export type BroadcastViewportMode =
-  | "desktop"
-  | "tablet"
-  | "compact"
-  | "portrait";
+export type BroadcastViewportMode = 'desktop' | 'tablet' | 'compact' | 'portrait';
 
 export interface BroadcastViewportContext {
   width: number;
@@ -24,21 +20,21 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function detectTouchPrimary(): boolean {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return false;
   }
 
   return (
-    "ontouchstart" in window ||
+    'ontouchstart' in window ||
     navigator.maxTouchPoints > 0 ||
-    window.matchMedia("(pointer: coarse)").matches
+    window.matchMedia('(pointer: coarse)').matches
   );
 }
 
 export function resolveBroadcastViewportContext(
   width: number,
   height: number,
-  touchPrimary: boolean,
+  touchPrimary: boolean
 ): BroadcastViewportContext {
   const aspectRatio = width / Math.max(height, 1);
   const isPortrait = height > width;
@@ -47,18 +43,14 @@ export function resolveBroadcastViewportContext(
 
   const mode: BroadcastViewportMode =
     touchPrimary && isPortrait
-      ? "portrait"
+      ? 'portrait'
       : isCompact
-        ? "compact"
+        ? 'compact'
         : isTablet
-          ? "tablet"
-          : "desktop";
+          ? 'tablet'
+          : 'desktop';
 
-  const uiScale = clamp(
-    Math.max(960 / Math.max(width, 1), 540 / Math.max(height, 1)),
-    1,
-    2,
-  );
+  const uiScale = clamp(Math.max(960 / Math.max(width, 1), 540 / Math.max(height, 1)), 1, 2);
 
   return {
     width,
@@ -69,17 +61,15 @@ export function resolveBroadcastViewportContext(
     isPortrait,
     isCompact,
     uiScale,
-    showBreakingBlock: mode === "desktop" || mode === "tablet",
+    showBreakingBlock: mode === 'desktop' || mode === 'tablet',
     showTicker: true,
-    showDatetime: mode === "desktop" || mode === "tablet",
+    showDatetime: mode === 'desktop' || mode === 'tablet',
     showFullscreenButton: width >= 420,
   };
 }
 
-export function syncBroadcastViewportContext(
-  target?: HTMLElement,
-): BroadcastViewportContext {
-  if (typeof window === "undefined" || typeof document === "undefined") {
+export function syncBroadcastViewportContext(target?: HTMLElement): BroadcastViewportContext {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return resolveBroadcastViewportContext(1280, 720, false);
   }
 
@@ -87,16 +77,14 @@ export function syncBroadcastViewportContext(
   const context = resolveBroadcastViewportContext(
     window.innerWidth,
     window.innerHeight,
-    detectTouchPrimary(),
+    detectTouchPrimary()
   );
 
   root.dataset.broadcastMode = context.mode;
-  root.dataset.broadcastOrientation = context.isPortrait
-    ? "portrait"
-    : "landscape";
-  root.dataset.broadcastTouch = context.touchPrimary ? "touch" : "pointer";
-  root.dataset.broadcastCompact = context.isCompact ? "true" : "false";
-  root.style.setProperty("--broadcast-ui-scale", `${context.uiScale}`);
+  root.dataset.broadcastOrientation = context.isPortrait ? 'portrait' : 'landscape';
+  root.dataset.broadcastTouch = context.touchPrimary ? 'touch' : 'pointer';
+  root.dataset.broadcastCompact = context.isCompact ? 'true' : 'false';
+  root.style.setProperty('--broadcast-ui-scale', `${context.uiScale}`);
 
   return context;
 }

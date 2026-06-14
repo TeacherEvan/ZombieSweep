@@ -1,14 +1,9 @@
-import Phaser from "phaser";
-import { BC, BROADCAST_FONT } from "./broadcast-styles";
+import type Phaser from 'phaser';
+import { BC, BROADCAST_FONT } from './broadcast-styles';
 
-export type TouchControlAction =
-  | "throwLeft"
-  | "throwRight"
-  | "melee"
-  | "ranged"
-  | "pause";
+export type TouchControlAction = 'throwLeft' | 'throwRight' | 'melee' | 'ranged' | 'pause';
 
-export type TouchControlDirection = "left" | "right" | "up" | "down";
+export type TouchControlDirection = 'left' | 'right' | 'up' | 'down';
 
 interface TouchButtonConfig {
   x: number;
@@ -16,7 +11,7 @@ interface TouchButtonConfig {
   width: number;
   height: number;
   label: string;
-  kind: "hold" | "tap";
+  kind: 'hold' | 'tap';
   direction?: TouchControlDirection;
   action?: TouchControlAction;
   accentColor?: number;
@@ -38,10 +33,7 @@ export class TouchControls {
   constructor(scene: Phaser.Scene, width: number, height: number, scale = 1) {
     this.scene = scene;
     this.viewportScale = scale;
-    this.container = this.scene.add
-      .container(0, 0)
-      .setScrollFactor(0)
-      .setDepth(180);
+    this.container = this.scene.add.container(0, 0).setScrollFactor(0).setDepth(180);
     this.build(width, height);
   }
 
@@ -69,18 +61,13 @@ export class TouchControls {
 
   private build(width: number, height: number): void {
     const title = this.scene.add
-      .text(
-        width / 2,
-        height - Math.round(168 * this.viewportScale),
-        "FIELD CONTROLS",
-        {
-          fontFamily: BROADCAST_FONT,
-          fontSize: `${Math.round(11 * this.viewportScale)}px`,
-          fontStyle: "800",
-          color: BC.TEXT_DIM,
-          letterSpacing: 3,
-        },
-      )
+      .text(width / 2, height - Math.round(168 * this.viewportScale), 'FIELD CONTROLS', {
+        fontFamily: BROADCAST_FONT,
+        fontSize: `${Math.round(11 * this.viewportScale)}px`,
+        fontStyle: '800',
+        color: BC.TEXT_DIM,
+        letterSpacing: 3,
+      })
       .setOrigin(0.5, 1)
       .setAlpha(0.92);
 
@@ -96,9 +83,9 @@ export class TouchControls {
       y: padCenterY - padSize - padGap,
       width: padSize,
       height: padSize,
-      label: "▲",
-      kind: "hold",
-      direction: "up",
+      label: '▲',
+      kind: 'hold',
+      direction: 'up',
       accentColor: BC.GREEN,
       labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
@@ -107,9 +94,9 @@ export class TouchControls {
       y: padCenterY,
       width: padSize,
       height: padSize,
-      label: "◀",
-      kind: "hold",
-      direction: "left",
+      label: '◀',
+      kind: 'hold',
+      direction: 'left',
       accentColor: BC.GREEN,
       labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
@@ -118,9 +105,9 @@ export class TouchControls {
       y: padCenterY,
       width: padSize,
       height: padSize,
-      label: "▶",
-      kind: "hold",
-      direction: "right",
+      label: '▶',
+      kind: 'hold',
+      direction: 'right',
       accentColor: BC.GREEN,
       labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
@@ -129,9 +116,9 @@ export class TouchControls {
       y: padCenterY + padSize + padGap,
       width: padSize,
       height: padSize,
-      label: "▼",
-      kind: "hold",
-      direction: "down",
+      label: '▼',
+      kind: 'hold',
+      direction: 'down',
       accentColor: BC.GREEN,
       labelSize: `${Math.round(20 * this.viewportScale)}px`,
     });
@@ -147,9 +134,9 @@ export class TouchControls {
       y: actionsStartY,
       width: actionWidth,
       height: actionHeight,
-      label: "L THROW",
-      kind: "tap",
-      action: "throwLeft",
+      label: 'L THROW',
+      kind: 'tap',
+      action: 'throwLeft',
       accentColor: BC.RED,
       labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
@@ -158,9 +145,9 @@ export class TouchControls {
       y: actionsStartY,
       width: actionWidth,
       height: actionHeight,
-      label: "R THROW",
-      kind: "tap",
-      action: "throwRight",
+      label: 'R THROW',
+      kind: 'tap',
+      action: 'throwRight',
       accentColor: BC.RED,
       labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
@@ -169,9 +156,9 @@ export class TouchControls {
       y: actionsStartY + actionHeight + actionGap,
       width: actionWidth,
       height: actionHeight,
-      label: "MELEE",
-      kind: "tap",
-      action: "melee",
+      label: 'MELEE',
+      kind: 'tap',
+      action: 'melee',
       accentColor: BC.GOLD,
       labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
@@ -180,9 +167,9 @@ export class TouchControls {
       y: actionsStartY + actionHeight + actionGap,
       width: actionWidth,
       height: actionHeight,
-      label: "FIRE",
-      kind: "tap",
-      action: "ranged",
+      label: 'FIRE',
+      kind: 'tap',
+      action: 'ranged',
       accentColor: BC.GOLD,
       labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
@@ -192,29 +179,26 @@ export class TouchControls {
       y: height - Math.round(28 * this.viewportScale),
       width: Math.round(160 * this.viewportScale),
       height: Math.round(30 * this.viewportScale),
-      label: "PAUSE",
-      kind: "tap",
-      action: "pause",
+      label: 'PAUSE',
+      kind: 'tap',
+      action: 'pause',
       accentColor: BC.AMBER,
       labelSize: `${Math.round(12 * this.viewportScale)}px`,
     });
   }
 
   private createButton(config: TouchButtonConfig): void {
-    const container = this.scene.add
-      .container(config.x, config.y)
-      .setScrollFactor(0);
+    const container = this.scene.add.container(config.x, config.y).setScrollFactor(0);
     const bg = this.scene.add.graphics();
     const accent = this.scene.add.graphics();
     const label = this.scene.add
       .text(0, 0, config.label.toUpperCase(), {
         fontFamily: BROADCAST_FONT,
-        fontSize:
-          config.labelSize ?? (config.kind === "hold" ? "18px" : "12px"),
-        fontStyle: "800",
+        fontSize: config.labelSize ?? (config.kind === 'hold' ? '18px' : '12px'),
+        fontStyle: '800',
         color: BC.TEXT,
         letterSpacing: 1,
-        align: "center",
+        align: 'center',
       })
       .setOrigin(0.5);
 
@@ -228,48 +212,31 @@ export class TouchControls {
 
       if (pressed) {
         bg.fillStyle(BC.CHROME_LIT, 1);
-        bg.fillRoundedRect(
-          -config.width / 2,
-          -config.height / 2,
-          config.width,
-          config.height,
-          10,
-        );
+        bg.fillRoundedRect(-config.width / 2, -config.height / 2, config.width, config.height, 10);
         bg.lineStyle(1, BC.CHROME_EDGE, 1);
         bg.strokeRoundedRect(
           -config.width / 2,
           -config.height / 2,
           config.width,
           config.height,
-          10,
+          10
         );
       } else {
         bg.fillStyle(BC.CHROME, 0.85);
-        bg.fillRoundedRect(
-          -config.width / 2,
-          -config.height / 2,
-          config.width,
-          config.height,
-          10,
-        );
+        bg.fillRoundedRect(-config.width / 2, -config.height / 2, config.width, config.height, 10);
         bg.lineStyle(1, BC.CHROME_EDGE, 0.8);
         bg.strokeRoundedRect(
           -config.width / 2,
           -config.height / 2,
           config.width,
           config.height,
-          10,
+          10
         );
       }
 
       accent.fillStyle(config.accentColor ?? BC.RED, 1);
-      const accentWidth = config.kind === "hold" ? 3 : 4;
-      accent.fillRect(
-        -config.width / 2,
-        -config.height / 2,
-        accentWidth,
-        config.height,
-      );
+      const accentWidth = config.kind === 'hold' ? 3 : 4;
+      accent.fillRect(-config.width / 2, -config.height / 2, accentWidth, config.height);
 
       label.setColor(pressed ? BC.TEXT : BC.TEXT_DIM);
     };
@@ -293,9 +260,9 @@ export class TouchControls {
       }
     };
 
-    hitArea.on("pointerdown", press);
-    hitArea.on("pointerup", release);
-    hitArea.on("pointerout", release);
+    hitArea.on('pointerdown', press);
+    hitArea.on('pointerup', release);
+    hitArea.on('pointerout', release);
 
     container.add([bg, accent, label, hitArea]);
     draw(false);

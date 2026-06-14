@@ -1,12 +1,12 @@
-import { Difficulty } from "../config/difficulty";
-import { PickupType } from "../entities/Pickup";
-import { ZombieType } from "../entities/Zombie";
-import { VehicleType } from "../config/vehicles";
+import type { Difficulty } from '../config/difficulty';
+import type { PickupType } from '../entities/Pickup';
+import type { ZombieType } from '../entities/Zombie';
+import type { VehicleType } from '../config/vehicles';
 
-export type MultiplayerMode = "coop" | "versus";
-export type CoopRole = "driver" | "gunner";
-export type VersusMatchReason = "route-complete" | "driver-down";
-export type VersusMatchWinner = "driver" | "rival" | "draw";
+export type MultiplayerMode = 'coop' | 'versus';
+export type CoopRole = 'driver' | 'gunner';
+export type VersusMatchReason = 'route-complete' | 'driver-down';
+export type VersusMatchWinner = 'driver' | 'rival' | 'draw';
 
 export interface GunnerAction {
   type: GunnerActionType;
@@ -27,7 +27,7 @@ export interface VersusScoreboard {
 }
 
 export interface VersusMatchResult {
-  mode: "versus";
+  mode: 'versus';
   reason: VersusMatchReason;
   winner: VersusMatchWinner;
   driverScore: number;
@@ -66,29 +66,25 @@ export interface DriverSnapshot {
   versusScoreboard?: VersusScoreboard;
 }
 
-export type GunnerActionType =
-  | "melee"
-  | "ranged"
-  | "throw-left"
-  | "throw-right";
+export type GunnerActionType = 'melee' | 'ranged' | 'throw-left' | 'throw-right';
 
 export type ClientMessage =
-  | { type: "host-room"; mode: MultiplayerMode }
-  | { type: "join-room"; roomCode: string }
-  | { type: "host-game-config"; config: CoopGameConfig }
-  | { type: "host-start-game" }
-  | { type: "driver-snapshot"; snapshot: DriverSnapshot }
-  | { type: "host-finish-match"; result: VersusMatchResult }
-  | { type: "gunner-action"; action: GunnerAction };
+  | { type: 'host-room'; mode: MultiplayerMode }
+  | { type: 'join-room'; roomCode: string }
+  | { type: 'host-game-config'; config: CoopGameConfig }
+  | { type: 'host-start-game' }
+  | { type: 'driver-snapshot'; snapshot: DriverSnapshot }
+  | { type: 'host-finish-match'; result: VersusMatchResult }
+  | { type: 'gunner-action'; action: GunnerAction };
 
 export type ServerMessage =
-  | { type: "room-hosted"; roomCode: string; mode: MultiplayerMode }
-  | { type: "room-joined"; roomCode: string; role: CoopRole; mode: MultiplayerMode }
-  | { type: "peer-status"; connected: boolean }
-  | { type: "game-config"; config: CoopGameConfig }
-  | { type: "start-game" }
-  | { type: "gunner-action"; action: GunnerAction }
-  | { type: "snapshot"; snapshot: DriverSnapshot }
-  | { type: "match-result"; result: VersusMatchResult }
-  | { type: "session-ended"; reason: string }
-  | { type: "error"; message: string };
+  | { type: 'room-hosted'; roomCode: string; mode: MultiplayerMode }
+  | { type: 'room-joined'; roomCode: string; role: CoopRole; mode: MultiplayerMode }
+  | { type: 'peer-status'; connected: boolean }
+  | { type: 'game-config'; config: CoopGameConfig }
+  | { type: 'start-game' }
+  | { type: 'gunner-action'; action: GunnerAction }
+  | { type: 'snapshot'; snapshot: DriverSnapshot }
+  | { type: 'match-result'; result: VersusMatchResult }
+  | { type: 'session-ended'; reason: string }
+  | { type: 'error'; message: string };

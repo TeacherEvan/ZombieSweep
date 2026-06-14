@@ -14,10 +14,10 @@ function sortTargets(targets: CoopTargetable[]): CoopTargetable[] {
 
 export function resolveTargetId(
   targets: CoopTargetable[],
-  currentTargetId: number | null,
+  currentTargetId: number | null
 ): number | null {
   if (targets.length === 0) return null;
-  if (currentTargetId !== null && targets.some((target) => target.id === currentTargetId)) {
+  if (currentTargetId !== null && targets.some(target => target.id === currentTargetId)) {
     return currentTargetId;
   }
 
@@ -27,23 +27,20 @@ export function resolveTargetId(
 export function cycleTargetId(
   targets: CoopTargetable[],
   currentTargetId: number | null,
-  direction: "next" | "previous",
+  direction: 'next' | 'previous'
 ): number | null {
   if (targets.length === 0) return null;
 
   const orderedTargets = sortTargets(targets);
-  const currentIndex = orderedTargets.findIndex(
-    (target) => target.id === currentTargetId,
-  );
+  const currentIndex = orderedTargets.findIndex(target => target.id === currentTargetId);
 
   if (currentIndex === -1) {
-    return direction === "next"
-      ? orderedTargets[0]?.id ?? null
-      : orderedTargets[orderedTargets.length - 1]?.id ?? null;
+    return direction === 'next'
+      ? (orderedTargets[0]?.id ?? null)
+      : (orderedTargets[orderedTargets.length - 1]?.id ?? null);
   }
 
-  const delta = direction === "next" ? 1 : -1;
-  const nextIndex =
-    (currentIndex + delta + orderedTargets.length) % orderedTargets.length;
+  const delta = direction === 'next' ? 1 : -1;
+  const nextIndex = (currentIndex + delta + orderedTargets.length) % orderedTargets.length;
   return orderedTargets[nextIndex]?.id ?? null;
 }

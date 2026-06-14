@@ -1,25 +1,26 @@
+import type { NpcDefinition, NpcDefinitionInput } from '../entities/Npc';
 import {
-  NpcDefinition,
-  NpcDefinitionInput,
   NpcFaction,
   NpcRarity,
   NpcState,
   NpcTimeSlice,
   createNpcDefinition,
-} from "../entities/Npc";
-import { NPC_ARCHETYPES } from "../entities/NpcCatalog";
-import { NpcDecisionContext, resolveNpcState } from "./NpcRules";
-import { TownReputation, normalizeTownReputation } from "./TownReputation";
+} from '../entities/Npc';
+import { NPC_ARCHETYPES } from '../entities/NpcCatalog';
+import type { NpcDecisionContext } from './NpcRules';
+import { resolveNpcState } from './NpcRules';
+import type { TownReputation } from './TownReputation';
+import { normalizeTownReputation } from './TownReputation';
 
 export type NpcCatalogEntry = NpcDefinition | NpcDefinitionInput;
 
 export type NpcSpawnZone =
-  | "FrontPorch"
-  | "BackPorch"
-  | "LeftSidewalk"
-  | "SidewalkRight"
-  | "CenterStreet"
-  | "Yard";
+  | 'FrontPorch'
+  | 'BackPorch'
+  | 'LeftSidewalk'
+  | 'SidewalkRight'
+  | 'CenterStreet'
+  | 'Yard';
 
 export interface NpcScheduleContext {
   day: number;
@@ -43,14 +44,14 @@ export interface NpcSpawnPlan extends NpcArchetypeSelection {
   state: NpcState;
 }
 
-const DEFAULT_SPAWN_ZONE: NpcSpawnZone = "FrontPorch";
+const DEFAULT_SPAWN_ZONE: NpcSpawnZone = 'FrontPorch';
 const VALID_SPAWN_ZONES: NpcSpawnZone[] = [
-  "FrontPorch",
-  "BackPorch",
-  "LeftSidewalk",
-  "SidewalkRight",
-  "CenterStreet",
-  "Yard",
+  'FrontPorch',
+  'BackPorch',
+  'LeftSidewalk',
+  'SidewalkRight',
+  'CenterStreet',
+  'Yard',
 ];
 
 const RARITY_BONUS: Record<NpcRarity, number> = {
@@ -71,43 +72,29 @@ function clamp(value: number, min = 0, max = 100): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function normalizeNumber(
-  value: unknown,
-  fallback: number,
-  min = 0,
-  max = 100,
-): number {
-  if (
-    typeof value !== "number" ||
-    Number.isNaN(value) ||
-    !Number.isFinite(value)
-  ) {
+function normalizeNumber(value: unknown, fallback: number, min = 0, max = 100): number {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
     return clamp(fallback, min, max);
   }
 
   return clamp(value, min, max);
 }
 
-function normalizeStringArray(
-  value: unknown,
-  fallback: string[] = [],
-): string[] {
+function normalizeStringArray(value: unknown, fallback: string[] = []): string[] {
   if (!Array.isArray(value)) {
     return [...fallback];
   }
 
   const cleaned = value
-    .filter((entry): entry is string => typeof entry === "string")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map(entry => entry.trim())
+    .filter(entry => entry.length > 0);
 
   const unique = Array.from(new Set(cleaned));
   return unique.length > 0 ? unique : [...fallback];
 }
 
-function normalizeScheduleContext(
-  context: NpcScheduleContext,
-): NpcScheduleContext {
+function normalizeScheduleContext(context: NpcScheduleContext): NpcScheduleContext {
   return {
     ...context,
     day: normalizeNumber(context.day, 1, 1, 7),
@@ -117,10 +104,7 @@ function normalizeScheduleContext(
     reputation: normalizeTownReputation(context.reputation),
     isSafeZone: context.isSafeZone ?? false,
     spawnZones: normalizeStringArray(context.spawnZones),
-    limit:
-      context.limit === undefined
-        ? undefined
-        : Math.max(1, Math.trunc(context.limit)),
+    limit: context.limit === undefined ? undefined : Math.max(1, Math.trunc(context.limit)),
   };
 }
 
@@ -130,37 +114,28 @@ function isDayAllowed(scheduleDays: number[], day: number): boolean {
 
 function isTimeSliceAllowed(
   scheduleTimeSlice: NpcTimeSlice,
-  contextTimeSlice: NpcTimeSlice,
+  contextTimeSlice: NpcTimeSlice
 ): boolean {
   return scheduleTimeSlice === contextTimeSlice;
 }
 
-function matchesMapTags(
-  scheduleTags: string[],
-  contextTags: string[],
-): boolean {
-  if (scheduleTags.length === 0 || scheduleTags.includes("town")) {
+function matchesMapTags(scheduleTags: string[], contextTags: string[]): boolean {
+  if (scheduleTags.length === 0 || scheduleTags.includes('town')) {
     return true;
   }
 
-  return scheduleTags.some((tag) => contextTags.includes(tag));
+  return scheduleTags.some(tag => contextTags.includes(tag));
 }
 
 function scoreListOverlap(items: string[], contextItems: string[]): number {
-  return items.reduce(
-    (score, item) => (contextItems.includes(item) ? score + 1 : score),
-    0,
-  );
+  return items.reduce((score, item) => (contextItems.includes(item) ? score + 1 : score), 0);
 }
 
 function rarityScore(rarity: NpcRarity): number {
   return RARITY_BONUS[rarity];
 }
 
-function factionAffinityScore(
-  definition: NpcDefinition,
-  context: NpcScheduleContext,
-): number {
+function factionAffinityScore(definition: NpcDefinition, context: NpcScheduleContext): number {
   const trust = context.reputation.trust;
   const alertness = context.reputation.alertness;
   const threat = context.threatLevel;
@@ -169,53 +144,46 @@ function factionAffinityScore(
 
   switch (definition.faction) {
     case NpcFaction.Survivor:
-      return (
-        Math.max(0, 60 - threat) * 0.15 + trust * 0.1 + (isSafeZone ? 6 : 0)
-      );
+      return Math.max(0, 60 - threat) * 0.15 + trust * 0.1 + (isSafeZone ? 6 : 0);
     case NpcFaction.HostileHuman:
       return (
         (100 - trust) * 0.14 +
         threat * 0.12 +
-        scoreListOverlap(["blockade", "raid", "ambush"], routeTriggers) * 6
+        scoreListOverlap(['blockade', 'raid', 'ambush'], routeTriggers) * 6
       );
     case NpcFaction.Responder:
       return (
         threat * 0.1 +
         alertness * 0.12 +
-        scoreListOverlap(["rescue", "signal", "aid"], routeTriggers) * 6
+        scoreListOverlap(['rescue', 'signal', 'aid'], routeTriggers) * 6
       );
     case NpcFaction.Trader:
       return (
         trust * 0.16 +
         (isSafeZone ? 10 : -8) +
         Math.max(0, 40 - threat) * 0.08 +
-        scoreListOverlap(["market", "supply", "clinic"], routeTriggers) * 7
+        scoreListOverlap(['market', 'supply', 'clinic'], routeTriggers) * 7
       );
     case NpcFaction.Infected:
       return (
         threat * 0.18 +
         alertness * 0.08 +
-        scoreListOverlap(["alarm", "noise", "panic"], routeTriggers) * 7 +
+        scoreListOverlap(['alarm', 'noise', 'panic'], routeTriggers) * 7 +
         (context.timeSlice === NpcTimeSlice.Night ? 8 : 0)
       );
   }
 }
 
-function scheduleAffinityScore(
-  definition: NpcDefinition,
-  context: NpcScheduleContext,
-): number {
+function scheduleAffinityScore(definition: NpcDefinition, context: NpcScheduleContext): number {
   const schedule = definition.schedule;
   const mapMatch = matchesMapTags(schedule.mapTags, context.mapTags) ? 6 : -8;
-  const triggerMatch =
-    scoreListOverlap(schedule.routeTriggers, context.routeTriggers) * 5;
+  const triggerMatch = scoreListOverlap(schedule.routeTriggers, context.routeTriggers) * 5;
   const dayMatch = isDayAllowed(schedule.days, context.day) ? 6 : -20;
   const timeMatch = isTimeSliceAllowed(schedule.timeSlice, context.timeSlice)
     ? TIME_SLICE_BONUS[schedule.timeSlice]
     : -10;
   const threatMatch =
-    context.threatLevel < schedule.minThreatLevel ||
-    context.threatLevel > schedule.maxThreatLevel
+    context.threatLevel < schedule.minThreatLevel || context.threatLevel > schedule.maxThreatLevel
       ? -30
       : 8;
 
@@ -241,21 +209,19 @@ function stateBonus(state: NpcState): number {
   }
 }
 
-function getScriptedEvent(
-  context: NpcScheduleContext,
-): NpcDecisionContext["scriptedEvent"] {
+function getScriptedEvent(context: NpcScheduleContext): NpcDecisionContext['scriptedEvent'] {
   const triggers = context.routeTriggers;
-  if (triggers.includes("raid")) return "raid";
-  if (triggers.includes("blockade")) return "blockade";
-  if (triggers.includes("rescue")) return "rescue";
-  if (triggers.includes("market")) return "market";
-  if (triggers.includes("alarm")) return "alert";
-  return "none";
+  if (triggers.includes('raid')) return 'raid';
+  if (triggers.includes('blockade')) return 'blockade';
+  if (triggers.includes('rescue')) return 'rescue';
+  if (triggers.includes('market')) return 'market';
+  if (triggers.includes('alarm')) return 'alert';
+  return 'none';
 }
 
 function buildDecisionContext(
   definition: NpcDefinition,
-  context: NpcScheduleContext,
+  context: NpcScheduleContext
 ): NpcDecisionContext {
   return {
     faction: definition.faction,
@@ -271,10 +237,7 @@ function buildDecisionContext(
   };
 }
 
-function scoreNpcDefinition(
-  definition: NpcDefinition,
-  context: NpcScheduleContext,
-): number {
+function scoreNpcDefinition(definition: NpcDefinition, context: NpcScheduleContext): number {
   if (definition.spawn.requiredFaction !== definition.faction) {
     return Number.NEGATIVE_INFINITY;
   }
@@ -290,7 +253,7 @@ function scoreNpcDefinition(
 
   const behaviorState = resolveNpcState(
     definition.behavior,
-    buildDecisionContext(definition, context),
+    buildDecisionContext(definition, context)
   );
 
   return (
@@ -308,14 +271,14 @@ function getDefaultSpawnZoneList(): NpcSpawnZone[] {
 
 function resolveSpawnZoneList(context: NpcScheduleContext): NpcSpawnZone[] {
   const sanitized = (context.spawnZones ?? [])
-    .map((zone) => sanitizeSpawnZone(zone))
+    .map(zone => sanitizeSpawnZone(zone))
     .filter((zone): zone is NpcSpawnZone => zone !== null);
 
   return sanitized.length > 0 ? sanitized : getDefaultSpawnZoneList();
 }
 
 export function sanitizeSpawnZone(zone: unknown): NpcSpawnZone | null {
-  if (typeof zone !== "string") {
+  if (typeof zone !== 'string') {
     return null;
   }
 
@@ -327,17 +290,17 @@ export function sanitizeSpawnZone(zone: unknown): NpcSpawnZone | null {
 
 export function selectNpcArchetypes(
   context: NpcScheduleContext,
-  catalog: ReadonlyArray<NpcCatalogEntry> = NPC_ARCHETYPES,
+  catalog: ReadonlyArray<NpcCatalogEntry> = NPC_ARCHETYPES
 ): NpcArchetypeSelection[] {
   const normalizedContext = normalizeScheduleContext(context);
 
   return catalog
-    .map((entry) => createNpcDefinition(entry))
-    .map((definition) => ({
+    .map(entry => createNpcDefinition(entry))
+    .map(definition => ({
       definition,
       score: scoreNpcDefinition(definition, normalizedContext),
     }))
-    .filter((selection) => selection.score !== Number.NEGATIVE_INFINITY)
+    .filter(selection => selection.score !== Number.NEGATIVE_INFINITY)
     .sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
@@ -349,7 +312,7 @@ export function selectNpcArchetypes(
 
 export function buildNpcSpawnPlan(
   context: NpcScheduleContext,
-  catalog: ReadonlyArray<NpcCatalogEntry> = NPC_ARCHETYPES,
+  catalog: ReadonlyArray<NpcCatalogEntry> = NPC_ARCHETYPES
 ): NpcSpawnPlan[] {
   const normalizedContext = normalizeScheduleContext(context);
   const selected = selectNpcArchetypes(normalizedContext, catalog);
@@ -358,18 +321,15 @@ export function buildNpcSpawnPlan(
   }
 
   const spawnZones = resolveSpawnZoneList(normalizedContext);
-  const limit = Math.min(
-    normalizedContext.limit ?? selected.length,
-    selected.length,
-  );
+  const limit = Math.min(normalizedContext.limit ?? selected.length, selected.length);
   const primaryZone = spawnZones[0] ?? DEFAULT_SPAWN_ZONE;
 
-  return selected.slice(0, limit).map((selection) => ({
+  return selected.slice(0, limit).map(selection => ({
     ...selection,
     spawnZone: primaryZone,
     state: resolveNpcState(
       selection.definition.behavior,
-      buildDecisionContext(selection.definition, normalizedContext),
+      buildDecisionContext(selection.definition, normalizedContext)
     ),
   }));
 }

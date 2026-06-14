@@ -10,10 +10,7 @@ export class ComboTracker {
   private comboCount = 0;
 
   registerKill(timestamp: number): ComboResult {
-    if (
-      this.lastKillTime > 0 &&
-      timestamp - this.lastKillTime <= COMBO_WINDOW_MS
-    ) {
+    if (this.lastKillTime > 0 && timestamp - this.lastKillTime <= COMBO_WINDOW_MS) {
       this.comboCount++;
     } else {
       this.comboCount = 1;

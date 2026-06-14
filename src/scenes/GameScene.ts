@@ -1,74 +1,61 @@
-import Phaser from "phaser";
-import { GAME } from "../config/constants";
-import { VEHICLE_STATS, WeaponSlot } from "../config/vehicles";
+import Phaser from 'phaser';
+import { GAME } from '../config/constants';
+import { VEHICLE_STATS, WeaponSlot } from '../config/vehicles';
+import type { Citizen } from '../entities/Citizen';
 import {
-  Citizen,
   CitizenType,
   createArmedSurvivalist,
   createFriendlyNeighbor,
   createPanickedRunner,
-} from "../entities/Citizen";
-import {
-  createNewspaper,
-  Newspaper,
-  NewspaperState,
-} from "../entities/Newspaper";
-import { NpcFaction, NpcRole, NpcState } from "../entities/Npc";
-import { createPickup, PickupType } from "../entities/Pickup";
-import {
+} from '../entities/Citizen';
+import type { Newspaper } from '../entities/Newspaper';
+import { createNewspaper, NewspaperState } from '../entities/Newspaper';
+import { NpcFaction, NpcRole, NpcState } from '../entities/Npc';
+import { createPickup, PickupType } from '../entities/Pickup';
+import type {
   DriverSnapshot,
   GunnerAction,
   GunnerActionType,
   ServerMessage,
   VersusMatchReason,
-} from "../network/protocol";
+} from '../network/protocol';
+import type { CoopRuntimeState } from '../network/runtime';
 import {
-  CoopRuntimeState,
   getCoopRuntimeState,
   getCoopSession,
   mergeCoopRuntimeState,
   setCoopSession,
   setCoopRuntimeState,
-} from "../network/runtime";
-import { MultiplayerSession } from "../network/MultiplayerSession";
-import { cycleTargetId, resolveTargetId } from "../network/coop-targeting";
+} from '../network/runtime';
+import type { MultiplayerSession } from '../network/MultiplayerSession';
+import { cycleTargetId, resolveTargetId } from '../network/coop-targeting';
+import { createVersusMatchResult, scoreRivalKill } from '../network/versus-rules';
+import type { CombatAlertTone, CombatEncounter } from './combat-authorship';
 import {
-  createVersusMatchResult,
-  scoreRivalKill,
-} from "../network/versus-rules";
-import {
-  CombatAlertTone,
-  CombatEncounter,
   getEliteProfile,
   getRouteEncounter,
   getRouteEventThreshold,
   getSurgeEncounter,
   resolveCombatPickupDrop,
-} from "./combat-authorship";
-import {
-  createRunner,
-  createShambler,
-  createSpitter,
-  Zombie,
-  ZombieType,
-} from "../entities/Zombie";
-import { MapConfig, MAPS } from "../maps/MapConfig";
-import { generateRoute, Route } from "../maps/MapGenerator";
-import { ComboTracker } from "../systems/ComboTracker";
-import { DayManager } from "../systems/DayManager";
-import { GameState, getOrCreateGameState } from "../systems/GameState";
-import { resolveNpcSpriteTextureKey } from "../systems/NpcAssets";
-import { ScoreManager } from "../systems/ScoreManager";
-import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
-import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
-import { HUD } from "../ui/HUD";
-import { PauseMenu } from "../ui/PauseMenu";
-import {
-  headlineDelivery,
-  headlineLifeLost,
-  headlineZombieKill,
-} from "../ui/ticker-bridge";
-import { TouchControls } from "../ui/TouchControls";
+} from './combat-authorship';
+import type { Zombie } from '../entities/Zombie';
+import { createRunner, createShambler, createSpitter, ZombieType } from '../entities/Zombie';
+import type { MapConfig } from '../maps/MapConfig';
+import { MAPS } from '../maps/MapConfig';
+import type { Route } from '../maps/MapGenerator';
+import { generateRoute } from '../maps/MapGenerator';
+import { ComboTracker } from '../systems/ComboTracker';
+import { DayManager } from '../systems/DayManager';
+import type { GameState } from '../systems/GameState';
+import { getOrCreateGameState } from '../systems/GameState';
+import { resolveNpcSpriteTextureKey } from '../systems/NpcAssets';
+import { ScoreManager } from '../systems/ScoreManager';
+import { BC, BROADCAST_FONT } from '../ui/broadcast-styles';
+import { resolveBroadcastViewportContext } from '../ui/broadcast-viewport';
+import { HUD } from '../ui/HUD';
+import { PauseMenu } from '../ui/PauseMenu';
+import { headlineDelivery, headlineLifeLost, headlineZombieKill } from '../ui/ticker-bridge';
+import { TouchControls } from '../ui/TouchControls';
 import {
   collectEffect,
   damageFlash,
@@ -79,20 +66,16 @@ import {
   isTouchPrimary,
   meleeSwingArc,
   screenShake,
-} from "../utils/animations";
-import {
-  createMeleeWeapon,
-  createRangedWeapon,
-  MeleeWeapon,
-  RangedWeapon,
-} from "../weapons/Weapon";
+} from '../utils/animations';
+import type { MeleeWeapon, RangedWeapon } from '../weapons/Weapon';
+import { createMeleeWeapon, createRangedWeapon } from '../weapons/Weapon';
 import {
   classifyDelivery,
   getHouseTextureKey,
   getRouteScrollSpeed,
   getVehicleControlProfile,
   getZombieWaveSettings,
-} from "./arcade-rules";
+} from './arcade-rules';
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -101,7 +84,7 @@ interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
 }
 
 interface HousePlacement {
-  house: ReturnType<typeof generateRoute>["houses"][number];
+  house: ReturnType<typeof generateRoute>['houses'][number];
   sprite: Phaser.Physics.Arcade.Sprite;
 }
 
@@ -161,7 +144,7 @@ export class GameScene extends Phaser.Scene {
   private versusScoreText?: Phaser.GameObjects.Text;
 
   constructor() {
-    super({ key: "GameScene" });
+    super({ key: 'GameScene' });
   }
 
   create(): void {
@@ -184,7 +167,7 @@ export class GameScene extends Phaser.Scene {
     this.viewportContext = resolveBroadcastViewportContext(
       window.innerWidth,
       window.innerHeight,
-      touchPrimary,
+      touchPrimary
     );
 
     const mapName = this.dayManager.getMapForDay(this.gameState.day);
@@ -194,15 +177,13 @@ export class GameScene extends Phaser.Scene {
       mapConfig,
       this.gameState.difficulty,
       this.gameState.day,
-      this.gameState.subscribers,
+      this.gameState.subscribers
     );
 
     this.deliveries = new Array(this.route.houses.length).fill(false);
     this.worldY = 0;
     this.comboTracker = new ComboTracker();
-    this.subscriberTotal = this.route.houses.filter(
-      (h) => h.isSubscriber,
-    ).length;
+    this.subscriberTotal = this.route.houses.filter(h => h.isSubscriber).length;
     this.nextZombieId = 1;
     this.nextPickupId = 1;
     this.nextSurgeKillThreshold = this.getCurrentWaveSettings().surgeThreshold;
@@ -229,7 +210,7 @@ export class GameScene extends Phaser.Scene {
     this.player.rangedWeapon = createRangedWeapon(rangedConfig);
 
     // Road background — dark asphalt with texture
-    this.cameras.main.setBackgroundColor("#2a2a2a");
+    this.cameras.main.setBackgroundColor('#2a2a2a');
     fadeIn(this);
 
     // Road surface detail
@@ -294,45 +275,35 @@ export class GameScene extends Phaser.Scene {
     if (kb) {
       this.cursors = kb.createCursorKeys();
       this.wasd = {
-        W: kb.addKey("W"),
-        A: kb.addKey("A"),
-        S: kb.addKey("S"),
-        D: kb.addKey("D"),
+        W: kb.addKey('W'),
+        A: kb.addKey('A'),
+        S: kb.addKey('S'),
+        D: kb.addKey('D'),
       };
       this.keys = {
-        Q: kb.addKey("Q"),
-        E: kb.addKey("E"),
-        SPACE: kb.addKey("SPACE"),
-        F: kb.addKey("F"),
-        ESC: kb.addKey("ESC"),
+        Q: kb.addKey('Q'),
+        E: kb.addKey('E'),
+        SPACE: kb.addKey('SPACE'),
+        F: kb.addKey('F'),
+        ESC: kb.addKey('ESC'),
       };
     }
 
     if (this.viewportContext.touchPrimary) {
-      this.touchControls = new TouchControls(
-        this,
-        width,
-        height,
-        this.viewportContext.uiScale,
-      );
+      this.touchControls = new TouchControls(this, width, height, this.viewportContext.uiScale);
     }
 
     // HUD + Pause
-    this.hud = new HUD(
-      this,
-      this.gameState,
-      this.player.paperCount,
-      this.player.rangedWeapon.ammo,
-    );
+    this.hud = new HUD(this, this.gameState, this.player.paperCount, this.player.rangedWeapon.ammo);
     this.hud.setDeliveryProgress(0, this.subscriberTotal);
     this.pauseMenu = new PauseMenu(this);
     if (this.isGunnerRole()) {
       this.gunnerReticle = this.add.graphics().setDepth(12);
       this.gunnerTargetText = this.add
-        .text(28, 86, this.isVersusMode() ? "RIVAL TARGET: SCANNING" : "TARGET: SCANNING", {
+        .text(28, 86, this.isVersusMode() ? 'RIVAL TARGET: SCANNING' : 'TARGET: SCANNING', {
           fontFamily: BROADCAST_FONT,
-          fontSize: "11px",
-          fontStyle: "700",
+          fontSize: '11px',
+          fontStyle: '700',
           color: BC.TEXT,
           letterSpacing: 1.5,
         })
@@ -341,12 +312,12 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.isVersusMode()) {
       this.versusScoreText = this.add
-        .text(width - 28, 86, "", {
+        .text(width - 28, 86, '', {
           fontFamily: BROADCAST_FONT,
-          fontSize: "11px",
-          fontStyle: "700",
+          fontSize: '11px',
+          fontStyle: '700',
           color: BC.css.GOLD_GLOW,
-          align: "right",
+          align: 'right',
           letterSpacing: 1.2,
         })
         .setOrigin(1, 0)
@@ -367,50 +338,38 @@ export class GameScene extends Phaser.Scene {
       this.physics.add.overlap(
         this.player,
         this.pickupSprites,
-        this
-          .onPickup as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        this.onPickup as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
         undefined,
-        this,
-      );
-      this.physics.add.overlap(
-        this.player,
-        this.hazardSprites,
         this
-          .onHazardHit as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
-        undefined,
-        this,
       );
+      this.physics.add.overlap(this.player, this.hazardSprites, this.onHazardHit, undefined, this);
       this.physics.add.overlap(
         this.player,
         this.zombieSprites,
-        this
-          .onZombieContact as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        this.onZombieContact as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
         undefined,
-        this,
+        this
       );
       this.physics.add.overlap(
         this.newspaperSprites,
         this.zombieSprites,
-        this
-          .onNewspaperHitZombie as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        this.onNewspaperHitZombie as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
         undefined,
-        this,
+        this
       );
       this.physics.add.overlap(
         this.newspaperSprites,
         this.citizenSprites,
-        this
-          .onNewspaperHitCitizen as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        this.onNewspaperHitCitizen as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
         undefined,
-        this,
+        this
       );
       this.physics.add.overlap(
         this.player,
         this.citizenSprites,
-        this
-          .onCitizenContact as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        this.onCitizenContact as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
         undefined,
-        this,
+        this
       );
 
       this.scheduleZombieWave();
@@ -421,7 +380,7 @@ export class GameScene extends Phaser.Scene {
     if (this.transitioning) return;
     if (this.pauseMenu.getIsVisible()) return;
 
-    if (this.touchControls?.consumeAction("pause")) {
+    if (this.touchControls?.consumeAction('pause')) {
       this.pauseMenu.toggle();
       return;
     }
@@ -447,29 +406,13 @@ export class GameScene extends Phaser.Scene {
     // Movement
     let vx = 0;
     let vy = 0;
-    if (
-      this.cursors?.left.isDown ||
-      this.wasd?.A.isDown ||
-      this.touchControls?.isHeld("left")
-    )
+    if (this.cursors?.left.isDown || this.wasd?.A.isDown || this.touchControls?.isHeld('left'))
       vx = -speed;
-    if (
-      this.cursors?.right.isDown ||
-      this.wasd?.D.isDown ||
-      this.touchControls?.isHeld("right")
-    )
+    if (this.cursors?.right.isDown || this.wasd?.D.isDown || this.touchControls?.isHeld('right'))
       vx = speed;
-    if (
-      this.cursors?.up.isDown ||
-      this.wasd?.W.isDown ||
-      this.touchControls?.isHeld("up")
-    )
+    if (this.cursors?.up.isDown || this.wasd?.W.isDown || this.touchControls?.isHeld('up'))
       vy = -speed;
-    if (
-      this.cursors?.down.isDown ||
-      this.wasd?.S.isDown ||
-      this.touchControls?.isHeld("down")
-    )
+    if (this.cursors?.down.isDown || this.wasd?.S.isDown || this.touchControls?.isHeld('down'))
       vy = speed;
 
     const body = this.player.body as Phaser.Physics.Arcade.Body;
@@ -479,50 +422,36 @@ export class GameScene extends Phaser.Scene {
         : controlProfile.coastResponsiveness;
     this.player.setVelocity(
       Phaser.Math.Linear(body.velocity.x, vx, responsiveness),
-      Phaser.Math.Linear(body.velocity.y, vy, responsiveness),
+      Phaser.Math.Linear(body.velocity.y, vy, responsiveness)
     );
 
     // Auto scroll
     const deliveredCount = this.deliveries.filter(Boolean).length;
     const targetScrollSpeed =
-      getRouteScrollSpeed(
-        this.gameState.day,
-        deliveredCount,
-        this.gameState.difficulty,
-      ) *
+      getRouteScrollSpeed(this.gameState.day, deliveredCount, this.gameState.difficulty) *
       (delta / 1000);
-    this.scrollSpeed = Phaser.Math.Linear(
-      this.scrollSpeed,
-      targetScrollSpeed,
-      0.08,
-    );
+    this.scrollSpeed = Phaser.Math.Linear(this.scrollSpeed, targetScrollSpeed, 0.08);
     this.worldY += this.scrollSpeed;
 
     // Throw newspaper left/right
     if (
-      (this.keys?.Q &&
-        Phaser.Input.Keyboard.JustDown(this.keys.Q) &&
-        this.player.paperCount > 0) ||
-      ((this.touchControls?.consumeAction("throwLeft") ?? false) &&
-        this.player.paperCount > 0)
+      (this.keys?.Q && Phaser.Input.Keyboard.JustDown(this.keys.Q) && this.player.paperCount > 0) ||
+      ((this.touchControls?.consumeAction('throwLeft') ?? false) && this.player.paperCount > 0)
     ) {
-      this.throwNewspaper("left");
+      this.throwNewspaper('left');
     }
     if (
-      (this.keys?.E &&
-        Phaser.Input.Keyboard.JustDown(this.keys.E) &&
-        this.player.paperCount > 0) ||
-      ((this.touchControls?.consumeAction("throwRight") ?? false) &&
-        this.player.paperCount > 0)
+      (this.keys?.E && Phaser.Input.Keyboard.JustDown(this.keys.E) && this.player.paperCount > 0) ||
+      ((this.touchControls?.consumeAction('throwRight') ?? false) && this.player.paperCount > 0)
     ) {
-      this.throwNewspaper("right");
+      this.throwNewspaper('right');
     }
 
     // Melee attack
     if (
       this.driverOwnsCombat() &&
       ((this.keys?.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) ||
-        this.touchControls?.consumeAction("melee"))
+        this.touchControls?.consumeAction('melee'))
     ) {
       this.meleeAttack();
     }
@@ -531,15 +460,15 @@ export class GameScene extends Phaser.Scene {
     if (
       this.driverOwnsCombat() &&
       ((this.keys?.F && Phaser.Input.Keyboard.JustDown(this.keys.F)) ||
-        this.touchControls?.consumeAction("ranged"))
+        this.touchControls?.consumeAction('ranged'))
     ) {
       this.rangedAttack();
     }
 
     // Update newspaper positions
-    this.newspaperSprites.getChildren().forEach((obj) => {
+    this.newspaperSprites.getChildren().forEach(obj => {
       const np = obj as Phaser.Physics.Arcade.Sprite;
-      const data = np.getData("newspaper") as Newspaper;
+      const data = np.getData('newspaper') as Newspaper;
       if (data.state === NewspaperState.Flying) {
         // Check if out of bounds
         if (np.x < -50 || np.x > 1010) {
@@ -550,9 +479,9 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Move zombies toward player
-    this.zombieSprites.getChildren().forEach((obj) => {
+    this.zombieSprites.getChildren().forEach(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
-      const zombie = sprite.getData("zombie") as Zombie;
+      const zombie = sprite.getData('zombie') as Zombie;
       if (!zombie || zombie.isDead()) {
         return;
       }
@@ -560,10 +489,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Check if route is complete (passed all houses)
-    if (
-      this.worldY > this.route.houses.length * 50 + 220 &&
-      !this.transitioning
-    ) {
+    if (this.worldY > this.route.houses.length * 50 + 220 && !this.transitioning) {
       this.transitioning = true;
       this.endRoute();
     }
@@ -584,44 +510,30 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private throwNewspaper(direction: "left" | "right"): void {
+  private throwNewspaper(direction: 'left' | 'right'): void {
     this.player.paperCount--;
     const isSunday = this.dayManager.isSunday(this.gameState.day);
-    const np = createNewspaper(
-      this.player.x,
-      this.player.y,
-      direction,
-      isSunday,
-    );
+    const np = createNewspaper(this.player.x, this.player.y, direction, isSunday);
 
-    const sprite = this.physics.add.sprite(
-      this.player.x,
-      this.player.y,
-      "newspaper",
-    );
-    sprite.setData("newspaper", np);
-    const vx = direction === "left" ? -np.speed * 40 : np.speed * 40;
+    const sprite = this.physics.add.sprite(this.player.x, this.player.y, 'newspaper');
+    sprite.setData('newspaper', np);
+    const vx = direction === 'left' ? -np.speed * 40 : np.speed * 40;
     sprite.setVelocity(vx, -30);
     this.newspaperSprites.add(sprite);
   }
 
-  private meleeAttack(source: "driver" | "rival" = "driver"): void {
+  private meleeAttack(source: 'driver' | 'rival' = 'driver'): void {
     const damage = this.player.meleeWeapon.attack();
     const range = this.player.meleeWeapon.range * 32;
 
     // Visual swing arc
     meleeSwingArc(this, this.player.x, this.player.y, range, 0xccaa88);
 
-    this.zombieSprites.getChildren().forEach((obj) => {
+    this.zombieSprites.getChildren().forEach(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
-      const dist = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        sprite.x,
-        sprite.y,
-      );
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, sprite.x, sprite.y);
       if (dist < range) {
-        const zombie = sprite.getData("zombie") as Zombie;
+        const zombie = sprite.getData('zombie') as Zombie;
         zombie.takeDamage(damage);
         if (zombie.isDead()) {
           this.awardZombieKill(zombie, sprite, source);
@@ -631,10 +543,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private rangedAttack(
-    targetId?: number | null,
-    source: "driver" | "rival" = "driver",
-  ): void {
+  private rangedAttack(targetId?: number | null, source: 'driver' | 'rival' = 'driver'): void {
     const damage = this.player.rangedWeapon.fire();
     if (damage === 0) return;
 
@@ -648,7 +557,7 @@ export class GameScene extends Phaser.Scene {
           this.player.x,
           this.player.y,
           targetedSprite.x,
-          targetedSprite.y,
+          targetedSprite.y
         );
         if (targetDist < this.player.rangedWeapon.range * 32) {
           nearest = targetedSprite;
@@ -657,14 +566,9 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    this.zombieSprites.getChildren().forEach((obj) => {
+    this.zombieSprites.getChildren().forEach(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
-      const dist = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        sprite.x,
-        sprite.y,
-      );
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, sprite.x, sprite.y);
       if (dist < this.player.rangedWeapon.range * 32 && dist < nearestDist) {
         nearest = sprite;
         nearestDist = dist;
@@ -672,17 +576,11 @@ export class GameScene extends Phaser.Scene {
     });
 
     if (nearest) {
-      const zombie = (nearest as Phaser.Physics.Arcade.Sprite).getData(
-        "zombie",
-      ) as Zombie;
+      const zombie = nearest.getData('zombie') as Zombie;
       zombie.takeDamage(damage);
       if (zombie.isDead()) {
-        this.awardZombieKill(
-          zombie,
-          nearest as Phaser.Physics.Arcade.Sprite,
-          source,
-        );
-        deathFlash(this, nearest as Phaser.Physics.Arcade.Sprite);
+        this.awardZombieKill(zombie, nearest, source);
+        deathFlash(this, nearest);
       }
     }
   }
@@ -690,17 +588,15 @@ export class GameScene extends Phaser.Scene {
   private awardZombieKill(
     zombie: Zombie,
     sprite: Phaser.Physics.Arcade.Sprite,
-    source: "driver" | "rival" = "driver",
+    source: 'driver' | 'rival' = 'driver'
   ): void {
     const x = sprite.x;
     const y = sprite.y;
-    const renderState = sprite.getData("zombieRenderState") as
-      | ZombieRenderState
-      | undefined;
+    const renderState = sprite.getData('zombieRenderState') as ZombieRenderState | undefined;
     const isElite = renderState?.elite ?? false;
-    const eliteLabel = renderState?.eliteLabel ?? "Elite";
+    const eliteLabel = renderState?.eliteLabel ?? 'Elite';
 
-    if (!(this.isVersusMode() && source === "rival")) {
+    if (!(this.isVersusMode() && source === 'rival')) {
       switch (zombie.type) {
         case ZombieType.Shambler:
           this.scoreManager.shamblerKill();
@@ -713,18 +609,14 @@ export class GameScene extends Phaser.Scene {
           break;
       }
     } else {
-      this.versusRivalScore += scoreRivalKill(
-        zombie.basePoints,
-        this.gameState.difficulty,
-        {
-          elite: isElite,
-        },
-      );
+      this.versusRivalScore += scoreRivalKill(zombie.basePoints, this.gameState.difficulty, {
+        elite: isElite,
+      });
     }
 
     if (isElite) {
       const bonus = Math.max(25, Math.round(zombie.basePoints * 1.5));
-      if (!(this.isVersusMode() && source === "rival")) {
+      if (!(this.isVersusMode() && source === 'rival')) {
         this.scoreManager.bonus(bonus);
       }
       floatingText(
@@ -733,7 +625,7 @@ export class GameScene extends Phaser.Scene {
         y - 44,
         `${eliteLabel.toUpperCase()} +${bonus}`,
         BC.css.RED_GLOW,
-        "16px",
+        '16px'
       );
     }
 
@@ -742,19 +634,12 @@ export class GameScene extends Phaser.Scene {
     if (result.isCombo) {
       const size = Math.min(12 + result.comboCount * 2, 24);
       const bonus = result.comboCount * 10;
-      if (this.isVersusMode() && source === "rival") {
+      if (this.isVersusMode() && source === 'rival') {
         this.versusRivalScore += bonus;
       } else {
         this.scoreManager.comboBonus(bonus);
       }
-      floatingText(
-        this,
-        x,
-        y - 30,
-        `+${bonus} COMBO!`,
-        BC.css.GOLD_GLOW,
-        `${size}px`,
-      );
+      floatingText(this, x, y - 30, `+${bonus} COMBO!`, BC.css.GOLD_GLOW, `${size}px`);
     }
 
     if (this.isVersusMode()) {
@@ -787,25 +672,25 @@ export class GameScene extends Phaser.Scene {
       const yDist = Math.abs(npSprite.y - houseSprite.y);
       const deliveryResult = classifyDelivery(house, xDist, yDist);
 
-      if (deliveryResult !== "miss" && !this.deliveries[i]) {
+      if (deliveryResult !== 'miss' && !this.deliveries[i]) {
         if (house.isSubscriber) {
           this.deliveries[i] = true;
           house.markDelivered();
           // Update delivery progress
           const completed = this.deliveries.filter(
-            (d, idx) => d && this.route.houses[idx].isSubscriber,
+            (d, idx) => d && this.route.houses[idx].isSubscriber
           ).length;
           this.hud.setDeliveryProgress(completed, this.subscriberTotal);
           this.maybeTriggerRouteEncounter(completed);
-          if (deliveryResult === "mailbox") {
+          if (deliveryResult === 'mailbox') {
             this.scoreManager.mailboxDelivery();
             floatingText(
               this,
               houseSprite.x,
               houseSprite.y - 20,
-              "MAILBOX!",
+              'MAILBOX!',
               BC.css.GREEN_BRIGHT,
-              "18px",
+              '18px'
             );
             headlineDelivery();
           } else {
@@ -814,16 +699,16 @@ export class GameScene extends Phaser.Scene {
               this,
               houseSprite.x,
               houseSprite.y - 20,
-              "DELIVERED",
+              'DELIVERED',
               BC.css.GREEN,
-              "14px",
+              '14px'
             );
           }
         } else {
           if (!house.damaged) {
             house.markDamaged();
             const breakable = house.breakables[0];
-            if (breakable?.name.includes("tombstone")) {
+            if (breakable?.name.includes('tombstone')) {
               this.scoreManager.tombstoneKnock();
             } else {
               this.scoreManager.windowBreak();
@@ -833,9 +718,9 @@ export class GameScene extends Phaser.Scene {
             this,
             houseSprite.x,
             houseSprite.y - 20,
-            house.breakables[0]?.name.toUpperCase() ?? "CRASH!",
+            house.breakables[0]?.name.toUpperCase() ?? 'CRASH!',
             BC.css.RED,
-            "16px",
+            '16px'
           );
           houseSprite.setTint(0xcc6666);
         }
@@ -846,30 +731,23 @@ export class GameScene extends Phaser.Scene {
 
     // Delivery miss feedback — newspaper went out of bounds without hitting anything
     if (!hit) {
-      floatingText(
-        this,
-        npSprite.x,
-        npSprite.y,
-        "MISS",
-        BC.css.RED_DIM,
-        "12px",
-      );
+      floatingText(this, npSprite.x, npSprite.y, 'MISS', BC.css.RED_DIM, '12px');
       screenShake(this, 0.004, 100);
     }
   }
 
   private onNewspaperHitCitizen(
     paperObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    citizenObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    citizenObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
     const paperSprite = paperObj as Phaser.Physics.Arcade.Sprite;
     const citizenSprite = citizenObj as Phaser.Physics.Arcade.Sprite;
-    const citizen = citizenSprite.getData("citizen") as Citizen | undefined;
+    const citizen = citizenSprite.getData('citizen') as Citizen | undefined;
 
-    if (!citizen || citizenSprite.getData("resolved")) return;
-    citizenSprite.setData("resolved", true);
-    citizenSprite.setData("hit", true);
-    citizenSprite.setData("contacted", true);
+    if (!citizen || citizenSprite.getData('resolved')) return;
+    citizenSprite.setData('resolved', true);
+    citizenSprite.setData('hit', true);
+    citizenSprite.setData('contacted', true);
 
     switch (citizen.type) {
       case CitizenType.FriendlyNeighbor:
@@ -889,15 +767,11 @@ export class GameScene extends Phaser.Scene {
       citizenSprite.y - 18,
       `${citizen.hitPenalty}`,
       BC.css.RED,
-      "14px",
+      '14px'
     );
 
     if (citizen.dropsPickup) {
-      this.spawnPickupSprite(
-        PickupType.NewspaperBundle,
-        citizenSprite.x,
-        citizenSprite.y,
-      );
+      this.spawnPickupSprite(PickupType.NewspaperBundle, citizenSprite.x, citizenSprite.y);
     }
 
     if (citizen.retaliates) {
@@ -910,14 +784,14 @@ export class GameScene extends Phaser.Scene {
 
   private onCitizenContact(
     _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    citizenObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    citizenObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
     const citizenSprite = citizenObj as Phaser.Physics.Arcade.Sprite;
-    const citizen = citizenSprite.getData("citizen") as Citizen | undefined;
-    if (!citizen || citizenSprite.getData("resolved")) return;
-    citizenSprite.setData("resolved", true);
-    citizenSprite.setData("hit", true);
-    citizenSprite.setData("contacted", true);
+    const citizen = citizenSprite.getData('citizen') as Citizen | undefined;
+    if (!citizen || citizenSprite.getData('resolved')) return;
+    citizenSprite.setData('resolved', true);
+    citizenSprite.setData('hit', true);
+    citizenSprite.setData('contacted', true);
 
     switch (citizen.type) {
       case CitizenType.FriendlyNeighbor:
@@ -931,65 +805,30 @@ export class GameScene extends Phaser.Scene {
         break;
     }
 
-    floatingText(
-      this,
-      citizenSprite.x,
-      citizenSprite.y - 18,
-      "HIT!",
-      BC.css.RED,
-      "14px",
-    );
+    floatingText(this, citizenSprite.x, citizenSprite.y - 18, 'HIT!', BC.css.RED, '14px');
   }
 
   private onPickup(
     _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    pickupObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    pickupObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
     const sprite = pickupObj as Phaser.Physics.Arcade.Sprite;
-    const pickup = sprite.getData("pickup");
+    const pickup = sprite.getData('pickup');
     if (pickup && !pickup.collected) {
       pickup.collect();
-      if (pickup.type === "NewspaperBundle") {
+      if (pickup.type === 'NewspaperBundle') {
         this.player.paperCount += pickup.quantity;
-        floatingText(
-          this,
-          sprite.x,
-          sprite.y,
-          `+${pickup.quantity} PAPERS`,
-          BC.TEXT,
-          "13px",
-        );
-      } else if (pickup.type === "AmmoCrate") {
+        floatingText(this, sprite.x, sprite.y, `+${pickup.quantity} PAPERS`, BC.TEXT, '13px');
+      } else if (pickup.type === 'AmmoCrate') {
         this.player.rangedWeapon.addAmmo(pickup.quantity);
-        floatingText(
-          this,
-          sprite.x,
-          sprite.y,
-          `+${pickup.quantity} AMMO`,
-          BC.css.AMBER,
-          "13px",
-        );
-      } else if (pickup.type === "HealthKit") {
+        floatingText(this, sprite.x, sprite.y, `+${pickup.quantity} AMMO`, BC.css.AMBER, '13px');
+      } else if (pickup.type === 'HealthKit') {
         if (this.gameState.lives < GAME.STARTING_LIVES) {
           this.gameState.gainLife();
-          floatingText(
-            this,
-            sprite.x,
-            sprite.y,
-            "+1 LIFE",
-            BC.css.GREEN_BRIGHT,
-            "13px",
-          );
+          floatingText(this, sprite.x, sprite.y, '+1 LIFE', BC.css.GREEN_BRIGHT, '13px');
         } else {
           this.player.rangedWeapon.addAmmo(2);
-          floatingText(
-            this,
-            sprite.x,
-            sprite.y,
-            "MED SCRAP +2 AMMO",
-            BC.css.GOLD,
-            "13px",
-          );
+          floatingText(this, sprite.x, sprite.y, 'MED SCRAP +2 AMMO', BC.css.GOLD, '13px');
         }
       }
       collectEffect(this, sprite);
@@ -1005,9 +844,9 @@ export class GameScene extends Phaser.Scene {
     if (this.gameState.isGameOver() && !this.transitioning) {
       this.transitioning = true;
       if (this.isVersusMode()) {
-        this.finishVersusMatch("driver-down");
+        this.finishVersusMatch('driver-down');
       } else {
-        fadeToScene(this, "GameOverScene");
+        fadeToScene(this, 'GameOverScene');
       }
     } else {
       // Brief invincibility flash
@@ -1020,11 +859,11 @@ export class GameScene extends Phaser.Scene {
 
   private onZombieContact(
     _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
     const stability = VEHICLE_STATS[this.gameState.vehicle].stability;
     const sprite = zombieObj as Phaser.Physics.Arcade.Sprite;
-    const zombie = sprite.getData("zombie") as Zombie;
+    const zombie = sprite.getData('zombie') as Zombie;
     if (!zombie || zombie.isDead()) return;
 
     this.gameState.loseLife();
@@ -1036,21 +875,21 @@ export class GameScene extends Phaser.Scene {
     if (this.gameState.isGameOver() && !this.transitioning) {
       this.transitioning = true;
       if (this.isVersusMode()) {
-        this.finishVersusMatch("driver-down");
+        this.finishVersusMatch('driver-down');
       } else {
-        fadeToScene(this, "GameOverScene");
+        fadeToScene(this, 'GameOverScene');
       }
     }
   }
 
   private onNewspaperHitZombie(
     npObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
     const npSprite = npObj as Phaser.Physics.Arcade.Sprite;
     const zombieSprite = zombieObj as Phaser.Physics.Arcade.Sprite;
-    const zombie = zombieSprite.getData("zombie") as Zombie;
-    const np = npSprite.getData("newspaper") as Newspaper;
+    const zombie = zombieSprite.getData('zombie') as Zombie;
+    const np = npSprite.getData('newspaper') as Newspaper;
 
     if (!zombie || zombie.isDead()) return;
 
@@ -1071,12 +910,8 @@ export class GameScene extends Phaser.Scene {
     this.route.houses.forEach((house, i) => {
       const side = i % 2 === 0 ? leftX : rightX;
       const y = 68 + i * houseSpacing;
-      const sprite = this.physics.add.staticSprite(
-        side,
-        y,
-        getHouseTextureKey(house),
-      );
-      sprite.setData("house", house);
+      const sprite = this.physics.add.staticSprite(side, y, getHouseTextureKey(house));
+      sprite.setData('house', house);
       this.houseSprites.push({ house, sprite });
     });
   }
@@ -1086,9 +921,9 @@ export class GameScene extends Phaser.Scene {
       if (i % 2 !== 0 && i % 3 !== 0) return;
 
       let citizen: Citizen;
-      if (house.isSubscriber && house.type === "Ranch") {
+      if (house.isSubscriber && house.type === 'Ranch') {
         citizen = createFriendlyNeighbor(0, 0);
-      } else if (house.type === "Victorian") {
+      } else if (house.type === 'Victorian') {
         citizen = createArmedSurvivalist(0, 0);
       } else {
         citizen = createPanickedRunner(0, 0);
@@ -1100,13 +935,13 @@ export class GameScene extends Phaser.Scene {
       const y = houseSprite.y + 6;
       const key =
         citizen.type === CitizenType.FriendlyNeighbor
-          ? "citizen-friendly"
+          ? 'citizen-friendly'
           : citizen.type === CitizenType.PanickedRunner
-            ? "citizen-panicked"
-            : "citizen-armed";
+            ? 'citizen-panicked'
+            : 'citizen-armed';
 
       const sprite = this.physics.add.sprite(x, y, key);
-      sprite.setData("citizen", citizen);
+      sprite.setData('citizen', citizen);
       sprite.setImmovable(true);
       sprite.setDepth(4);
       sprite.setBounce(0);
@@ -1119,7 +954,7 @@ export class GameScene extends Phaser.Scene {
           duration: 900 + i * 40,
           yoyo: true,
           repeat: -1,
-          ease: "Sine.easeInOut",
+          ease: 'Sine.easeInOut',
         });
       }
     });
@@ -1129,12 +964,8 @@ export class GameScene extends Phaser.Scene {
     this.route.hazards.forEach((hazard, i) => {
       const x = 300 + ((i * 67) % 360);
       const y = 100 + i * 60;
-      const sprite = this.physics.add.staticSprite(
-        x,
-        y,
-        `hazard-${hazard.type.toLowerCase()}`,
-      );
-      sprite.setData("hazard", hazard);
+      const sprite = this.physics.add.staticSprite(x, y, `hazard-${hazard.type.toLowerCase()}`);
+      sprite.setData('hazard', hazard);
       this.hazardSprites.add(sprite);
     });
   }
@@ -1151,12 +982,7 @@ export class GameScene extends Phaser.Scene {
     this.route.npcSpawns.forEach((plan, i) => {
       const placement = this.houseSprites[i % this.houseSprites.length];
       const houseSprite = placement.sprite;
-      const { x, y } = this.getNpcSpawnPosition(
-        plan.spawnZone,
-        houseSprite.x,
-        houseSprite.y,
-        i,
-      );
+      const { x, y } = this.getNpcSpawnPosition(plan.spawnZone, houseSprite.x, houseSprite.y, i);
       const key = resolveNpcSpriteTextureKey(
         {
           faction: plan.definition.faction,
@@ -1164,7 +990,7 @@ export class GameScene extends Phaser.Scene {
           state: plan.state,
           textureKey: plan.definition.textureKey,
         },
-        this.textures,
+        this.textures
       );
 
       if (plan.definition.faction === NpcFaction.Infected) {
@@ -1176,23 +1002,17 @@ export class GameScene extends Phaser.Scene {
               : ZombieType.Shambler,
           x,
           y,
-          Phaser.Math.FloatBetween(0, 1) <
-            this.getCurrentWaveSettings().eliteChance * 0.5,
-          key,
+          Phaser.Math.FloatBetween(0, 1) < this.getCurrentWaveSettings().eliteChance * 0.5,
+          key
         );
-        sprite.setData("npcPlan", plan);
+        sprite.setData('npcPlan', plan);
         return;
       }
 
-      const citizen = this.createCitizenFromPlan(
-        plan.definition.faction,
-        plan.state,
-        x,
-        y,
-      );
+      const citizen = this.createCitizenFromPlan(plan.definition.faction, plan.state, x, y);
       const sprite = this.physics.add.sprite(x, y, key);
-      sprite.setData("npcPlan", plan);
-      sprite.setData("citizen", citizen);
+      sprite.setData('npcPlan', plan);
+      sprite.setData('citizen', citizen);
       sprite.setImmovable(true);
       sprite.setDepth(4);
       sprite.setBounce(0);
@@ -1205,7 +1025,7 @@ export class GameScene extends Phaser.Scene {
           duration: 900 + i * 40,
           yoyo: true,
           repeat: -1,
-          ease: "Sine.easeInOut",
+          ease: 'Sine.easeInOut',
         });
       }
     });
@@ -1215,36 +1035,34 @@ export class GameScene extends Phaser.Scene {
     spawnZone: string,
     houseX: number,
     houseY: number,
-    index: number,
+    index: number
   ): { x: number; y: number } {
     const isLeftSide = houseX < 480;
     const offset = this.getNpcSpawnOffset(spawnZone);
     const x =
-      spawnZone === "CenterStreet"
+      spawnZone === 'CenterStreet'
         ? 480 + (index % 2 === 0 ? -18 : 18)
         : isLeftSide
           ? houseX + offset
           : houseX - offset;
-    const y =
-      houseY +
-      (spawnZone === "Yard" ? 14 : spawnZone === "CenterStreet" ? 2 : 6);
+    const y = houseY + (spawnZone === 'Yard' ? 14 : spawnZone === 'CenterStreet' ? 2 : 6);
 
     return { x, y };
   }
 
   private getNpcSpawnOffset(spawnZone: string): number {
     switch (spawnZone) {
-      case "BackPorch":
+      case 'BackPorch':
         return 62;
-      case "Yard":
+      case 'Yard':
         return 48;
-      case "LeftSidewalk":
+      case 'LeftSidewalk':
         return 34;
-      case "SidewalkRight":
+      case 'SidewalkRight':
         return 34;
-      case "CenterStreet":
+      case 'CenterStreet':
         return 0;
-      case "FrontPorch":
+      case 'FrontPorch':
       default:
         return 52;
     }
@@ -1254,16 +1072,13 @@ export class GameScene extends Phaser.Scene {
     faction: NpcFaction,
     state: NpcState,
     x: number,
-    y: number,
+    y: number
   ): Citizen {
     if (faction === NpcFaction.Trader) {
       return createFriendlyNeighbor(x, y);
     }
 
-    if (
-      faction === NpcFaction.Responder ||
-      faction === NpcFaction.HostileHuman
-    ) {
+    if (faction === NpcFaction.Responder || faction === NpcFaction.HostileHuman) {
       return createArmedSurvivalist(x, y);
     }
 
@@ -1283,22 +1098,10 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < count; i++) {
       const x = Phaser.Math.Between(150, 810);
       const y = Phaser.Math.Between(-50, -10);
-      const types = [
-        ZombieType.Shambler,
-        ZombieType.Runner,
-        ZombieType.Spitter,
-      ];
-      const maxTypeIndex = Math.min(
-        types.length - 1,
-        Math.floor(this.gameState.day / 2),
-      );
+      const types = [ZombieType.Shambler, ZombieType.Runner, ZombieType.Spitter];
+      const maxTypeIndex = Math.min(types.length - 1, Math.floor(this.gameState.day / 2));
       const type = types[Phaser.Math.Between(0, maxTypeIndex)];
-      this.spawnZombieSprite(
-        type,
-        x,
-        y,
-        Phaser.Math.FloatBetween(0, 1) < eliteChance,
-      );
+      this.spawnZombieSprite(type, x, y, Phaser.Math.FloatBetween(0, 1) < eliteChance);
     }
   }
 
@@ -1318,7 +1121,7 @@ export class GameScene extends Phaser.Scene {
       this.gameState.day,
       this.gameState.difficulty,
       deliveredCount,
-      this.zombieKillCount,
+      this.zombieKillCount
     );
   }
 
@@ -1328,7 +1131,7 @@ export class GameScene extends Phaser.Scene {
     y: number,
     elite = false,
     textureKey = `zombie-${type.toLowerCase()}`,
-    forcedId?: number,
+    forcedId?: number
   ): Phaser.Physics.Arcade.Sprite {
     let zombie: Zombie;
     switch (type) {
@@ -1362,8 +1165,8 @@ export class GameScene extends Phaser.Scene {
       renderState.eliteLabel = eliteProfile.label;
     }
 
-    sprite.setData("zombie", zombie);
-    sprite.setData("zombieRenderState", renderState);
+    sprite.setData('zombie', zombie);
+    sprite.setData('zombieRenderState', renderState);
     this.zombieSprites.add(sprite);
     if (elite && renderState.eliteLabel) {
       const eliteProfile = getEliteProfile(type, this.gameState.day);
@@ -1373,7 +1176,7 @@ export class GameScene extends Phaser.Scene {
         y - 22,
         renderState.eliteLabel.toUpperCase(),
         this.getAlertColor(eliteProfile.tone),
-        "12px",
+        '12px'
       );
       if (this.hud) {
         this.maybeAnnounceElite(type);
@@ -1386,20 +1189,20 @@ export class GameScene extends Phaser.Scene {
     pickup: PickupType,
     x: number,
     y: number,
-    forcedId?: number,
+    forcedId?: number
   ): Phaser.Physics.Arcade.Sprite {
     const pickupModel = createPickup(x, y, pickup);
     const key =
       pickup === PickupType.NewspaperBundle
-        ? "pickup-newspaper"
+        ? 'pickup-newspaper'
         : pickup === PickupType.AmmoCrate
-          ? "pickup-ammo"
-          : "pickup-health";
+          ? 'pickup-ammo'
+          : 'pickup-health';
     const sprite = this.physics.add.staticSprite(x, y, key);
-    sprite.setData("pickup", pickupModel);
+    sprite.setData('pickup', pickupModel);
     const pickupId = forcedId ?? this.nextPickupId++;
     this.nextPickupId = Math.max(this.nextPickupId, pickupId + 1);
-    sprite.setData("pickupId", pickupId);
+    sprite.setData('pickupId', pickupId);
     this.pickupSprites.add(sprite);
     return sprite;
   }
@@ -1430,7 +1233,7 @@ export class GameScene extends Phaser.Scene {
       this.gameState.day,
       this.gameState.difficulty,
       this.getCurrentWaveSettings().count,
-      this.zombieKillCount,
+      this.zombieKillCount
     );
     this.launchEncounter(encounter);
   }
@@ -1447,7 +1250,7 @@ export class GameScene extends Phaser.Scene {
         alpha: 0,
         scale: 0.2,
         duration: 280 + Phaser.Math.Between(40, 140),
-        ease: "Cubic.easeOut",
+        ease: 'Cubic.easeOut',
         onComplete: () => {
           chunk.destroy();
         },
@@ -1456,15 +1259,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   private isGunnerRole(): boolean {
-    return this.coopRuntime?.enabled === true && this.coopRuntime.role === "gunner";
+    return this.coopRuntime?.enabled === true && this.coopRuntime.role === 'gunner';
   }
 
   private isDriverRole(): boolean {
-    return this.coopRuntime?.enabled === true && this.coopRuntime.role === "driver";
+    return this.coopRuntime?.enabled === true && this.coopRuntime.role === 'driver';
   }
 
   private isVersusMode(): boolean {
-    return this.coopRuntime?.enabled === true && this.coopRuntime.mode === "versus";
+    return this.coopRuntime?.enabled === true && this.coopRuntime.mode === 'versus';
   }
 
   private driverOwnsCombat(): boolean {
@@ -1476,27 +1279,27 @@ export class GameScene extends Phaser.Scene {
     if (!this.coopSession) return;
     this.unsubscribeCoopMessage?.();
     this.unsubscribeCoopClose?.();
-    this.unsubscribeCoopMessage = this.coopSession.onMessage((message) => {
+    this.unsubscribeCoopMessage = this.coopSession.onMessage(message => {
       this.handleCoopMessage(message);
     });
     this.unsubscribeCoopClose = this.coopSession.onClose(() => {
       this.coopSession = null;
       setCoopSession(this.registry, null);
-      this.handleCoopDisconnect("Relay disconnected.");
+      this.handleCoopDisconnect('Relay disconnected.');
     });
   }
 
   private handleCoopMessage(message: ServerMessage): void {
     switch (message.type) {
-      case "gunner-action":
+      case 'gunner-action':
         if (!this.isDriverRole()) return;
         this.handleGunnerAction(message.action);
         return;
-      case "snapshot":
+      case 'snapshot':
         if (!this.isGunnerRole()) return;
         this.applyDriverSnapshot(message.snapshot);
         return;
-      case "peer-status":
+      case 'peer-status':
         if (!this.coopRuntime) return;
         this.coopRuntime = {
           ...this.coopRuntime,
@@ -1506,25 +1309,25 @@ export class GameScene extends Phaser.Scene {
         if (!message.connected) {
           this.handleCoopDisconnect(
             this.isDriverRole()
-              ? "Gunner link lost. Driver combat restored."
-              : "Driver link lost. Returning to relay room.",
+              ? 'Gunner link lost. Driver combat restored.'
+              : 'Driver link lost. Returning to relay room.'
           );
         }
         return;
-      case "session-ended":
+      case 'session-ended':
         this.coopSession = null;
         setCoopSession(this.registry, null);
         this.handleCoopDisconnect(message.reason);
         return;
-      case "match-result":
+      case 'match-result':
         if (!this.isGunnerRole() || !this.isVersusMode()) return;
         if (!this.transitioning) {
           this.transitioning = true;
           mergeCoopRuntimeState(this.registry, {
-            phase: "linked",
-            statusMessage: "Versus round complete. Awaiting relay return.",
+            phase: 'linked',
+            statusMessage: 'Versus round complete. Awaiting relay return.',
           });
-          fadeToScene(this, "GameOverScene", { versusResult: message.result });
+          fadeToScene(this, 'GameOverScene', { versusResult: message.result });
         }
         return;
       default:
@@ -1533,22 +1336,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleGunnerAction(action: GunnerAction): void {
-    const source: "driver" | "rival" = this.isVersusMode() ? "rival" : "driver";
+    const source: 'driver' | 'rival' = this.isVersusMode() ? 'rival' : 'driver';
     switch (action.type) {
-      case "melee":
+      case 'melee':
         this.meleeAttack(source);
         break;
-      case "ranged":
+      case 'ranged':
         this.rangedAttack(action.targetId, source);
         break;
-      case "throw-left":
+      case 'throw-left':
         if (!this.isVersusMode() && this.player.paperCount > 0) {
-          this.throwNewspaper("left");
+          this.throwNewspaper('left');
         }
         break;
-      case "throw-right":
+      case 'throw-right':
         if (!this.isVersusMode() && this.player.paperCount > 0) {
-          this.throwNewspaper("right");
+          this.throwNewspaper('right');
         }
         break;
     }
@@ -1567,45 +1370,45 @@ export class GameScene extends Phaser.Scene {
       (this.wasd?.S && Phaser.Input.Keyboard.JustDown(this.wasd.S));
 
     if (previousTarget) {
-      this.cycleGunnerTarget("previous");
+      this.cycleGunnerTarget('previous');
     } else if (nextTarget) {
-      this.cycleGunnerTarget("next");
+      this.cycleGunnerTarget('next');
     }
 
     if (
       (this.keys?.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) ||
-      this.touchControls?.consumeAction("melee")
+      this.touchControls?.consumeAction('melee')
     ) {
-      this.sendGunnerAction("melee");
+      this.sendGunnerAction('melee');
     }
 
     if (
       (this.keys?.F && Phaser.Input.Keyboard.JustDown(this.keys.F)) ||
-      this.touchControls?.consumeAction("ranged")
+      this.touchControls?.consumeAction('ranged')
     ) {
-      this.sendGunnerAction("ranged");
+      this.sendGunnerAction('ranged');
     }
 
     if (
       !this.isVersusMode() &&
       ((this.keys?.Q && Phaser.Input.Keyboard.JustDown(this.keys.Q)) ||
-        this.touchControls?.consumeAction("throwLeft"))
+        this.touchControls?.consumeAction('throwLeft'))
     ) {
-      this.sendGunnerAction("throw-left");
+      this.sendGunnerAction('throw-left');
     }
 
     if (
       !this.isVersusMode() &&
       ((this.keys?.E && Phaser.Input.Keyboard.JustDown(this.keys.E)) ||
-        this.touchControls?.consumeAction("throwRight"))
+        this.touchControls?.consumeAction('throwRight'))
     ) {
-      this.sendGunnerAction("throw-right");
+      this.sendGunnerAction('throw-right');
     }
   }
 
   private pushDriverSnapshot(): void {
     const snapshot: DriverSnapshot = {
-      mode: this.isVersusMode() ? "versus" : "coop",
+      mode: this.isVersusMode() ? 'versus' : 'coop',
       player: {
         x: this.player.x,
         y: this.player.y,
@@ -1618,10 +1421,10 @@ export class GameScene extends Phaser.Scene {
       paperCount: this.player.paperCount,
       ammoCount: this.player.rangedWeapon.ammo,
       deliveries: [...this.deliveries],
-      zombies: this.zombieSprites.getChildren().map((obj) => {
+      zombies: this.zombieSprites.getChildren().map(obj => {
         const sprite = obj as Phaser.Physics.Arcade.Sprite;
-        const zombie = sprite.getData("zombie") as Zombie;
-        const renderState = sprite.getData("zombieRenderState") as ZombieRenderState;
+        const zombie = sprite.getData('zombie') as Zombie;
+        const renderState = sprite.getData('zombieRenderState') as ZombieRenderState;
         return {
           id: renderState.id,
           type: zombie.type,
@@ -1631,11 +1434,11 @@ export class GameScene extends Phaser.Scene {
           elite: renderState.elite,
         };
       }),
-      pickups: this.pickupSprites.getChildren().map((obj) => {
+      pickups: this.pickupSprites.getChildren().map(obj => {
         const sprite = obj as Phaser.Physics.Arcade.Sprite;
-        const pickup = sprite.getData("pickup") as ReturnType<typeof createPickup>;
+        const pickup = sprite.getData('pickup') as ReturnType<typeof createPickup>;
         return {
-          id: sprite.getData("pickupId") as number,
+          id: sprite.getData('pickupId') as number,
           type: pickup.type,
           x: sprite.x,
           y: sprite.y,
@@ -1650,7 +1453,7 @@ export class GameScene extends Phaser.Scene {
         : undefined,
     };
 
-    this.coopSession?.send({ type: "driver-snapshot", snapshot });
+    this.coopSession?.send({ type: 'driver-snapshot', snapshot });
   }
 
   private applyDriverSnapshot(snapshot: DriverSnapshot): void {
@@ -1674,7 +1477,7 @@ export class GameScene extends Phaser.Scene {
     this.deliveries = [...snapshot.deliveries];
 
     const completed = this.deliveries.filter(
-      (delivered, index) => delivered && this.route.houses[index]?.isSubscriber,
+      (delivered, index) => delivered && this.route.houses[index]?.isSubscriber
     ).length;
     this.hud.setDeliveryProgress(completed, this.subscriberTotal);
 
@@ -1685,18 +1488,16 @@ export class GameScene extends Phaser.Scene {
     });
 
     const zombieById = new Map<number, Phaser.Physics.Arcade.Sprite>();
-    this.zombieSprites.getChildren().forEach((obj) => {
+    this.zombieSprites.getChildren().forEach(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
-      const renderState = sprite.getData("zombieRenderState") as
-        | ZombieRenderState
-        | undefined;
+      const renderState = sprite.getData('zombieRenderState') as ZombieRenderState | undefined;
       if (renderState) {
         zombieById.set(renderState.id, sprite);
       }
     });
 
     const snapshotZombieIds = new Set<number>();
-    snapshot.zombies.forEach((remoteZombie) => {
+    snapshot.zombies.forEach(remoteZombie => {
       snapshotZombieIds.add(remoteZombie.id);
       let sprite = zombieById.get(remoteZombie.id);
       if (!sprite) {
@@ -1706,10 +1507,10 @@ export class GameScene extends Phaser.Scene {
           remoteZombie.y,
           remoteZombie.elite,
           undefined,
-          remoteZombie.id,
+          remoteZombie.id
         );
       }
-      const zombie = sprite.getData("zombie") as Zombie;
+      const zombie = sprite.getData('zombie') as Zombie;
       zombie.hp = remoteZombie.hp;
       sprite.setPosition(remoteZombie.x, remoteZombie.y);
     });
@@ -1722,13 +1523,13 @@ export class GameScene extends Phaser.Scene {
     this.selectedTargetId = resolveTargetId(snapshot.zombies, this.selectedTargetId);
 
     const pickupById = new Map<number, Phaser.Physics.Arcade.Sprite>();
-    this.pickupSprites.getChildren().forEach((obj) => {
+    this.pickupSprites.getChildren().forEach(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
-      pickupById.set(sprite.getData("pickupId") as number, sprite);
+      pickupById.set(sprite.getData('pickupId') as number, sprite);
     });
 
     const snapshotPickupIds = new Set<number>();
-    snapshot.pickups.forEach((remotePickup) => {
+    snapshot.pickups.forEach(remotePickup => {
       snapshotPickupIds.add(remotePickup.id);
       let sprite = pickupById.get(remotePickup.id);
       if (!sprite && !remotePickup.collected) {
@@ -1736,13 +1537,13 @@ export class GameScene extends Phaser.Scene {
           remotePickup.type,
           remotePickup.x,
           remotePickup.y,
-          remotePickup.id,
+          remotePickup.id
         );
       }
 
       if (!sprite) return;
 
-      const pickup = sprite.getData("pickup") as ReturnType<typeof createPickup>;
+      const pickup = sprite.getData('pickup') as ReturnType<typeof createPickup>;
       pickup.collected = remotePickup.collected;
       sprite.setPosition(remotePickup.x, remotePickup.y);
 
@@ -1760,7 +1561,7 @@ export class GameScene extends Phaser.Scene {
 
   private sendGunnerAction(type: GunnerActionType): void {
     this.coopSession?.send({
-      type: "gunner-action",
+      type: 'gunner-action',
       action: {
         type,
         targetId: this.selectedTargetId,
@@ -1768,30 +1569,22 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private cycleGunnerTarget(direction: "next" | "previous"): void {
-    const targets = this.zombieSprites.getChildren().flatMap((obj) => {
+  private cycleGunnerTarget(direction: 'next' | 'previous'): void {
+    const targets = this.zombieSprites.getChildren().flatMap(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
-      const renderState = sprite.getData("zombieRenderState") as
-        | ZombieRenderState
-        | undefined;
+      const renderState = sprite.getData('zombieRenderState') as ZombieRenderState | undefined;
       if (!renderState) return [];
       return [{ id: renderState.id, x: sprite.x, y: sprite.y }];
     });
 
-    this.selectedTargetId = cycleTargetId(
-      targets,
-      this.selectedTargetId,
-      direction,
-    );
+    this.selectedTargetId = cycleTargetId(targets, this.selectedTargetId, direction);
     this.updateGunnerTargetIndicator();
   }
 
   private findZombieSpriteById(id: number): Phaser.Physics.Arcade.Sprite | null {
     for (const obj of this.zombieSprites.getChildren()) {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
-      const renderState = sprite.getData("zombieRenderState") as
-        | ZombieRenderState
-        | undefined;
+      const renderState = sprite.getData('zombieRenderState') as ZombieRenderState | undefined;
       if (renderState?.id === id) {
         return sprite;
       }
@@ -1804,26 +1597,22 @@ export class GameScene extends Phaser.Scene {
     if (!this.isGunnerRole()) return;
 
     const targetSprite =
-      this.selectedTargetId !== null
-        ? this.findZombieSpriteById(this.selectedTargetId)
-        : null;
+      this.selectedTargetId !== null ? this.findZombieSpriteById(this.selectedTargetId) : null;
 
     this.gunnerReticle?.clear();
 
     if (!targetSprite) {
       this.gunnerTargetText?.setText(
-        this.isVersusMode() ? "RIVAL TARGET: SCANNING" : "TARGET: SCANNING",
+        this.isVersusMode() ? 'RIVAL TARGET: SCANNING' : 'TARGET: SCANNING'
       );
       return;
     }
 
-    const zombie = targetSprite.getData("zombie") as Zombie;
-    const renderState = targetSprite.getData("zombieRenderState") as
-      | ZombieRenderState
-      | undefined;
+    const zombie = targetSprite.getData('zombie') as Zombie;
+    const renderState = targetSprite.getData('zombieRenderState') as ZombieRenderState | undefined;
     const targetLabel = renderState?.elite
-      ? `${this.isVersusMode() ? "RIVAL TARGET" : "TARGET"}: ELITE ${zombie.type.toUpperCase()}`
-      : `${this.isVersusMode() ? "RIVAL TARGET" : "TARGET"}: ${zombie.type.toUpperCase()}`;
+      ? `${this.isVersusMode() ? 'RIVAL TARGET' : 'TARGET'}: ELITE ${zombie.type.toUpperCase()}`
+      : `${this.isVersusMode() ? 'RIVAL TARGET' : 'TARGET'}: ${zombie.type.toUpperCase()}`;
 
     this.gunnerTargetText?.setText(targetLabel);
     this.gunnerReticle?.lineStyle(2, BC.RED, 0.95);
@@ -1832,25 +1621,25 @@ export class GameScene extends Phaser.Scene {
       targetSprite.x - 26,
       targetSprite.y,
       targetSprite.x - 12,
-      targetSprite.y,
+      targetSprite.y
     );
     this.gunnerReticle?.lineBetween(
       targetSprite.x + 12,
       targetSprite.y,
       targetSprite.x + 26,
-      targetSprite.y,
+      targetSprite.y
     );
     this.gunnerReticle?.lineBetween(
       targetSprite.x,
       targetSprite.y - 26,
       targetSprite.x,
-      targetSprite.y - 12,
+      targetSprite.y - 12
     );
     this.gunnerReticle?.lineBetween(
       targetSprite.x,
       targetSprite.y + 12,
       targetSprite.x,
-      targetSprite.y + 26,
+      targetSprite.y + 26
     );
   }
 
@@ -1866,7 +1655,7 @@ export class GameScene extends Phaser.Scene {
     const encounter = getRouteEncounter(
       this.nextRouteEncounterIndex,
       this.gameState.day,
-      this.gameState.difficulty,
+      this.gameState.difficulty
     );
     this.nextRouteEncounterIndex += 1;
     this.launchEncounter(encounter);
@@ -1880,29 +1669,25 @@ export class GameScene extends Phaser.Scene {
       96,
       encounter.label,
       this.getAlertColor(encounter.tone),
-      "24px",
+      '24px'
     );
-    screenShake(this, encounter.tone === "danger" ? 0.01 : 0.008, 180);
-    encounter.groups.forEach((group) => {
+    screenShake(this, encounter.tone === 'danger' ? 0.01 : 0.008, 180);
+    encounter.groups.forEach(group => {
       this.spawnEncounterGroup(group);
     });
   }
 
-  private spawnEncounterGroup(group: CombatEncounter["groups"][number]): void {
+  private spawnEncounterGroup(group: CombatEncounter['groups'][number]): void {
     const lanePositions =
-      group.spread === "wide"
+      group.spread === 'wide'
         ? [180, 320, 480, 640, 780]
-        : group.spread === "flank"
+        : group.spread === 'flank'
           ? [220, 740]
           : [360, 480, 600];
 
     for (let i = 0; i < group.count; i++) {
-      const x =
-        lanePositions[i % lanePositions.length] +
-        Phaser.Math.Between(-18, 18);
-      const y =
-        Phaser.Math.Between(-70, 10) -
-        Math.floor(i / lanePositions.length) * 28;
+      const x = lanePositions[i % lanePositions.length] + Phaser.Math.Between(-18, 18);
+      const y = Phaser.Math.Between(-70, 10) - Math.floor(i / lanePositions.length) * 28;
       this.spawnZombieSprite(group.type, x, y, i < group.eliteCount);
     }
   }
@@ -1912,20 +1697,16 @@ export class GameScene extends Phaser.Scene {
 
     this.lastEliteAnnouncementAt = this.time.now;
     const profile = getEliteProfile(type, this.gameState.day);
-    this.hud.setCombatAlert(
-      `${profile.label.toUpperCase()} INBOUND`,
-      profile.tone,
-      1600,
-    );
+    this.hud.setCombatAlert(`${profile.label.toUpperCase()} INBOUND`, profile.tone, 1600);
   }
 
   private getAlertColor(tone: CombatAlertTone): string {
     switch (tone) {
-      case "success":
+      case 'success':
         return BC.css.GREEN_BRIGHT;
-      case "warning":
+      case 'warning':
         return BC.css.GOLD_GLOW;
-      case "danger":
+      case 'danger':
       default:
         return BC.css.RED_GLOW;
     }
@@ -1936,39 +1717,35 @@ export class GameScene extends Phaser.Scene {
 
     this.versusDriverScore = this.gameState.score;
     this.versusScoreText.setText(
-      `DRIVER ${this.versusDriverScore}\nRIVAL ${this.versusRivalScore}`,
+      `DRIVER ${this.versusDriverScore}\nRIVAL ${this.versusRivalScore}`
     );
   }
 
   private finishVersusMatch(reason: VersusMatchReason): void {
-    const result = createVersusMatchResult(
-      this.gameState.score,
-      this.versusRivalScore,
-      reason,
-    );
+    const result = createVersusMatchResult(this.gameState.score, this.versusRivalScore, reason);
     mergeCoopRuntimeState(this.registry, {
-      phase: "linked",
-      statusMessage: "Versus round complete. Return to the relay room for another match.",
+      phase: 'linked',
+      statusMessage: 'Versus round complete. Return to the relay room for another match.',
     });
     if (this.isDriverRole()) {
       this.coopSession?.send({
-        type: "host-finish-match",
+        type: 'host-finish-match',
         result,
       });
     }
-    fadeToScene(this, "GameOverScene", { versusResult: result });
+    fadeToScene(this, 'GameOverScene', { versusResult: result });
   }
 
   private handleCoopDisconnect(reason: string): void {
     if (this.isGunnerRole()) {
       mergeCoopRuntimeState(this.registry, {
         peerConnected: false,
-        phase: "disconnected",
+        phase: 'disconnected',
         statusMessage: reason,
       });
       if (!this.transitioning) {
         this.transitioning = true;
-        fadeToScene(this, "OnlineCoopScene");
+        fadeToScene(this, 'OnlineCoopScene');
       }
       return;
     }
@@ -1980,7 +1757,7 @@ export class GameScene extends Phaser.Scene {
       };
       setCoopRuntimeState(this.registry, this.coopRuntime);
       mergeCoopRuntimeState(this.registry, {
-        phase: "disconnected",
+        phase: 'disconnected',
         statusMessage: reason,
       });
     }
@@ -1989,15 +1766,15 @@ export class GameScene extends Phaser.Scene {
       this,
       this.cameras.main.centerX,
       72,
-      "SOLO CONTROL RESTORED",
+      'SOLO CONTROL RESTORED',
       BC.css.RED_GLOW,
-      "20px",
+      '20px'
     );
   }
 
   private endRoute(): void {
     if (this.isVersusMode()) {
-      this.finishVersusMatch("route-complete");
+      this.finishVersusMatch('route-complete');
       return;
     }
 
@@ -2007,6 +1784,6 @@ export class GameScene extends Phaser.Scene {
       delivered: this.deliveries[i],
     }));
 
-    fadeToScene(this, "TrainingScene", { deliveryData });
+    fadeToScene(this, 'TrainingScene', { deliveryData });
   }
 }

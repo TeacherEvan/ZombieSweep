@@ -1,10 +1,10 @@
-import Phaser from "phaser";
-import { BC, BROADCAST_FONT } from "../ui/broadcast-styles";
+import Phaser from 'phaser';
+import { BC, BROADCAST_FONT } from '../ui/broadcast-styles';
 
 // ── Easing constants ──
 // Natural deceleration curves — never bounce or elastic
-const EASE_OUT_QUART = "Quart.easeOut";
-const EASE_OUT_EXPO = "Expo.easeOut";
+const EASE_OUT_QUART = 'Quart.easeOut';
+const EASE_OUT_EXPO = 'Expo.easeOut';
 
 // ── Station Break Transition Config ──
 // Timing and layout constants for the broadcast "Station Break" wipe.
@@ -13,16 +13,12 @@ export const STATION_BREAK = {
   HOLD_MS: 200,
   DEPTH: 999,
   BAR_HEIGHT: 6,
-  STATION_ID: "WZMB 13",
+  STATION_ID: 'WZMB 13',
 } as const;
 
 // ── Screen Shake ──
 // Camera shake on damage, impact, etc.
-export function screenShake(
-  scene: Phaser.Scene,
-  intensity = 0.008,
-  duration = 180,
-): void {
+export function screenShake(scene: Phaser.Scene, intensity = 0.008, duration = 180): void {
   scene.cameras.main.shake(duration, intensity);
 }
 
@@ -40,9 +36,9 @@ export function floatingText(
   y: number,
   text: string,
   color: string,
-  fontSize = "16px",
+  fontSize = '16px',
   rise = 40,
-  duration = 700,
+  duration = 700
 ): Phaser.GameObjects.Text {
   const txt = scene.add
     .text(x, y, text, {
@@ -52,7 +48,7 @@ export function floatingText(
       shadow: {
         offsetX: 0,
         offsetY: 0,
-        color: "#000000",
+        color: '#000000',
         blur: 4,
         fill: true,
       },
@@ -77,10 +73,10 @@ export function floatingText(
 export function deathFlash(
   scene: Phaser.Scene,
   sprite: Phaser.GameObjects.Sprite | Phaser.Physics.Arcade.Sprite,
-  onComplete?: () => void,
+  onComplete?: () => void
 ): void {
   // Disable physics body immediately so it can't interact
-  if ("body" in sprite && sprite.body) {
+  if ('body' in sprite && sprite.body) {
     (sprite.body as Phaser.Physics.Arcade.Body).enable = false;
   }
 
@@ -105,9 +101,9 @@ export function deathFlash(
 export function collectEffect(
   scene: Phaser.Scene,
   sprite: Phaser.GameObjects.Sprite | Phaser.Physics.Arcade.Sprite,
-  onComplete?: () => void,
+  onComplete?: () => void
 ): void {
-  if ("body" in sprite && sprite.body) {
+  if ('body' in sprite && sprite.body) {
     (sprite.body as Phaser.Physics.Arcade.Body).enable = false;
   }
 
@@ -132,7 +128,7 @@ export function meleeSwingArc(
   x: number,
   y: number,
   range: number,
-  color = 0xffffff,
+  color = 0xffffff
 ): void {
   const arc = scene.add.graphics().setDepth(120);
   arc.lineStyle(3, color, 0.7);
@@ -155,7 +151,7 @@ export function pulse(
   scene: Phaser.Scene,
   target: Phaser.GameObjects.GameObject,
   scale = 1.2,
-  duration = 150,
+  duration = 150
 ): void {
   scene.tweens.killTweensOf(target);
   scene.tweens.add({
@@ -175,7 +171,7 @@ export function fadeToScene(
   scene: Phaser.Scene,
   targetScene: string,
   data?: object,
-  _duration = 400,
+  _duration = 400
 ): void {
   // Accessibility: instant cut when user prefers reduced motion
   if (prefersReducedMotion()) {
@@ -201,8 +197,8 @@ export function fadeToScene(
   const stationText = scene.add
     .text(cw / 2, ch / 2 + 20, STATION_ID, {
       fontFamily: BROADCAST_FONT,
-      fontSize: "28px",
-      fontStyle: "800",
+      fontSize: '28px',
+      fontStyle: '800',
       color: BC.TEXT,
       letterSpacing: 4,
     })
@@ -268,14 +264,9 @@ export function staggerReveal(
     stagger?: number;
     duration?: number;
     offsetY?: number;
-  } = {},
+  } = {}
 ): void {
-  const {
-    baseDelay = 200,
-    stagger = 80,
-    duration = 400,
-    offsetY = 16,
-  } = config;
+  const { baseDelay = 200, stagger = 80, duration = 400, offsetY = 16 } = config;
 
   targets.forEach((target, i) => {
     if (
@@ -303,8 +294,8 @@ export function countUp(
   target: number,
   duration = 1200,
   delay = 0,
-  prefix = "",
-  suffix = "",
+  prefix = '',
+  suffix = ''
 ): void {
   const counter = { value: 0 };
   scene.tweens.add({
@@ -322,19 +313,14 @@ export function countUp(
 // ── Reduced Motion Check ──
 // Respect prefers-reduced-motion
 export function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 // ── Newspaper Confetti ──
 // Burst of small newspaper-page rectangles for victory celebrations.
 // Runtime-drawn — no assets needed.
-export function newspaperConfetti(
-  scene: Phaser.Scene,
-  cx: number,
-  cy: number,
-  count = 24,
-): void {
+export function newspaperConfetti(scene: Phaser.Scene, cx: number, cy: number, count = 24): void {
   if (prefersReducedMotion()) return;
 
   const colors = [0xf5f0d0, 0xe8e0c8, 0xd8d0b8, 0xccbbaa];
@@ -372,11 +358,7 @@ export function newspaperConfetti(
 // ── TV Static Noise ──
 // Brief burst of random noise rectangles simulating signal loss.
 // Used on defeat screen before "SIGNAL LOST" text appears.
-export function tvStatic(
-  scene: Phaser.Scene,
-  duration = 350,
-  onComplete?: () => void,
-): void {
+export function tvStatic(scene: Phaser.Scene, duration = 350, onComplete?: () => void): void {
   if (prefersReducedMotion()) {
     onComplete?.();
     return;
@@ -423,10 +405,10 @@ export function tvStatic(
 // Returns true when the primary input is touch (phone/tablet).
 // Used to swap instruction text ("PRESS ENTER" → "TAP").
 export function isTouchPrimary(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === 'undefined') return false;
   return (
-    "ontouchstart" in window ||
+    'ontouchstart' in window ||
     navigator.maxTouchPoints > 0 ||
-    window.matchMedia("(pointer: coarse)").matches
+    window.matchMedia('(pointer: coarse)').matches
   );
 }

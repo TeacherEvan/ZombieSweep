@@ -1,4 +1,4 @@
-import { ClientMessage, ServerMessage } from "./protocol";
+import type { ClientMessage, ServerMessage } from './protocol';
 
 type MessageListener = (message: ServerMessage) => void;
 type ConnectionListener = () => void;
@@ -17,28 +17,28 @@ export class MultiplayerSession {
       const socket = new WebSocket(serverUrl);
       let settled = false;
 
-      socket.addEventListener("open", () => {
+      socket.addEventListener('open', () => {
         settled = true;
         this.socket = socket;
         resolve();
       });
 
-      socket.addEventListener("message", (event) => {
+      socket.addEventListener('message', event => {
         const payload = JSON.parse(event.data) as ServerMessage;
-        this.messageListeners.forEach((listener) => listener(payload));
+        this.messageListeners.forEach(listener => listener(payload));
       });
 
-      socket.addEventListener("close", () => {
+      socket.addEventListener('close', () => {
         this.socket = null;
-        this.closeListeners.forEach((listener) => listener());
+        this.closeListeners.forEach(listener => listener());
         if (!settled) {
-          reject(new Error("Unable to reach the co-op relay."));
+          reject(new Error('Unable to reach the co-op relay.'));
         }
       });
 
-      socket.addEventListener("error", () => {
+      socket.addEventListener('error', () => {
         if (!settled) {
-          reject(new Error("Unable to reach the co-op relay."));
+          reject(new Error('Unable to reach the co-op relay.'));
         }
       });
     });

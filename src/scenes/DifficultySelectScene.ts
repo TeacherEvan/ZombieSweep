@@ -1,12 +1,12 @@
-import Phaser from "phaser";
-import { GAME } from "../config/constants";
-import { Difficulty } from "../config/difficulty";
-import { getCoopSession, getCoopRuntimeState } from "../network/runtime";
-import { VehicleType } from "../config/vehicles";
-import { getOrCreateGameState } from "../systems/GameState";
-import { BC, BROADCAST_FONT, createChyron } from "../ui/broadcast-styles";
-import { resolveBroadcastViewportContext } from "../ui/broadcast-viewport";
-import { fadeIn, fadeToScene, isTouchPrimary } from "../utils/animations";
+import Phaser from 'phaser';
+import { GAME } from '../config/constants';
+import { Difficulty } from '../config/difficulty';
+import { getCoopSession, getCoopRuntimeState } from '../network/runtime';
+import type { VehicleType } from '../config/vehicles';
+import { getOrCreateGameState } from '../systems/GameState';
+import { BC, BROADCAST_FONT, createChyron } from '../ui/broadcast-styles';
+import { resolveBroadcastViewportContext } from '../ui/broadcast-viewport';
+import { fadeIn, fadeToScene, isTouchPrimary } from '../utils/animations';
 
 const THREAT_LEVELS: Record<
   string,
@@ -19,25 +19,25 @@ const THREAT_LEVELS: Record<
   }
 > = {
   [Difficulty.EasyStreet]: {
-    threat: "LOW",
-    label: "EASY STREET",
-    desc: "1× Points · Low density",
+    threat: 'LOW',
+    label: 'EASY STREET',
+    desc: '1× Points · Low density',
     color: 0x22aa44,
-    cssColor: "#22aa44",
+    cssColor: '#22aa44',
   },
   [Difficulty.MiddleRoad]: {
-    threat: "ELEVATED",
-    label: "MIDDLE ROAD",
-    desc: "2× Points · Medium density",
+    threat: 'ELEVATED',
+    label: 'MIDDLE ROAD',
+    desc: '2× Points · Medium density',
     color: 0xcc8822,
-    cssColor: "#cc8822",
+    cssColor: '#cc8822',
   },
   [Difficulty.HardWay]: {
-    threat: "SEVERE",
-    label: "THE HARD WAY",
-    desc: "3× Points · High density",
+    threat: 'SEVERE',
+    label: 'THE HARD WAY',
+    desc: '3× Points · High density',
     color: 0xcc1100,
-    cssColor: "#cc1100",
+    cssColor: '#cc1100',
   },
 };
 
@@ -61,7 +61,7 @@ export class DifficultySelectScene extends Phaser.Scene {
   private rowBaseY = 0;
 
   constructor() {
-    super({ key: "DifficultySelectScene" });
+    super({ key: 'DifficultySelectScene' });
   }
 
   init(data: { vehicle: VehicleType }): void {
@@ -73,7 +73,7 @@ export class DifficultySelectScene extends Phaser.Scene {
     const viewport = resolveBroadcastViewportContext(
       window.innerWidth,
       window.innerHeight,
-      isTouchPrimary(),
+      isTouchPrimary()
     );
     const scale = viewport.uiScale;
     this.compactLayout = viewport.isCompact;
@@ -102,21 +102,19 @@ export class DifficultySelectScene extends Phaser.Scene {
     const chyron = createChyron(
       this,
       48,
-      "ZOMBIE THREAT ADVISORY",
-      "WZMB 13 EMERGENCY BROADCAST SYSTEM",
+      'ZOMBIE THREAT ADVISORY',
+      'WZMB 13 EMERGENCY BROADCAST SYSTEM',
       {
-        titleSize: this.compactLayout ? `${Math.round(20 * scale)}px` : "22px",
-        subtitleSize: this.compactLayout
-          ? `${Math.round(10 * scale)}px`
-          : "11px",
-      },
+        titleSize: this.compactLayout ? `${Math.round(20 * scale)}px` : '22px',
+        subtitleSize: this.compactLayout ? `${Math.round(10 * scale)}px` : '11px',
+      }
     );
     chyron.setX(-width);
     this.tweens.add({
       targets: chyron,
       x: width / 2,
       duration: 350,
-      ease: "Quart.easeOut",
+      ease: 'Quart.easeOut',
     });
 
     // Instruction
@@ -125,14 +123,14 @@ export class DifficultySelectScene extends Phaser.Scene {
       .text(
         width / 2,
         height - 28,
-        touchMode ? "TAP TO SELECT" : "↑ ↓  SELECT  ·  ENTER  CONFIRM",
+        touchMode ? 'TAP TO SELECT' : '↑ ↓  SELECT  ·  ENTER  CONFIRM',
         {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? `${Math.round(11 * scale)}px` : "11px",
-          fontStyle: "600",
+          fontSize: this.compactLayout ? `${Math.round(11 * scale)}px` : '11px',
+          fontStyle: '600',
           color: BC.TEXT_MUTED,
           letterSpacing: 2,
-        },
+        }
       )
       .setOrigin(0.5);
 
@@ -148,32 +146,27 @@ export class DifficultySelectScene extends Phaser.Scene {
         width / 2 - this.rowWidth / 2,
         y - this.rowHeight / 2,
         this.rowWidth,
-        this.rowHeight,
+        this.rowHeight
       );
       bg.lineStyle(1, BC.CHROME_EDGE, 0.6);
       bg.strokeRect(
         width / 2 - this.rowWidth / 2,
         y - this.rowHeight / 2,
         this.rowWidth,
-        this.rowHeight,
+        this.rowHeight
       );
 
       // Left color band (6px)
       const band = this.add.graphics();
       band.fillStyle(info.color, 1);
-      band.fillRect(
-        width / 2 - this.rowWidth / 2,
-        y - this.rowHeight / 2,
-        6,
-        this.rowHeight,
-      );
+      band.fillRect(width / 2 - this.rowWidth / 2, y - this.rowHeight / 2, 6, this.rowHeight);
 
       // Threat level label (colored)
       const threatText = this.add
         .text(width / 2 - this.rowWidth / 2 + 24, y - 14, info.threat, {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? `${Math.round(14 * scale)}px` : "13px",
-          fontStyle: "800",
+          fontSize: this.compactLayout ? `${Math.round(14 * scale)}px` : '13px',
+          fontStyle: '800',
           color: info.cssColor,
           letterSpacing: 2,
         })
@@ -183,8 +176,8 @@ export class DifficultySelectScene extends Phaser.Scene {
       const label = this.add
         .text(width / 2 - 40, y - 14, info.label, {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? `${Math.round(26 * scale)}px` : "24px",
-          fontStyle: "800",
+          fontSize: this.compactLayout ? `${Math.round(26 * scale)}px` : '24px',
+          fontStyle: '800',
           color: BC.TEXT_DIM,
         })
         .setOrigin(0.5, 0.5);
@@ -193,8 +186,8 @@ export class DifficultySelectScene extends Phaser.Scene {
       const desc = this.add
         .text(width / 2 - 40, y + 14, info.desc, {
           fontFamily: BROADCAST_FONT,
-          fontSize: this.compactLayout ? `${Math.round(13 * scale)}px` : "12px",
-          fontStyle: "600",
+          fontSize: this.compactLayout ? `${Math.round(13 * scale)}px` : '12px',
+          fontStyle: '600',
           color: BC.TEXT_MUTED,
           letterSpacing: 1,
         })
@@ -208,11 +201,8 @@ export class DifficultySelectScene extends Phaser.Scene {
       this.rows.push({ bg, label, threat: threatText, desc, hitArea, info });
 
       // Staggered entrance
-      [bg, band, threatText, label, desc, hitArea].forEach((el) => {
-        if (
-          el instanceof Phaser.GameObjects.Text ||
-          el instanceof Phaser.GameObjects.Rectangle
-        ) {
+      [bg, band, threatText, label, desc, hitArea].forEach(el => {
+        if (el instanceof Phaser.GameObjects.Text || el instanceof Phaser.GameObjects.Rectangle) {
           el.setAlpha(0);
         }
       });
@@ -222,15 +212,15 @@ export class DifficultySelectScene extends Phaser.Scene {
         alpha: 1,
         duration: 400,
         delay: 300 + i * 100,
-        ease: "Quart.easeOut",
+        ease: 'Quart.easeOut',
       });
 
-      hitArea.on("pointerdown", () => {
+      hitArea.on('pointerdown', () => {
         this.selectedIndex = i;
         this.updateSelection();
         this.confirmSelection();
       });
-      hitArea.on("pointerover", () => {
+      hitArea.on('pointerover', () => {
         this.selectedIndex = i;
         this.updateSelection();
       });
@@ -239,24 +229,24 @@ export class DifficultySelectScene extends Phaser.Scene {
     this.time.delayedCall(400, () => this.updateSelection());
 
     // Keyboard
-    this.input.keyboard?.on("keydown-UP", () => {
+    this.input.keyboard?.on('keydown-UP', () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateSelection();
     });
-    this.input.keyboard?.on("keydown-DOWN", () => {
+    this.input.keyboard?.on('keydown-DOWN', () => {
       this.selectedIndex = Math.min(2, this.selectedIndex + 1);
       this.updateSelection();
     });
-    this.input.keyboard?.on("keydown-W", () => {
+    this.input.keyboard?.on('keydown-W', () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateSelection();
     });
-    this.input.keyboard?.on("keydown-S", () => {
+    this.input.keyboard?.on('keydown-S', () => {
       this.selectedIndex = Math.min(2, this.selectedIndex + 1);
       this.updateSelection();
     });
-    this.input.keyboard?.on("keydown-ENTER", () => this.confirmSelection());
-    this.input.keyboard?.on("keydown-SPACE", () => this.confirmSelection());
+    this.input.keyboard?.on('keydown-ENTER', () => this.confirmSelection());
+    this.input.keyboard?.on('keydown-SPACE', () => this.confirmSelection());
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.removeAllListeners();
@@ -276,14 +266,14 @@ export class DifficultySelectScene extends Phaser.Scene {
           width / 2 - this.rowWidth / 2,
           y - this.rowHeight / 2,
           this.rowWidth,
-          this.rowHeight,
+          this.rowHeight
         );
         bg.lineStyle(1, info.color, 0.5);
         bg.strokeRect(
           width / 2 - this.rowWidth / 2,
           y - this.rowHeight / 2,
           this.rowWidth,
-          this.rowHeight,
+          this.rowHeight
         );
         label.setColor(BC.TEXT);
         desc.setColor(BC.TEXT_DIM);
@@ -293,14 +283,14 @@ export class DifficultySelectScene extends Phaser.Scene {
           width / 2 - this.rowWidth / 2,
           y - this.rowHeight / 2,
           this.rowWidth,
-          this.rowHeight,
+          this.rowHeight
         );
         bg.lineStyle(1, BC.CHROME_EDGE, 0.6);
         bg.strokeRect(
           width / 2 - this.rowWidth / 2,
           y - this.rowHeight / 2,
           this.rowWidth,
-          this.rowHeight,
+          this.rowHeight
         );
         label.setColor(BC.TEXT_DIM);
         desc.setColor(BC.TEXT_MUTED);
@@ -318,14 +308,14 @@ export class DifficultySelectScene extends Phaser.Scene {
     const gameState = getOrCreateGameState(this.registry);
     gameState.reset();
     gameState.configure(difficulty, this.vehicle);
-    this.registry.set("gameState", gameState);
+    this.registry.set('gameState', gameState);
 
     // "ADVISORY CONFIRMED" flash
     const confirmText = this.add
-      .text(width / 2, height / 2, "ADVISORY CONFIRMED", {
+      .text(width / 2, height / 2, 'ADVISORY CONFIRMED', {
         fontFamily: BROADCAST_FONT,
-        fontSize: "26px",
-        fontStyle: "800",
+        fontSize: '26px',
+        fontStyle: '800',
         color: BC.TEXT,
         letterSpacing: 3,
       })
@@ -342,9 +332,9 @@ export class DifficultySelectScene extends Phaser.Scene {
       yoyo: true,
       hold: 300,
       onComplete: () => {
-        if (coopRuntime?.enabled && coopRuntime.role === "driver") {
+        if (coopRuntime?.enabled && coopRuntime.role === 'driver') {
           coopSession?.send({
-            type: "host-game-config",
+            type: 'host-game-config',
             config: {
               mode: coopRuntime.mode,
               difficulty,
@@ -353,9 +343,9 @@ export class DifficultySelectScene extends Phaser.Scene {
               subscribers: GAME.STARTING_SUBSCRIBERS,
             },
           });
-          coopSession?.send({ type: "host-start-game" });
+          coopSession?.send({ type: 'host-start-game' });
         }
-        fadeToScene(this, "GameScene");
+        fadeToScene(this, 'GameScene');
       },
     });
   }

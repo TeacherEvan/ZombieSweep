@@ -1,8 +1,8 @@
-import { GAME } from "../config/constants";
-import { Difficulty, DIFFICULTY_MULTIPLIERS } from "../config/difficulty";
-import { VehicleType } from "../config/vehicles";
+import { GAME } from '../config/constants';
+import { Difficulty, DIFFICULTY_MULTIPLIERS } from '../config/difficulty';
+import { VehicleType } from '../config/vehicles';
 
-export type GameOverReason = "lives" | "subscriptions" | "completed";
+export type GameOverReason = 'lives' | 'subscriptions' | 'completed';
 
 /**
  * Safely retrieve GameState from a Phaser registry.
@@ -13,10 +13,10 @@ export function getOrCreateGameState(registry: {
   get(key: string): unknown;
   set(key: string, value: unknown): void;
 }): GameState {
-  const existing = registry.get("gameState");
+  const existing = registry.get('gameState');
   if (existing instanceof GameState) return existing;
   const fresh = new GameState();
-  registry.set("gameState", fresh);
+  registry.set('gameState', fresh);
   return fresh;
 }
 
@@ -72,15 +72,13 @@ export class GameState {
   }
 
   isGameOver(): boolean {
-    return (
-      this.lives === 0 || this.subscribers === 0 || this.day > GAME.TOTAL_DAYS
-    );
+    return this.lives === 0 || this.subscribers === 0 || this.day > GAME.TOTAL_DAYS;
   }
 
   getGameOverReason(): GameOverReason | null {
-    if (this.lives === 0) return "lives";
-    if (this.subscribers === 0) return "subscriptions";
-    if (this.day > GAME.TOTAL_DAYS) return "completed";
+    if (this.lives === 0) return 'lives';
+    if (this.subscribers === 0) return 'subscriptions';
+    if (this.day > GAME.TOTAL_DAYS) return 'completed';
     return null;
   }
 

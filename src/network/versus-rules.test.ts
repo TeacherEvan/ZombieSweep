@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
-import { Difficulty } from "../config/difficulty";
-import { createVersusMatchResult, scoreRivalKill } from "./versus-rules";
+import { Difficulty } from '../config/difficulty';
+import { createVersusMatchResult, scoreRivalKill } from './versus-rules';
 
-describe("versus-rules", () => {
-  it("gives the rival a tuned kill score with elite bonuses", () => {
+describe('versus-rules', () => {
+  it('gives the rival a tuned kill score with elite bonuses', () => {
     const standard = scoreRivalKill(50, Difficulty.MiddleRoad, {
       elite: false,
     });
@@ -15,7 +15,7 @@ describe("versus-rules", () => {
     expect(elite).toBeGreaterThan(standard);
   });
 
-  it("includes combo bonuses in rival scoring", () => {
+  it('includes combo bonuses in rival scoring', () => {
     const withoutCombo = scoreRivalKill(40, Difficulty.EasyStreet, {
       elite: false,
     });
@@ -27,21 +27,15 @@ describe("versus-rules", () => {
     expect(withCombo - withoutCombo).toBe(20);
   });
 
-  it("creates a driver win result", () => {
-    expect(createVersusMatchResult(500, 320, "route-complete").winner).toBe(
-      "driver",
-    );
+  it('creates a driver win result', () => {
+    expect(createVersusMatchResult(500, 320, 'route-complete').winner).toBe('driver');
   });
 
-  it("creates a rival win result", () => {
-    expect(createVersusMatchResult(180, 420, "driver-down").winner).toBe(
-      "rival",
-    );
+  it('creates a rival win result', () => {
+    expect(createVersusMatchResult(180, 420, 'driver-down').winner).toBe('rival');
   });
 
-  it("supports draws", () => {
-    expect(createVersusMatchResult(300, 300, "route-complete").winner).toBe(
-      "draw",
-    );
+  it('supports draws', () => {
+    expect(createVersusMatchResult(300, 300, 'route-complete').winner).toBe('draw');
   });
 });

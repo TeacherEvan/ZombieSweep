@@ -1,16 +1,16 @@
-import { NEWSPAPER } from "../config/constants";
+import { NEWSPAPER } from '../config/constants';
 
 export enum NewspaperState {
-  Flying = "Flying",
-  Landed = "Landed",
-  Hit = "Hit",
+  Flying = 'Flying',
+  Landed = 'Landed',
+  Hit = 'Hit',
 }
 
 export interface Newspaper {
   x: number;
   y: number;
   speed: number;
-  direction: "left" | "right";
+  direction: 'left' | 'right';
   state: NewspaperState;
   stunDamage: number;
 }
@@ -18,8 +18,8 @@ export interface Newspaper {
 export function createNewspaper(
   x: number,
   y: number,
-  direction: "left" | "right",
-  isSunday: boolean,
+  direction: 'left' | 'right',
+  isSunday: boolean
 ): Newspaper {
   return {
     x,

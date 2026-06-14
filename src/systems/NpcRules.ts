@@ -1,19 +1,9 @@
-import {
-  NpcBehaviorProfile,
-  NpcFaction,
-  NpcRole,
-  NpcState,
-  NpcTimeSlice,
-} from "../entities/Npc";
-import { TownReputation, normalizeTownReputation } from "./TownReputation";
+import type { NpcBehaviorProfile } from '../entities/Npc';
+import { NpcFaction, NpcRole, NpcState, NpcTimeSlice } from '../entities/Npc';
+import type { TownReputation } from './TownReputation';
+import { normalizeTownReputation } from './TownReputation';
 
-export type NpcScriptedEvent =
-  | "none"
-  | "alert"
-  | "rescue"
-  | "market"
-  | "raid"
-  | "blockade";
+export type NpcScriptedEvent = 'none' | 'alert' | 'rescue' | 'market' | 'raid' | 'blockade';
 
 export interface NpcDecisionContext {
   faction: NpcFaction;
@@ -36,11 +26,7 @@ function clamp(value: number, min = 0, max = 100): number {
 }
 
 function sanitizeNumber(value: unknown, fallback: number): number {
-  if (
-    typeof value !== "number" ||
-    Number.isNaN(value) ||
-    !Number.isFinite(value)
-  ) {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
     return fallback;
   }
 
@@ -55,7 +41,7 @@ function normalizeContext(context: NpcDecisionContext): NpcDecisionContext {
     nearbyZombies: clamp(sanitizeNumber(context.nearbyZombies ?? 0, 0)),
     playerProximity: clamp(sanitizeNumber(context.playerProximity ?? 100, 100)),
     isSafeZone: context.isSafeZone ?? false,
-    scriptedEvent: context.scriptedEvent ?? "none",
+    scriptedEvent: context.scriptedEvent ?? 'none',
     reputation: normalizeTownReputation(context.reputation),
   };
 }
@@ -83,17 +69,17 @@ function getRoleBias(role: NpcRole): number {
 
 function getScriptedEventBias(event: NpcScriptedEvent): number {
   switch (event) {
-    case "raid":
+    case 'raid':
       return 20;
-    case "blockade":
+    case 'blockade':
       return 16;
-    case "alert":
+    case 'alert':
       return 10;
-    case "rescue":
+    case 'rescue':
       return -8;
-    case "market":
+    case 'market':
       return -10;
-    case "none":
+    case 'none':
     default:
       return 0;
   }
@@ -104,7 +90,7 @@ export function calculateNpcPressure(context: NpcDecisionContext): number {
   const nearbyZombies = safeContext.nearbyZombies ?? 0;
   const playerProximity = safeContext.playerProximity ?? 100;
   const isSafeZone = safeContext.isSafeZone ?? false;
-  const scriptedEvent = safeContext.scriptedEvent ?? "none";
+  const scriptedEvent = safeContext.scriptedEvent ?? 'none';
   const timeSliceBias =
     safeContext.timeSlice === NpcTimeSlice.Night
       ? NIGHT_PRESSURE_BONUS
@@ -130,14 +116,14 @@ export function calculateNpcPressure(context: NpcDecisionContext): number {
       proximityBias +
       safeZoneBias +
       roleBias +
-      eventBias,
+      eventBias
   );
 }
 
 function choosePreferredState(
   behavior: Partial<NpcBehaviorProfile> | undefined,
   candidates: NpcState[],
-  fallback: NpcState,
+  fallback: NpcState
 ): NpcState {
   if (!behavior) {
     return fallback;
@@ -145,7 +131,7 @@ function choosePreferredState(
 
   const preferredStates = Array.isArray(behavior.preferredStates)
     ? behavior.preferredStates.filter((state): state is NpcState =>
-        Object.values(NpcState).includes(state),
+        Object.values(NpcState).includes(state)
       )
     : [];
 
@@ -160,13 +146,13 @@ function choosePreferredState(
 
 export function resolveNpcState(
   behavior: Partial<NpcBehaviorProfile> | undefined,
-  context: NpcDecisionContext,
+  context: NpcDecisionContext
 ): NpcState {
   const safeContext = normalizeContext(context);
   const nearbyZombies = safeContext.nearbyZombies ?? 0;
   const playerProximity = safeContext.playerProximity ?? 100;
   const isSafeZone = safeContext.isSafeZone ?? false;
-  const scriptedEvent = safeContext.scriptedEvent ?? "none";
+  const scriptedEvent = safeContext.scriptedEvent ?? 'none';
   const pressure = calculateNpcPressure(safeContext);
 
   if (safeContext.faction === NpcFaction.Infected) {
@@ -187,17 +173,13 @@ export function resolveNpcState(
     }
 
     if (playerProximity <= 20 && safeContext.reputation.trust >= 45) {
-      return choosePreferredState(
-        behavior,
-        [NpcState.Interact, NpcState.Travel],
-        NpcState.Idle,
-      );
+      return choosePreferredState(behavior, [NpcState.Interact, NpcState.Travel], NpcState.Idle);
     }
 
     return choosePreferredState(
       behavior,
       [NpcState.Idle, NpcState.Travel, NpcState.Interact],
-      NpcState.Idle,
+      NpcState.Idle
     );
   }
 
@@ -213,7 +195,7 @@ export function resolveNpcState(
     return choosePreferredState(
       behavior,
       [NpcState.Interact, NpcState.Travel, NpcState.Trade],
-      NpcState.Trade,
+      NpcState.Trade
     );
   }
 
@@ -222,31 +204,27 @@ export function resolveNpcState(
       return choosePreferredState(behavior, [NpcState.Flee], NpcState.Flee);
     }
 
-    if (scriptedEvent === "rescue" || nearbyZombies >= 1 || pressure >= 35) {
+    if (scriptedEvent === 'rescue' || nearbyZombies >= 1 || pressure >= 35) {
       return choosePreferredState(
         behavior,
         [NpcState.Investigate, NpcState.Defend],
-        NpcState.Travel,
+        NpcState.Travel
       );
     }
 
     return choosePreferredState(
       behavior,
       [NpcState.Travel, NpcState.Interact, NpcState.Investigate],
-      NpcState.Travel,
+      NpcState.Travel
     );
   }
 
   if (safeContext.faction === NpcFaction.HostileHuman) {
-    if (
-      scriptedEvent === "raid" ||
-      scriptedEvent === "blockade" ||
-      pressure >= 50
-    ) {
+    if (scriptedEvent === 'raid' || scriptedEvent === 'blockade' || pressure >= 50) {
       return choosePreferredState(
         behavior,
         [NpcState.Defend, NpcState.Investigate],
-        NpcState.Defend,
+        NpcState.Defend
       );
     }
 
@@ -254,14 +232,14 @@ export function resolveNpcState(
       return choosePreferredState(
         behavior,
         [NpcState.Investigate, NpcState.Defend],
-        NpcState.Investigate,
+        NpcState.Investigate
       );
     }
 
     return choosePreferredState(
       behavior,
       [NpcState.Travel, NpcState.Investigate],
-      NpcState.Investigate,
+      NpcState.Investigate
     );
   }
 

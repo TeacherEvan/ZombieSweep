@@ -1,5 +1,5 @@
-import { CITIZEN_PENALTY, POINTS } from "../config/constants";
-import { GameState } from "./GameState";
+import { CITIZEN_PENALTY, POINTS } from '../config/constants';
+import type { GameState } from './GameState';
 
 export class ScoreManager {
   private gameState: GameState;

@@ -1,8 +1,8 @@
-import { WeaponConfig } from "../config/vehicles";
+import type { WeaponConfig } from '../config/vehicles';
 
 export interface MeleeWeapon {
   name: string;
-  type: "melee";
+  type: 'melee';
   damage: number;
   speed: number;
   range: number;
@@ -12,7 +12,7 @@ export interface MeleeWeapon {
 
 export interface RangedWeapon {
   name: string;
-  type: "ranged";
+  type: 'ranged';
   damage: number;
   speed: number;
   range: number;
@@ -27,7 +27,7 @@ export interface RangedWeapon {
 export function createMeleeWeapon(config: WeaponConfig): MeleeWeapon {
   return {
     name: config.name,
-    type: "melee",
+    type: 'melee',
     damage: config.damage,
     speed: config.speed,
     range: config.range,
@@ -41,7 +41,7 @@ export function createMeleeWeapon(config: WeaponConfig): MeleeWeapon {
 export function createRangedWeapon(config: WeaponConfig): RangedWeapon {
   return {
     name: config.name,
-    type: "ranged",
+    type: 'ranged',
     damage: config.damage,
     speed: config.speed,
     range: config.range,
