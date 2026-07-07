@@ -1,6 +1,7 @@
 export const FEATURE_FLAGS = {
   onlineCoop: import.meta.env.VITE_ONLINE_COOP === 'true',
   onlineVersus: import.meta.env.VITE_ONLINE_VERSUS === 'true',
+  render3d: import.meta.env.VITE_RENDER3D === 'true',
   debugMetrics: import.meta.env.DEV,
 } as const;
 

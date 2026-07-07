@@ -56,6 +56,7 @@
 | `onlineCoop` | OFF | Enable CO-OP multiplayer |
 | `onlineVersus` | OFF | Enable VERSUS multiplayer |
 | `debugMetrics` | DEV only | Exposes `__ZOMBIESWEEP_OBSERVABILITY__` in console |
+| `render3d` | OFF (planned) | *Planned* — Three.js scene-replacement bridge for 3D vehicles/environment/effects. See `docs/plans/2026-07-07-3d-scene-bridge-design.md`. Not yet shipped. |
 
 ---
 

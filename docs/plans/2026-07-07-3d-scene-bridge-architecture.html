@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZombieSweep — 3D Scene-Replacement Bridge Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'JetBrains Mono', monospace; background: #020617; min-height: 100vh; padding: 2rem; color: white; }
+    .container { max-width: 1320px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container { background: rgba(15, 23, 42, 0.5); border-radius: 1rem; border: 1px solid #1e293b; padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 1100px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>ZombieSweep — 3D Scene-Replacement Bridge (v2)</h1>
+      </div>
+      <p class="subtitle">Design v2 · 2D GameScene canonical · Three.js replaces selected groups in-place · FEATURE_FLAGS.render3d gated</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 920">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b" /></marker>
+          <marker id="arrowhead-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#34d399" /></marker>
+          <marker id="arrowhead-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" /></marker>
+          <marker id="arrowhead-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" /></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+
+        <!-- grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ============ 3D SUBSYSTEM BOUNDARY (behind boxes) ============ -->
+        <rect x="405" y="55" width="850" height="620" rx="12" fill="rgba(251, 191, 36, 0.04)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="418" y="73" fill="#fbbf24" font-size="10" font-weight="600">3D Scene-Replacement Subsystem (Three.js canvas mounted only when FEATURE_FLAGS.render3d = true)</text>
+
+        <!-- ============ ARROWS (drawn early → render BEHIND boxes) ============ -->
+        <!-- render-stack vertical links (2px gap above box tops) -->
+        <line x1="205" y1="136" x2="205" y2="154" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="205" y1="242" x2="205" y2="260" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+        <!-- feature flag → manager -->
+        <line x1="590" y1="156" x2="590" y2="178" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrowhead-rose)"/>
+
+        <!-- sync pipeline horizontal links -->
+        <line x1="760" y1="433" x2="788" y2="433" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+        <line x1="970" y1="433" x2="998" y2="433" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+
+        <!-- manager → base (mount link) -->
+        <path d="M 740 213 C 820 213 940 433 998 433" fill="none" stroke="#34d399" stroke-width="1.25" stroke-dasharray="5,5" marker-end="url(#arrowhead-emerald)"/>
+
+        <!-- canonical 2D → sprite transform contract (data source) -->
+        <path d="M 370 310 C 405 310 405 433 436 433" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-amber)"/>
+        <text x="392" y="378" fill="#fbbf24" font-size="8" text-anchor="middle">state read</text>
+
+        <!-- base → three sub-bridges (converge 2px below base bottom) -->
+        <line x1="1120" y1="464" x2="565" y2="518" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+        <line x1="1120" y1="464" x2="840" y2="518" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+        <line x1="1120" y1="464" x2="1115" y2="518" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+
+        <!-- parity link: sub-bridges → Three canvas -->
+        <path d="M 440 559 C 380 559 372 300 372 244" fill="none" stroke="#34d399" stroke-width="1.25" stroke-dasharray="5,5" marker-end="url(#arrowhead-emerald)"/>
+        <text x="300" y="405" fill="#34d399" font-size="8" text-anchor="middle">mesh ↔ sprite parity</text>
+
+        <!-- ============ BOXES (opaque backing + semi-transparent fill) ============ -->
+        <!-- RENDER STACK (left column) -->
+        <text x="40" y="56" fill="#94a3b8" font-size="10" font-weight="600">RENDER STACK — z-order (top → bottom)</text>
+
+        <!-- UIScene -->
+        <rect x="40" y="70" width="330" height="66" rx="6" fill="#0f172a"/>
+        <rect x="40" y="70" width="330" height="66" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="205" y="92" fill="white" font-size="12" font-weight="600" text-anchor="middle">UIScene Canvas (TOP layer)</text>
+        <text x="205" y="108" fill="#94a3b8" font-size="9" text-anchor="middle">HUD · PauseMenu · TouchControls · Reticle</text>
+        <text x="205" y="124" fill="#22d3ee" font-size="8" text-anchor="middle">depth band 50–60 · setScrollFactor(0)</text>
+
+        <!-- Three.js canvas -->
+        <rect x="40" y="156" width="330" height="86" rx="6" fill="#0f172a"/>
+        <rect x="40" y="156" width="330" height="86" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="205" y="180" fill="white" font-size="12" font-weight="600" text-anchor="middle">Three.js Canvas (transparent)</text>
+        <text x="205" y="197" fill="#94a3b8" font-size="9" text-anchor="middle">Vehicles · Environment · Effects meshes</text>
+        <text x="205" y="213" fill="#34d399" font-size="8" text-anchor="middle">Orthographic camera (matched frustum)</text>
+        <text x="205" y="227" fill="#34d399" font-size="8" text-anchor="middle">gameplay depth band −10..12</text>
+
+        <!-- GameScene canvas -->
+        <rect x="40" y="262" width="330" height="86" rx="6" fill="#0f172a"/>
+        <rect x="40" y="262" width="330" height="86" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="205" y="286" fill="white" font-size="12" font-weight="600" text-anchor="middle">GameScene Canvas (BOTTOM)</text>
+        <text x="205" y="303" fill="#94a3b8" font-size="9" text-anchor="middle">Road / background graphics</text>
+        <text x="205" y="319" fill="#fbbf24" font-size="8" text-anchor="middle">HIDDEN sprite groups (physics bodies ACTIVE)</text>
+        <text x="205" y="333" fill="#fbbf24" font-size="8" text-anchor="middle">2D gameplay = CANONICAL source of truth</text>
+
+        <!-- FEATURE FLAG GATE -->
+        <rect x="440" y="90" width="300" height="66" rx="6" fill="#0f172a"/>
+        <rect x="440" y="90" width="300" height="66" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="590" y="112" fill="white" font-size="11" font-weight="600" text-anchor="middle">FEATURE_FLAGS.render3d</text>
+        <text x="590" y="128" fill="#94a3b8" font-size="9" text-anchor="middle">GATE · on ⇒ mount 3D · off ⇒ 2D only</text>
+        <text x="590" y="143" fill="#fb7185" font-size="8" text-anchor="middle">flag off ⇒ no Three canvas, zero regression</text>
+
+        <!-- Render3DManager -->
+        <rect x="440" y="180" width="300" height="66" rx="6" fill="#0f172a"/>
+        <rect x="440" y="180" width="300" height="66" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="590" y="202" fill="white" font-size="11" font-weight="600" text-anchor="middle">Render3DManager</text>
+        <text x="590" y="218" fill="#94a3b8" font-size="9" text-anchor="middle">mount / unmount 3D canvas</text>
+        <text x="590" y="233" fill="#fbbf24" font-size="8" text-anchor="middle">create() · update() · shutdown() lifecycle</text>
+
+        <!-- NPC stays 2D (scope correction) -->
+        <rect x="440" y="300" width="300" height="54" rx="6" fill="#0f172a"/>
+        <rect x="440" y="300" width="300" height="54" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="590" y="322" fill="white" font-size="11" font-weight="600" text-anchor="middle">NPCs (texture-keyed chars)</text>
+        <text x="590" y="338" fill="#94a3b8" font-size="9" text-anchor="middle">REMAIN 2D — not vehicles, out of scope</text>
+
+        <!-- SYNC PIPELINE -->
+        <text x="440" y="392" fill="#94a3b8" font-size="10" font-weight="600">SYNC PIPELINE — per-frame</text>
+
+        <!-- Sprite Transform Contract -->
+        <rect x="440" y="404" width="320" height="58" rx="6" fill="#0f172a"/>
+        <rect x="440" y="404" width="320" height="58" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="600" y="426" fill="white" font-size="11" font-weight="600" text-anchor="middle">Sprite Transform Contract</text>
+        <text x="600" y="442" fill="#94a3b8" font-size="8" text-anchor="middle">reads public fields: x, y, rotation,</text>
+        <text x="600" y="454" fill="#94a3b8" font-size="8" text-anchor="middle">scaleX/Y, visible, alpha, depth</text>
+
+        <!-- projection.ts -->
+        <rect x="790" y="404" width="180" height="58" rx="6" fill="#0f172a"/>
+        <rect x="790" y="404" width="180" height="58" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="880" y="426" fill="white" font-size="11" font-weight="600" text-anchor="middle">projection.ts</text>
+        <text x="880" y="442" fill="#94a3b8" font-size="8" text-anchor="middle">world → screen → world</text>
+        <text x="880" y="454" fill="#34d399" font-size="8" text-anchor="middle">pure · unit-tested · no WebGL</text>
+
+        <!-- SceneSyncBridge base -->
+        <rect x="1000" y="404" width="240" height="58" rx="6" fill="#0f172a"/>
+        <rect x="1000" y="404" width="240" height="58" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1120" y="426" fill="white" font-size="11" font-weight="600" text-anchor="middle">SceneSyncBridge (base)</text>
+        <text x="1120" y="442" fill="#94a3b8" font-size="8" text-anchor="middle">mesh pool · enabled toggle</text>
+        <text x="1120" y="454" fill="#34d399" font-size="8" text-anchor="middle">re-shows 2D group when off</text>
+
+        <!-- three sub-bridges -->
+        <rect x="440" y="520" width="250" height="78" rx="6" fill="#0f172a"/>
+        <rect x="440" y="520" width="250" height="78" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="565" y="544" fill="white" font-size="11" font-weight="600" text-anchor="middle">VehicleBridge</text>
+        <text x="565" y="561" fill="#94a3b8" font-size="8" text-anchor="middle">reads: PlayerSprite only</text>
+        <text x="565" y="574" fill="#94a3b8" font-size="8" text-anchor="middle">per VEHICLE_STATS · procedural hull</text>
+        <text x="565" y="588" fill="#34d399" font-size="8" text-anchor="middle">parity test (tolerance)</text>
+
+        <rect x="715" y="520" width="250" height="78" rx="6" fill="#0f172a"/>
+        <rect x="715" y="520" width="250" height="78" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="840" y="544" fill="white" font-size="11" font-weight="600" text-anchor="middle">EnvironmentBridge</text>
+        <text x="840" y="561" fill="#94a3b8" font-size="8" text-anchor="middle">reads: houseSprites placements</text>
+        <text x="840" y="574" fill="#94a3b8" font-size="8" text-anchor="middle">instanced houses + scrolling ground</text>
+        <text x="840" y="588" fill="#34d399" font-size="8" text-anchor="middle">fog + directional/ambient light</text>
+
+        <rect x="990" y="520" width="250" height="78" rx="6" fill="#0f172a"/>
+        <rect x="990" y="520" width="250" height="78" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1115" y="544" fill="white" font-size="11" font-weight="600" text-anchor="middle">EffectsBridge</text>
+        <text x="1115" y="561" fill="#94a3b8" font-size="8" text-anchor="middle">reads: newspaperSprites, kill +</text>
+        <text x="1115" y="574" fill="#94a3b8" font-size="8" text-anchor="middle">combo events</text>
+        <text x="1115" y="588" fill="#34d399" font-size="8" text-anchor="middle">pooled particles · hard cap</text>
+
+        <!-- ============ LEGEND (below boundary, outside box) ============ -->
+        <text x="40" y="706" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="40" y="718" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="62" y="726" fill="#94a3b8" font-size="8">UI layer (top)</text>
+        <rect x="40" y="734" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="62" y="742" fill="#94a3b8" font-size="8">Three.js / bridges</text>
+        <rect x="40" y="750" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="62" y="758" fill="#94a3b8" font-size="8">Canonical 2D / existing</text>
+        <rect x="40" y="766" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="62" y="774" fill="#94a3b8" font-size="8">Feature-flag gate</text>
+        <rect x="40" y="782" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1"/>
+        <text x="62" y="790" fill="#94a3b8" font-size="8">Unchanged / out of scope</text>
+        <line x1="40" y1="802" x2="56" y2="802" stroke="#34d399" stroke-width="1.25" stroke-dasharray="4,3"/>
+        <text x="62" y="805" fill="#94a3b8" font-size="8">mesh ↔ sprite parity link</text>
+        <line x1="40" y1="816" x2="56" y2="816" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <text x="62" y="819" fill="#94a3b8" font-size="8">canonical state read</text>
+
+        <!-- phase strip -->
+        <text x="440" y="712" fill="white" font-size="10" font-weight="600">Phase Plan</text>
+        <text x="440" y="730" fill="#94a3b8" font-size="9">P0 Foundation (projection · base · flag · manager · UIScene split)</text>
+        <text x="440" y="746" fill="#94a3b8" font-size="9">P1 VehicleBridge → P2 EnvironmentBridge → P3 EffectsBridge</text>
+        <text x="440" y="762" fill="#94a3b8" font-size="9">P4 Cross-cutting (depth sort · camera sync · fallback · low-power)</text>
+        <text x="440" y="778" fill="#94a3b8" font-size="9">P5 Stability &amp; Launch (tests · perf budget · CI smoke · docs)</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header"><div class="card-dot rose"></div><h3>Key Design Decisions</h3></div>
+        <ul>
+          <li>• 2D GameScene stays canonical; 3D is a projection only</li>
+          <li>• Hidden sprites use setVisible(false); bodies stay active</li>
+          <li>• Orthographic Three camera matched to Phaser frustum</li>
+          <li>• UIScene split so HUD renders above 3D canvas</li>
+          <li>• FEATURE_FLAGS.render3d gates everything (zero regression)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-dot emerald"></div><h3>Three Bridges (parallel)</h3></div>
+        <ul>
+          <li>• VehicleBridge — player vehicle only (NPCs are 2D chars)</li>
+          <li>• EnvironmentBridge — instanced houses + ground + fog/light</li>
+          <li>• EffectsBridge — projectiles, death bursts, combo pulse</li>
+          <li>• Each: mesh pool, enabled toggle, parity test</li>
+          <li>• No external GLTF in v1 (procedural geometry)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-dot amber"></div><h3>Risks &amp; Success</h3></div>
+        <ul>
+          <li>• Risk: 3D occluding HUD → UIScene split (P0.6)</li>
+          <li>• Risk: projection drift → per-bridge parity test</li>
+          <li>• Risk: WebGL/CI → stub renderer + flag-off path</li>
+          <li>• Success: tests green on+off; no FPS regression &gt;5%</li>
+          <li>• Success: HUD above 3D; input unaffected</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">ZombieSweep · 3D Scene-Replacement Bridge (Design v2) · 2026-07-07</p>
+  </div>
+</body>
+</html>

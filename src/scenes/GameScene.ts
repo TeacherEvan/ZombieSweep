@@ -76,6 +76,12 @@ import {
   getVehicleControlProfile,
   getZombieWaveSettings,
 } from './arcade-rules';
+import { FEATURE_FLAGS } from '../config/featureFlags';
+import { Render3DManager } from '../three/Render3DManager';
+import {
+  createEnvironmentBridge,
+  type EnvironmentBridgeSource,
+} from '../three/bridges/EnvironmentBridge';
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -117,11 +123,17 @@ export class GameScene extends Phaser.Scene {
   private pickupSprites!: Phaser.Physics.Arcade.StaticGroup;
 
   private scrollSpeed = 0;
+  private deliveredCount = 0;
+  private controlProfile!: ReturnType<typeof getVehicleControlProfile>;
   private worldY = 0;
   private deliveries: boolean[] = [];
   private transitioning = false;
   private zombieKillCount = 0;
   private lastTickerKillCount = 0;
+
+  /** Optional 3D environment layer. Null unless FEATURE_FLAGS.render3d is on. */
+  private render3d: Render3DManager | null = null;
+  private envBridge = null as ReturnType<typeof createEnvironmentBridge> | null;
   private comboTracker!: ComboTracker;
   private subscriberTotal = 0;
   private viewportContext = resolveBroadcastViewportContext(960, 540, false);
@@ -181,6 +193,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.deliveries = new Array(this.route.houses.length).fill(false);
+    this.deliveredCount = 0;
     this.worldY = 0;
     this.comboTracker = new ComboTracker();
     this.subscriberTotal = this.route.houses.filter(h => h.isSubscriber).length;
@@ -189,6 +202,7 @@ export class GameScene extends Phaser.Scene {
     this.nextSurgeKillThreshold = this.getCurrentWaveSettings().surgeThreshold;
 
     const vehicleStats = VEHICLE_STATS[this.gameState.vehicle];
+    this.controlProfile = getVehicleControlProfile(this.gameState.vehicle);
 
     // Create physics groups
     this.zombieSprites = this.physics.add.group();
@@ -261,6 +275,19 @@ export class GameScene extends Phaser.Scene {
     this.spawnHouses();
     this.spawnCitizens();
 
+    // Optional 3D environment layer (flag-gated; zero 2D effect when off).
+    if (FEATURE_FLAGS.render3d) {
+      const { width, height } = this.cameras.main;
+      this.render3d = new Render3DManager({ viewWidth: width, viewHeight: height });
+      this.render3d.create();
+      const scene = this.render3d.getScene();
+      if (scene) {
+        this.envBridge = createEnvironmentBridge(scene, this.render3d.getConfig());
+        this.envBridge.create();
+        this.envBridge.setEnabled(true);
+      }
+    }
+
     // Place hazards
     this.spawnHazards();
 
@@ -331,6 +358,13 @@ export class GameScene extends Phaser.Scene {
       this.touchControls = undefined;
       this.unsubscribeCoopMessage?.();
       this.unsubscribeCoopClose?.();
+      // Tear down the 3D layer (safe no-op when flag was off).
+      if (this.envBridge) {
+        this.envBridge.teardown();
+        this.envBridge = null;
+      }
+      this.render3d?.teardown();
+      this.render3d = null;
     });
 
     if (!this.isGunnerRole()) {
@@ -400,7 +434,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const controlProfile = getVehicleControlProfile(this.gameState.vehicle);
+    const controlProfile = this.controlProfile;
     const speed = controlProfile.maxSpeed;
 
     // Movement
@@ -426,12 +460,31 @@ export class GameScene extends Phaser.Scene {
     );
 
     // Auto scroll
-    const deliveredCount = this.deliveries.filter(Boolean).length;
     const targetScrollSpeed =
-      getRouteScrollSpeed(this.gameState.day, deliveredCount, this.gameState.difficulty) *
+      getRouteScrollSpeed(this.gameState.day, this.deliveredCount, this.gameState.difficulty) *
       (delta / 1000);
     this.scrollSpeed = Phaser.Math.Linear(this.scrollSpeed, targetScrollSpeed, 0.08);
     this.worldY += this.scrollSpeed;
+
+    // Feed the 3D environment bridge (no-op unless render3d flag is on).
+    if (this.envBridge) {
+      const cam = this.cameras.main;
+      const source: EnvironmentBridgeSource[] = [
+        {
+          houses: this.houseSprites.map(hp => ({
+            house: { type: hp.house.type },
+            sprite: hp.sprite,
+          })),
+          worldY: this.worldY,
+        },
+      ];
+      this.envBridge.update({
+        source,
+        host: this.render3d!.getScene()!,
+        cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
+      });
+      this.render3d!.update(delta);
+    }
 
     // Throw newspaper left/right
     if (
@@ -675,6 +728,7 @@ export class GameScene extends Phaser.Scene {
       if (deliveryResult !== 'miss' && !this.deliveries[i]) {
         if (house.isSubscriber) {
           this.deliveries[i] = true;
+          this.deliveredCount++;
           house.markDelivered();
           // Update delivery progress
           const completed = this.deliveries.filter(
@@ -705,9 +759,9 @@ export class GameScene extends Phaser.Scene {
             );
           }
         } else {
+          const breakable = house.breakables[0];
           if (!house.damaged) {
             house.markDamaged();
-            const breakable = house.breakables[0];
             if (breakable?.name.includes('tombstone')) {
               this.scoreManager.tombstoneKnock();
             } else {
@@ -718,7 +772,7 @@ export class GameScene extends Phaser.Scene {
             this,
             houseSprite.x,
             houseSprite.y - 20,
-            house.breakables[0]?.name.toUpperCase() ?? 'CRASH!',
+            breakable?.name.toUpperCase() ?? 'CRASH!',
             BC.css.RED,
             '16px'
           );
@@ -1116,11 +1170,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private getCurrentWaveSettings() {
-    const deliveredCount = this.deliveries.filter(Boolean).length;
     return getZombieWaveSettings(
       this.gameState.day,
       this.gameState.difficulty,
-      deliveredCount,
+      this.deliveredCount,
       this.zombieKillCount
     );
   }
@@ -1475,6 +1528,7 @@ export class GameScene extends Phaser.Scene {
     this.player.paperCount = snapshot.paperCount;
     this.player.rangedWeapon.ammo = snapshot.ammoCount;
     this.deliveries = [...snapshot.deliveries];
+    this.deliveredCount = this.deliveries.filter(Boolean).length;
 
     const completed = this.deliveries.filter(
       (delivered, index) => delivered && this.route.houses[index]?.isSubscriber

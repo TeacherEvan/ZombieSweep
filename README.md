@@ -42,7 +42,7 @@ src/
 
 ### Prerequisites
 
-- Node.js 18+ recommended
+- Node.js 20.19+ or 22.12+ (required by Vite 8; Node 18 is unsupported)
 - npm
 
 ### Install dependencies
@@ -118,6 +118,16 @@ In co-op, the gunner can cycle targets with the keyboard and fire targeted range
 ## Testing Notes
 
 The repository uses Vitest for behavior-focused tests around pure-logic modules. Phaser scenes are intended for browser-based integration testing rather than unit tests.
+
+## 3D Scene-Replacement (Planned)
+
+> **Status:** Design complete, not yet shipped. See [docs/plans/2026-07-07-3d-scene-bridge-design.md](docs/plans/2026-07-07-3d-scene-bridge-design.md).
+
+A planned enhancement adds real 3D visual elements via a parallel Three.js renderer that
+replaces selected 2D sprite groups (player vehicle, environment houses/ground, combat
+effects) in-place. The 2D `GameScene` remains the canonical source of truth for gameplay;
+the 3D layer is a per-frame projection of 2D state, gated behind the `render3d` feature
+flag (off by default) for zero-regression rollout. NPCs stay 2D.
 
 ## Deployment
 
