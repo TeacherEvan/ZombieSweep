@@ -56,7 +56,7 @@
 | `onlineCoop` | OFF | Enable CO-OP multiplayer |
 | `onlineVersus` | OFF | Enable VERSUS multiplayer |
 | `debugMetrics` | DEV only | Exposes `__ZOMBIESWEEP_OBSERVABILITY__` in console |
-| `render3d` | OFF | Implemented, flag-gated (zero-regression). Behind `VITE_RENDER3D=true`: bridges the **environment** layer (houses/ground, Phase 2), the **effects** layer (projectile sprites, death-burst particle pool, combo point-light pulse, all pooled + hard-capped at 200 live particles, Phase 3), and the sync layer (Phase 0/1). Vehicles remain 2D; the 2D simulation is the source of truth and is untouched when the flag is OFF. See `docs/plans/.archive/2026-07-07-3d-scene-bridge-design.md`. |
+| `render3d` | ON | Default-on visual overhaul (rollback via `VITE_RENDER3D=false`). Bridges the environment layer (procedural 3D houses, ground lane dashes, rim/hemi light rig), effects layer (3D projectile meshes, death-burst particle pool, combo point-light pulse, capped at 200), player vehicles (3D bike, rollerblades, skateboard models), and zombie meshes (Shambler/Runner/Spitter models with vertical bobbing animations). 2D engine remains the underlying source of truth. See `docs/plans/2026-07-08-3d-default-visual-overhaul-design.md`. |
 
 ---
 

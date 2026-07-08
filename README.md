@@ -123,35 +123,26 @@ The repository uses Vitest for behavior-focused tests around pure-logic modules.
 
 Hot-path optimizations in `GameScene` are documented in [docs/plans/.archive/2026-07-07-game-scene-hot-path-optimization.md](docs/plans/.archive/2026-07-07-game-scene-hot-path-optimization.md). Patterns applied without behavior change: cache the vehicle control profile once instead of per-frame, maintain an incremental delivery counter instead of re-filtering the deliveries array every frame/wave, and hoist repeated index reads out of conditional branches.
 
-## 3D Scene-Replacement (Implemented, flag-gated)
+## 3D Scene-Replacement (Default-ON Visual Overhaul)
 
-> **Status:** Implemented, flag-gated (off by default), zero-regression. See [docs/plans/.archive/2026-07-07-3d-scene-bridge-design.md](docs/plans/.archive/2026-07-07-3d-scene-bridge-design.md).
+> **Status:** Fully implemented, verified, default-on. Rollback/disable via `VITE_RENDER3D=false` or if WebGL is unavailable. See [docs/plans/2026-07-08-3d-default-visual-overhaul-design.md](docs/plans/2026-07-08-3d-default-visual-overhaul-design.md).
 
-A parallel Three.js renderer replaces selected 2D sprite groups (environment houses/ground,
-combat effects) in-place. The 2D `GameScene` remains the canonical source of truth for
-gameplay; the 3D layer is a per-frame projection of 2D state, gated behind the `render3d`
-feature flag (off by default) for zero-regression rollout.
+A parallel Three.js renderer replaces selected 2D sprite groups (environment houses/ground, players, zombies, combat effects) in-place. The 2D `GameScene` remains the canonical source of truth for gameplay; the 3D layer is a per-frame projection of 2D state, default-on for an immersive visual experience.
 
-**Current state (2026-07-07):** the `render3d` flag is fully wired and ships three bridges
-behind `VITE_RENDER3D=true`:
-- **sync bridge** (Phase 0/1) — reprojection + matched ortho camera;
-- **environment bridge** (Phase 2) — instanced houses + scrolling ground;
-- **effects bridge** (Phase 3) — flying-projectile sprites, a pooled death-burst particle
-  system (hard-capped at 200 live particles), and a combo point-light pulse.
+**Current state (2026-07-08):** the `render3d` flag is default-on and ships four bridges (disableable via `VITE_RENDER3D=false`):
+- **sync bridge** — reprojection + matched ortho camera;
+- **environment bridge** — procedural 3D houses (slate-gray pitched roofs, glowing windows, wooden doors), scrolling ground lane dashes, and a rim/hemisphere light rig;
+- **effects bridge** — flying-projectile meshes, a pooled death-burst particle system (hard-capped at 200 live particles), and a combo point-light pulse;
+- **player bridge** — procedural low-poly bicycle, rollerblades, and skateboard models matching active vehicle type;
+- **zombie bridge** — procedural Shambler, Runner, and Spitter models featuring vertical bobbing walking animations (Runners bobbing faster) and elite glowing overlays.
 
-**Cross-cutting (Phase 4, all done):**
-- **P4.1 Unified depth sort** — every mesh is placed in a gameplay depth band via
-  `renderOrder` + `depthZOffset`, with a parity test proving houses sit behind projectiles.
-- **P4.2 Camera shake sync** — the live 2D Phaser camera-shake offset is fed into the 3D
-  ortho camera each frame so the 3D view shakes in sync (no accumulation/drift).
-- **P4.3 Graceful fallback** — flag OFF is a complete no-op; if WebGL is unavailable or the
-  renderer fails to construct, `initRender3DLayer()` degrades to a 2D-only run via try/catch,
-  leaving all 2D render objects untouched.
-- **P4.5 Reduced-motion / low-power** — `prefers-reduced-motion` is read defensively and
-  threaded into both bridges (fewer particles, no fog/shadows).
+**Cross-cutting & Fallback:**
+- **P4.1 Unified depth sort** — every mesh is placed in a gameplay depth band via `renderOrder` + `depthZOffset` to prevent z-fighting.
+- **P4.2 Camera shake sync** — the live 2D Phaser camera-shake offset is fed into the 3D ortho camera each frame so the 3D view shakes in sync.
+- **P4.3 Graceful fallback** — if WebGL is unavailable, or a failure occurs during initialization, the engine automatically degrades to the 2D-only gameplay mode without throwing or crashing.
+- **P4.5 Reduced-motion / low-power** — respects client preferences by disabling fog/shadows and capping particle counts.
 
-The 2D `GameScene` stays the source of truth; when the flag is OFF none of the 3D bridges
-are created or synced (proven by tests). Vehicles and NPCs remain 2D in all cases.
+The 2D `GameScene` stays the source of truth; when the flag is OFF none of the 3D bridges are created or synced (proven by tests).
 
 ## Deployment
 
