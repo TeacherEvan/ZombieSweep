@@ -1,0 +1,54 @@
+- generic [active] [ref=f7e1]:
+  - status [ref=f7e2]:
+    - generic [ref=f7e3]:
+      - generic [ref=f7e4]: WZMB
+      - generic [ref=f7e5]: "13"
+    - generic [ref=f7e6]: TRI-COUNTY EMERGENCY BROADCAST NETWORK
+    - generic [ref=f7e8]: ACQUIRING SATELLITE FEED
+    - generic [ref=f7e11]:
+      - text: The following broadcast contains scenes of zombie violence
+      - text: and extreme newspaper delivery. Viewer discretion is advised.
+  - generic [ref=f7e12]:
+    - text: ROTATE DEVICE FOR BEST EXPERIENCE
+    - generic [ref=f7e13]:
+      - generic [ref=f7e14]:
+        - generic [ref=f7e15]: WZMB
+        - generic [ref=f7e16]: "13"
+      - generic [ref=f7e19]: LIVE
+      - button "Toggle fullscreen" [ref=f7e20] [cursor=pointer]:
+        - img [ref=f7e21]
+    - generic [ref=f7e23]: ROTATE THE DEVICE FOR THE ROUTE
+    - generic [ref=f7e26]:
+      - generic [ref=f7e27]: ALERT
+      - generic [ref=f7e29]:
+        - generic [ref=f7e30]: ZOMBIE SIGHTINGS SURGE IN MAPLE GROVE — RESIDENTS URGED TO BARRICADE HOMES AFTER DUSK
+        - generic [ref=f7e31]: ◆
+        - generic [ref=f7e32]: NATIONAL GUARD ESTABLISHES PERIMETER AROUND DOWNTOWN DEADWOOD — SUPPLY DROPS SCHEDULED TUESDAY
+        - generic [ref=f7e33]: ◆
+        - generic [ref=f7e34]: "CDC ADVISORY: BASEBALL BATS AND MACHETES RATED \"HIGHLY EFFECTIVE\" AGAINST UNDEAD THREATS"
+        - generic [ref=f7e35]: ◆
+        - generic [ref=f7e36]: LOCAL NEWSPAPER CARRIERS HAILED AS HEROES — "THE PAPERS MUST GO THROUGH" SAYS ROUTE SUPERVISOR
+        - generic [ref=f7e37]: ◆
+        - generic [ref=f7e38]: RUST CREEK BRIDGE COLLAPSE TRAPS SURVIVORS — RESCUE OPERATIONS UNDERWAY
+        - generic [ref=f7e39]: ◆
+        - generic [ref=f7e40]: SUNDAY EDITION NOW 3X NORMAL WEIGHT — CARRIERS REPORT INCREASED ZOMBIE DETERRENT EFFECTIVENESS
+        - generic [ref=f7e41]: ◆
+        - generic [ref=f7e42]: TRI-COUNTY AMATEUR RADIO NETWORK BROADCASTS SAFE ZONE COORDINATES — TUNE TO 145.230 MHZ
+        - generic [ref=f7e43]: ◆
+        - generic [ref=f7e44]: SKATEBOARD MILITIA CLEARS ROUTE 7 CORRIDOR — MACHETE SALES UP 400% AT REMAINING HARDWARE STORES
+        - generic [ref=f7e45]: ◆
+        - generic [ref=f7e46]: ZOMBIE SIGHTINGS SURGE IN MAPLE GROVE — RESIDENTS URGED TO BARRICADE HOMES AFTER DUSK
+        - generic [ref=f7e47]: ◆
+        - generic [ref=f7e48]: NATIONAL GUARD ESTABLISHES PERIMETER AROUND DOWNTOWN DEADWOOD — SUPPLY DROPS SCHEDULED TUESDAY
+        - generic [ref=f7e49]: ◆
+        - generic [ref=f7e50]: "CDC ADVISORY: BASEBALL BATS AND MACHETES RATED \"HIGHLY EFFECTIVE\" AGAINST UNDEAD THREATS"
+        - generic [ref=f7e51]: ◆
+        - generic [ref=f7e52]: LOCAL NEWSPAPER CARRIERS HAILED AS HEROES — "THE PAPERS MUST GO THROUGH" SAYS ROUTE SUPERVISOR
+        - generic [ref=f7e53]: ◆
+        - generic [ref=f7e54]: RUST CREEK BRIDGE COLLAPSE TRAPS SURVIVORS — RESCUE OPERATIONS UNDERWAY
+        - generic [ref=f7e55]: ◆
+        - generic [ref=f7e56]: SUNDAY EDITION NOW 3X NORMAL WEIGHT — CARRIERS REPORT INCREASED ZOMBIE DETERRENT EFFECTIVENESS
+        - generic [ref=f7e57]: ◆
+        - generic [ref=f7e58]: TRI-COUNTY AMATEUR RADIO NETWORK BROADCASTS SAFE ZONE COORDINATES — TUNE TO 145.230 MHZ
+        - generic [ref=f7e59]: ◆
+        - generic [ref=f7e60]: SKATEBOARD MILITIA CLEARS ROUTE 7 CORRIDOR — MACHETE SALES UP 400% AT REMAINING HARDWARE STORES

@@ -23,5 +23,12 @@ export default defineConfig({
     alias: {
       phaser3spectorjs: phaser3spectorStub,
     },
+    // The jsdom-pool test that imports the real Phaser (GameScene) is loaded via
+    // Vite's transform pipeline, which bypasses the esbuild dep optimizer that
+    // bakes the `phaser3spectorjs` alias into the pre-bundled dist. Inline
+    // Phaser so the alias is applied at transform time in every environment.
+    deps: {
+      inline: ["phaser"],
+    },
   },
 });

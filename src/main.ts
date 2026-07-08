@@ -77,7 +77,7 @@ const config: Phaser.Types.Core.GameConfig = {
   ],
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.NO_CENTER,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   callbacks: {
     preBoot: () => {
@@ -116,5 +116,36 @@ game.events.on('postrender', () => {
 if (import.meta.env.DEV) {
   (window as unknown as Record<string, unknown>).__ZOMBIESWEEP_OBSERVABILITY__ = {
     getStatus: getObservabilityStatus,
+  };
+
+  // DEV-playtest hook: lets an automated agent (Chrome DevTools / evaluate_script)
+  // introspect the live game without modifying production behavior. Strip-safe:
+  // this whole block is compiled out of production builds (import.meta.env.DEV).
+  (window as unknown as Record<string, unknown>).__ZOMBIESWEEP__ = {
+    game,
+    getActiveScenes: () => game.scene.getScenes(true).map(s => s.scene.key),
+    getScene: (key: string) => game.scene.getScene(key),
+    getGameState: () => {
+      const gs = game.registry.get('gameState');
+      if (gs && typeof gs === 'object') {
+        const g = gs as Record<string, unknown>;
+        return {
+          day: g.day,
+          lives: g.lives,
+          score: g.score,
+          subscribers: g.subscribers,
+          difficulty: g.difficulty,
+          vehicle: g.vehicle,
+          isGameOver: g.isGameOver,
+        };
+      }
+      return null;
+    },
+    isPaused: () => {
+      const gameScene = game.scene.getScene('GameScene') as
+        | { scene: { isPaused: () => boolean } }
+        | undefined;
+      return gameScene?.scene?.isPaused?.() ?? false;
+    },
   };
 }
