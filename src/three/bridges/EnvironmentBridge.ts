@@ -56,15 +56,21 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   /** Inject lighting rig + fog + ground plane into the scene. Idempotent. */
   create(): void {
     if (this.built) return;
-    const ambient = new THREE.AmbientLight(0x404654, 1.1);
-    const dir = new THREE.DirectionalLight(0xfff0d0, 1.4);
+    const ambient = new THREE.AmbientLight(0x404654, 0.7);
+    const dir = new THREE.DirectionalLight(0xfff0d0, 1.1);
     dir.position.set(-0.5, 1, 0.8);
+    const hemi = new THREE.HemisphereLight(0x78909c, 0x3e2723, 0.5); // cool sky blue to warm earth brown
+    const rim = new THREE.DirectionalLight(0xa0c0ff, 0.6); // cool back/rim light
+    rim.position.set(0.5, 0.5, -1);
+
     // Reduced-motion / low-power: no shadow casting (no shadow maps to render).
     if (!this.reducedMotion) {
       dir.castShadow = false;
     }
     this.scene.add(ambient);
     this.scene.add(dir);
+    this.scene.add(hemi);
+    this.scene.add(rim);
 
     // Apocalypse mood fog — skipped in reduced-motion mode.
     if (!this.reducedMotion) {
@@ -79,6 +85,43 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     });
     this.ground = new THREE.Mesh(groundGeom, groundMat);
     this.ground.rotation.x = -Math.PI / 2; // lay flat (XZ plane)
+
+    // Add detailed road markings, sidewalks, and curb lines in local space of ground.
+    const roadMarkings = new THREE.Group();
+
+    // Sidewalks
+    const leftSidewalkGeom = new THREE.PlaneGeometry(120, GROUND_DEPTH);
+    const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x666660, roughness: 0.9 });
+    const leftSidewalk = new THREE.Mesh(leftSidewalkGeom, sidewalkMat);
+    leftSidewalk.position.set(-400, 0, 0.01); // slightly above ground to prevent z-fighting
+    roadMarkings.add(leftSidewalk);
+
+    const rightSidewalk = new THREE.Mesh(leftSidewalkGeom, sidewalkMat);
+    rightSidewalk.position.set(400, 0, 0.01);
+    roadMarkings.add(rightSidewalk);
+
+    // Grass Edges
+    const edgeGeom = new THREE.PlaneGeometry(40, GROUND_DEPTH);
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x2d4a2d, roughness: 1.0 });
+    const leftEdge = new THREE.Mesh(edgeGeom, edgeMat);
+    leftEdge.position.set(-480, 0, 0.02);
+    roadMarkings.add(leftEdge);
+
+    const rightEdge = new THREE.Mesh(edgeGeom, edgeMat);
+    rightEdge.position.set(480, 0, 0.02);
+    roadMarkings.add(rightEdge);
+
+    // Lane dashed lines
+    const dashGeom = new THREE.PlaneGeometry(6, 24);
+    const dashMat = new THREE.MeshStandardMaterial({ color: 0x5a5a3a, roughness: 0.9 });
+    for (let y = -GROUND_DEPTH / 2; y < GROUND_DEPTH / 2; y += 40) {
+      const dash = new THREE.Mesh(dashGeom, dashMat);
+      dash.position.set(-3, y, 0.01);
+      roadMarkings.add(dash);
+    }
+
+    this.ground.add(roadMarkings);
+
     // Back-most depth band: ground never occludes gameplay meshes.
     this.ground.renderOrder = depthRenderOrder('ground');
     this.ground.position.z = depthZOffset('ground');
