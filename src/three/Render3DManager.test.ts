@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
 import { Render3DManager } from './Render3DManager';
 import type { SceneHost, RendererStub } from './Render3DManager';
 
@@ -146,5 +147,69 @@ describe('Render3DManager', () => {
     });
     expect(() => manager.create()).not.toThrow();
     expect(manager.isActive()).toBe(false);
+  });
+
+  it('mounts the canvas when mount element is provided', () => {
+    const domElement = {
+      classList: {
+        add: vi.fn(),
+      },
+      style: {},
+    } as unknown as HTMLCanvasElement;
+    
+    const renderer = {
+      render: vi.fn(),
+      setSize: vi.fn(),
+      dispose: vi.fn(),
+      domElement,
+    };
+    
+    const rendererFactory = vi.fn(() => renderer);
+    const mount = {
+      appendChild: vi.fn(),
+    } as unknown as HTMLElement;
+
+    const manager = new Render3DManager({
+      enabled: true,
+      rendererFactory,
+      mount,
+    });
+    manager.create();
+    expect(rendererFactory).toHaveBeenCalledTimes(1);
+    expect(mount.appendChild).toHaveBeenCalledWith(domElement);
+    expect(domElement.classList.add).toHaveBeenCalledWith('three-canvas');
+    expect(domElement.style.position).toBe('absolute');
+    expect(domElement.style.inset).toBe('0');
+    expect(domElement.style.zIndex).toBe('0');
+  });
+
+  it('setupComposer is called and behaves gracefully when renderer factory returns WebGLRenderer', () => {
+    const glRenderer = Object.create(THREE.WebGLRenderer.prototype);
+    Object.assign(glRenderer, {
+      render: vi.fn(),
+      setSize: vi.fn(),
+      dispose: vi.fn(),
+      domElement: { tagName: 'CANVAS' } as unknown as HTMLCanvasElement,
+    });
+
+    const manager = new Render3DManager({
+      enabled: true,
+      rendererFactory: () => glRenderer,
+      host: makeHost(),
+      reducedMotion: false,
+    });
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      manager.create();
+      expect(manager.isActive()).toBe(true);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[Render3D] Post-FX composer unavailable'),
+        expect.any(Error)
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

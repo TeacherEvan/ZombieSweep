@@ -86,6 +86,7 @@ import {
 } from '../three/bridges/EnvironmentBridge';
 import { createEffectsBridge, type EffectsBridgeSource } from '../three/bridges/EffectsBridge';
 import type { KillEvent } from '../three/bridges/EffectsBridge';
+import { PlayerBridge, type PlayerSourceItem } from '../three/bridges/PlayerBridge';
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -139,6 +140,7 @@ export class GameScene extends Phaser.Scene {
   private render3d: Render3DManager | null = null;
   private envBridge = null as ReturnType<typeof createEnvironmentBridge> | null;
   private effectsBridge = null as ReturnType<typeof createEffectsBridge> | null;
+  private playerBridge: PlayerBridge | null = null;
   private comboTracker!: ComboTracker;
   /** Buffered kill events for the current frame (drained into the effects bridge). */
   private pendingKillEvents: KillEvent[] = [];
@@ -233,42 +235,48 @@ export class GameScene extends Phaser.Scene {
     this.player.rangedWeapon = createRangedWeapon(rangedConfig);
 
     // Road background — dark asphalt with texture
-    this.cameras.main.setBackgroundColor('#2a2a2a');
+    if (FEATURE_FLAGS.render3d) {
+      this.cameras.main.setBackgroundColor('rgba(0,0,0,0)');
+    } else {
+      this.cameras.main.setBackgroundColor('#2a2a2a');
+    }
     fadeIn(this);
 
-    // Road surface detail
-    const roadGfx = this.add.graphics();
-    roadGfx.setDepth(-10);
-    // Center road area
-    roadGfx.fillStyle(0x3a3a3a, 1);
-    roadGfx.fillRect(140, 0, 680, 540);
-    // Road lane lines (dashed)
-    roadGfx.fillStyle(0x5a5a3a, 0.4);
-    for (let ly = 0; ly < 540; ly += 40) {
-      roadGfx.fillRect(477, ly, 6, 24);
-    }
-    // Road edge markings
-    roadGfx.fillStyle(0x4a4a35, 0.3);
-    roadGfx.fillRect(140, 0, 3, 540);
-    roadGfx.fillRect(817, 0, 3, 540);
+    // Road surface detail — skipped if 3D layer is active
+    if (!FEATURE_FLAGS.render3d) {
+      const roadGfx = this.add.graphics();
+      roadGfx.setDepth(-10);
+      // Center road area
+      roadGfx.fillStyle(0x3a3a3a, 1);
+      roadGfx.fillRect(140, 0, 680, 540);
+      // Road lane lines (dashed)
+      roadGfx.fillStyle(0x5a5a3a, 0.4);
+      for (let ly = 0; ly < 540; ly += 40) {
+        roadGfx.fillRect(477, ly, 6, 24);
+      }
+      // Road edge markings
+      roadGfx.fillStyle(0x4a4a35, 0.3);
+      roadGfx.fillRect(140, 0, 3, 540);
+      roadGfx.fillRect(817, 0, 3, 540);
 
-    // Sidewalks with texture
-    const sidewalkGfx = this.add.graphics();
-    sidewalkGfx.setDepth(-10);
-    sidewalkGfx.fillStyle(0x666660, 1);
-    sidewalkGfx.fillRect(20, 0, 120, 540);
-    sidewalkGfx.fillRect(820, 0, 120, 540);
-    // Sidewalk cracks
-    sidewalkGfx.fillStyle(0x555550, 0.6);
-    for (let sy = 0; sy < 540; sy += 60) {
-      sidewalkGfx.fillRect(20, sy, 120, 2);
+      // Sidewalks with texture
+      const sidewalkGfx = this.add.graphics();
+      sidewalkGfx.setDepth(-10);
+      sidewalkGfx.fillStyle(0x666660, 1);
+      sidewalkGfx.fillRect(20, 0, 120, 540);
+      sidewalkGfx.fillRect(820, 0, 120, 540);
+      // Sidewalk cracks
+      sidewalkGfx.fillStyle(0x555550, 0.6);
+      for (let sy = 0; sy < 540; sy += 60) {
+        sidewalkGfx.fillRect(20, sy, 120, 2);
+      }
+      // Grass/dirt edges
+      const edgeGfx = this.add.graphics();
+      edgeGfx.setDepth(-10);
+      edgeGfx.fillStyle(0x2d4a2d, 0.6);
+      edgeGfx.fillRect(0, 0, 20, 540);
+      edgeGfx.fillRect(940, 0, 20, 540);
     }
-    // Grass/dirt edges
-    const edgeGfx = this.add.graphics();
-    edgeGfx.setDepth(-10);
-    edgeGfx.fillStyle(0x2d4a2d, 0.6);
-    edgeGfx.fillRect(0, 0, 20, 540);
-    edgeGfx.fillRect(940, 0, 20, 540);
 
     // Atmospheric vignette effect on edges
     const vignetteGfx = this.add.graphics();
@@ -555,8 +563,16 @@ export class GameScene extends Phaser.Scene {
         viewWidth: width,
         viewHeight: height,
         reducedMotion,
+        // Mount the 3D canvas behind the (transparent) Phaser canvas so the world
+        // shows through and the HUD paints on top (design P3/T3).
+        mount: document.getElementById('app'),
       });
       this.render3d.create();
+      // When the 3D layer owns the world backdrop, make the Phaser camera
+      // transparent so the 3D scene shows through (the opaque 2D road graphics
+      // are skipped below). HUD/overlays still draw on this canvas. Guarded so
+      // non-Phaser camera stubs (tests) don't trip the wiring.
+      this.cameras.main.setBackgroundColor?.('rgba(0,0,0,0)');
       const scene = this.render3d.getScene();
       if (scene) {
         this.envBridge = createEnvironmentBridge(scene, this.render3d.getConfig(), reducedMotion);
@@ -566,12 +582,16 @@ export class GameScene extends Phaser.Scene {
         this.effectsBridge = createEffectsBridge(scene, this.render3d.getConfig(), reducedMotion);
         this.effectsBridge.create();
         this.effectsBridge.setEnabled(true);
+
+        this.playerBridge = new PlayerBridge(scene, this.render3d.getConfig(), reducedMotion);
+        this.playerBridge.setEnabled(true);
       }
     } catch (err) {
       console.warn('[GameScene] 3D layer init failed — continuing in 2D only.', err);
       this.render3d = null;
       this.envBridge = null;
       this.effectsBridge = null;
+      this.playerBridge = null;
     }
   }
 
@@ -618,6 +638,25 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
+    if (this.playerBridge && this.player) {
+      const playerItem: PlayerSourceItem = {
+        vehicle: this.gameState.vehicle,
+        sprite: {
+          x: this.player.x,
+          y: this.player.y,
+          rotation: this.player.rotation,
+          scaleX: this.player.scaleX,
+          visible: this.player.visible,
+          setVisible: (v: boolean) => this.player.setVisible(v),
+        },
+      };
+      this.playerBridge.update({
+        source: [playerItem],
+        host: this.render3d!.getScene()!,
+        cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
+      });
+    }
+
     // P4.2: feed the live 2D camera shake offset into the 3D ortho camera so
     // the 3D view shakes in sync. Phaser stores the live offset in the private
     // shakeEffect._offsetX/_offsetY; read defensively (no public accessor).
@@ -637,6 +676,10 @@ export class GameScene extends Phaser.Scene {
     if (this.effectsBridge) {
       this.effectsBridge.teardown();
       this.effectsBridge = null;
+    }
+    if (this.playerBridge) {
+      this.playerBridge.teardown();
+      this.playerBridge = null;
     }
     this.pendingKillEvents = [];
     this.lastComboTier = 0;

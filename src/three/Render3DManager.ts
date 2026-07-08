@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { FEATURE_FLAGS } from '../config/featureFlags';
 import { defaultOrthoConfig, type CameraView, type OrthoConfig } from './projection';
 
@@ -50,6 +54,8 @@ export interface Render3DManagerOptions {
   unitsPerPixel?: number;
   /** Thread reduced-motion / low-power into the bridges (design P4.5). */
   reducedMotion?: boolean;
+  /** DOM element to mount the renderer's canvas into (production only). */
+  mount?: HTMLElement | null;
 }
 
 /**
@@ -65,10 +71,12 @@ export class Render3DManager {
   private readonly host: SceneHost | null;
   private readonly cfg: OrthoConfig;
   private readonly reducedMotion: boolean;
+  private readonly mount: HTMLElement | null;
 
   private scene: THREE.Scene | null = null;
   private camera: THREE.OrthographicCamera | null = null;
   private renderer: RendererStub | null = null;
+  private composer: EffectComposer | null = null;
   private active = false;
 
   /** Live camera shake offset (world units), fed from the 2D Phaser shake. */
@@ -80,6 +88,7 @@ export class Render3DManager {
     this.rendererFactory = opts.rendererFactory ?? (() => new THREE.WebGLRenderer());
     this.host = opts.host ?? null;
     this.reducedMotion = opts.reducedMotion ?? false;
+    this.mount = opts.mount ?? null;
     this.cfg = defaultOrthoConfig(
       opts.viewWidth ?? 960,
       opts.viewHeight ?? 540,
@@ -108,6 +117,35 @@ export class Render3DManager {
   /** The THREE.Scene (null until create() with the flag on). */
   getScene(): THREE.Scene | null {
     return this.scene;
+  }
+
+  /**
+   * Build the optional post-FX composer (bloom + output pass). Called from
+   * create() only when active and not reduced-motion. Any failure (e.g. an
+   * unsupported pass) leaves `composer` null so the plain renderer is used.
+   */
+  private setupComposer(): void {
+    // Only build post-FX on the real WebGLRenderer (production). The test stub
+    // renderer is a plain object and must NOT be wrapped in a composer.
+    if (!this.renderer || !this.scene || !this.camera) return;
+    if (!(this.renderer instanceof THREE.WebGLRenderer)) return;
+    try {
+      const composer = new EffectComposer(this.renderer as unknown as THREE.WebGLRenderer);
+      composer.addPass(new RenderPass(this.scene, this.camera));
+      const bloom = new UnrealBloomPass(
+        new THREE.Vector2(this.cfg.viewWidth, this.cfg.viewHeight),
+        0.6, // strength — moderate; emissive windows/combo light glow
+        0.5, // radius
+        0.85 // threshold — only bright pixels bloom
+      );
+      composer.addPass(bloom);
+      composer.addPass(new OutputPass());
+      composer.setSize(this.cfg.viewWidth, this.cfg.viewHeight);
+      this.composer = composer;
+    } catch (err) {
+      console.warn('[Render3D] Post-FX composer unavailable — using plain renderer.', err);
+      this.composer = null;
+    }
   }
 
   /**
@@ -143,9 +181,31 @@ export class Render3DManager {
     }
     this.renderer.setSize(this.cfg.viewWidth, this.cfg.viewHeight);
 
-    // In production the renderer's canvas is mounted into #game-root between
-    // the GameScene and UIScene canvases (design P0.1). Tests use a host object.
-    if (this.host) this.host.add(this.scene);
+    // Mount the renderer canvas behind the (transparent) Phaser canvas so the
+    // 3D world shows through and the HUD (on the Phaser canvas) paints on top.
+    // Tests pass a `host` instead and never touch the DOM (design P0.1/P5.3).
+    if (this.mount && this.renderer.domElement) {
+      const el = this.renderer.domElement;
+      el.classList.add('three-canvas');
+      Object.assign(el.style, {
+        position: 'absolute',
+        inset: '0',
+        width: '100%',
+        height: '100%',
+        zIndex: '0',
+        pointerEvents: 'none',
+      } as Partial<CSSStyleDeclaration>);
+      this.mount.appendChild(el);
+    } else if (this.host) {
+      this.host.add(this.scene);
+    }
+
+    // Optional post-FX (bloom + film grade). Skipped in reduced-motion mode
+    // and only when a composer can be built (design P3/P4.5).
+    if (!this.reducedMotion) {
+      this.setupComposer();
+    }
+
     this.active = true;
   }
 
@@ -166,7 +226,11 @@ export class Render3DManager {
     this.camera.position.x = this.shakeX;
     this.camera.position.y = this.shakeY;
     this.camera.position.z = 10;
-    this.renderer.render(this.scene, this.camera);
+    if (this.composer) {
+      this.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   /** The matched orthographic camera view, for bridges to reproject against. */
@@ -177,6 +241,10 @@ export class Render3DManager {
 
   /** Tear down and dispose everything. Safe to call when inactive. */
   teardown(): void {
+    if (this.composer) {
+      this.composer.dispose();
+      this.composer = null;
+    }
     if (this.renderer) {
       this.renderer.dispose();
       this.renderer = null;

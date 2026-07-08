@@ -53,9 +53,9 @@ window.requestAnimationFrame = (callback: FrameRequestCallback) => {
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.CANVAS,
+  parent: 'app',
   width: 960,
   height: 540,
-  parent: 'app',
   backgroundColor: '#000000',
   physics: {
     default: 'arcade',

@@ -13,6 +13,8 @@
 export const DEPTH_BAND = {
   ground: 0,
   house: 1,
+  player: 3,
+  actor: 4,
   projectile: 5,
   particle: 6,
 } as const;
@@ -27,6 +29,8 @@ export type DepthBand = keyof typeof DEPTH_BAND;
 export const DEPTH_Z_OFFSET = {
   ground: -4,
   house: -2,
+  player: -0.5,
+  actor: 0,
   projectile: 1,
   particle: 2,
 } as const;

@@ -257,13 +257,28 @@
             z-index: 1;
         }
 
+        /* Both the Phaser (2D/HUD) canvas and the Three.js (3D world) canvas live
+           inside #app, stacked. The 3D canvas sits behind (z-index:0); the Phaser
+           canvas (HUD + overlays) paints on top (z-index:1). Backgrounds are
+           transparent so the 3D world shows through where the Phaser canvas is
+           clear (design P3/T3). */
         #app canvas {
+            position: absolute;
+            inset: 0;
             display: block;
             min-width: 0;
             min-height: 0;
-            background: #000;
+            background: transparent;
             max-width: 100%;
             max-height: 100%;
+        }
+
+        #app canvas.three-canvas {
+            z-index: 0;
+        }
+
+        #app canvas:not(.three-canvas) {
+            z-index: 1;
         }
 
         #app,
