@@ -7,6 +7,9 @@ import {
   type KillEvent,
   PARTICLE_POOL_CAP,
 } from './bridges/EffectsBridge';
+import { PlayerBridge, type PlayerSourceItem } from './bridges/PlayerBridge';
+import { ZombieBridge, type ZombieSourceItem } from './bridges/ZombieBridge';
+import { ZombieType } from '../entities/Zombie';
 import { defaultOrthoConfig, type CameraView } from './projection';
 import { HouseType } from '../entities/House';
 
@@ -29,6 +32,7 @@ const cam: CameraView = { scrollX: 0, scrollY: 0, zoom: 1 };
 
 const HOUSE_COUNT = 40;
 const PROJECTILE_COUNT = 30;
+const ZOMBIE_COUNT = 30;
 
 function makeHouses(): HouseSourceItem[] {
   const houses: HouseSourceItem[] = [];
@@ -55,24 +59,59 @@ function makeEffectsSource(kills: KillEvent[] = []): EffectsBridgeSource {
   return { projectiles, killEvents: kills, comboTier: 4 };
 }
 
+function makeZombies(): ZombieSourceItem[] {
+  const zombies: ZombieSourceItem[] = [];
+  for (let i = 0; i < ZOMBIE_COUNT; i++) {
+    zombies.push({
+      type: ZombieType.Shambler,
+      elite: i % 5 === 0,
+      sprite: {
+        x: (i * 32) % 960,
+        y: 200 + (i % 4) * 30,
+        rotation: (i * Math.PI) / 6,
+        visible: true,
+        setVisible: () => {},
+      },
+    });
+  }
+  return zombies;
+}
+
 describe('3D bridge perf guard (headless, no GPU)', () => {
-  it('environment + effects sync stays within frame budget across 300 frames', () => {
+  it('environment + effects + player + zombie sync stays within frame budget across 300 frames', () => {
     const scene = new THREE.Scene();
     const env = createEnvironmentBridge(scene, cfg);
     env.setEnabled(true);
     const fx = createEffectsBridge(scene, cfg);
     fx.setEnabled(true);
+    const player = new PlayerBridge(scene, cfg);
+    player.setEnabled(true);
+    const zombie = new ZombieBridge(scene, cfg);
+    zombie.setEnabled(true);
 
     const envSource = [{ houses: makeHouses(), worldY: 0 }];
     const fxSource = makeEffectsSource([{ x: 480, y: 270, intensity: 1 }]);
+    const playerSource: PlayerSourceItem[] = [{
+      vehicle: 'skateboard',
+      sprite: {
+        x: 480,
+        y: 270,
+        rotation: 0.1,
+        scaleX: 1,
+        visible: true,
+        setVisible: () => {},
+      },
+    }];
+    const zombieSource = makeZombies();
 
     const FRAMES = 300;
     const start = performance.now();
     for (let f = 0; f < FRAMES; f++) {
       envSource[0].worldY = f * 4; // scroll the route
       env.update({ source: envSource, host: scene, cam });
-      // Reuse the same kill pool each frame; cap must hold.
       fx.update({ source: [fxSource], host: scene, cam, dt: 16 });
+      player.update({ source: playerSource, host: scene, cam });
+      zombie.update({ source: zombieSource, host: scene, cam, dt: 16 });
     }
     const elapsed = performance.now() - start;
     const perFrame = elapsed / FRAMES;
