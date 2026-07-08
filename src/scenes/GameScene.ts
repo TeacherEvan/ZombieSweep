@@ -660,6 +660,7 @@ export class GameScene extends Phaser.Scene {
         source: [playerItem],
         host: this.render3d!.getScene()!,
         cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
+        dt: delta,
       });
     }
 

@@ -134,6 +134,7 @@ export function createHouseMesh(opts: HouseMeshOptions): THREE.Group {
       if (story === 0 && Math.abs(x) < doorWidth + 2) continue;
 
       const winFront = new THREE.Mesh(windowGeom, windowMat);
+      winFront.name = 'window';
       winFront.position.set(x, y, depth / 2 + windowDepth / 2);
       group.add(winFront);
     }
@@ -143,11 +144,13 @@ export function createHouseMesh(opts: HouseMeshOptions): THREE.Group {
     for (const z of sideZOffsets) {
       // Rotated window mesh for sides
       const winLeft = new THREE.Mesh(windowGeom, windowMat);
+      winLeft.name = 'window';
       winLeft.rotation.y = Math.PI / 2;
       winLeft.position.set(-width / 2 - windowDepth / 2, y, z);
       group.add(winLeft);
 
       const winRight = new THREE.Mesh(windowGeom, windowMat);
+      winRight.name = 'window';
       winRight.rotation.y = Math.PI / 2;
       winRight.position.set(width / 2 + windowDepth / 2, y, z);
       group.add(winRight);

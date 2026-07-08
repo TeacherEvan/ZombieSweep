@@ -143,6 +143,26 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     // House group reconciliation (base SyncBridge contract).
     super.update({ source: src.houses, host: args.host });
 
+    // Dynamic flickering of window materials
+    const time = performance.now();
+    for (let i = 0; i < this.liveMeshes.length; i++) {
+      const house = this.liveMeshes[i];
+      const offset = i * 23.5;
+      const baseIntensity = 1.4;
+      const flicker = Math.sin(time * 0.002 + offset) * 0.15;
+      const noise = (Math.sin(time * 0.047 + offset) + Math.cos(time * 0.071 + offset)) * 0.05;
+      const intensity = Math.max(0.6, baseIntensity + flicker + noise);
+
+      house.traverse(child => {
+        if (child.name === 'window' && child instanceof THREE.Mesh) {
+          const mat = child.material as THREE.MeshStandardMaterial;
+          if (mat && mat.isMeshStandardMaterial) {
+            mat.emissiveIntensity = intensity;
+          }
+        }
+      });
+    }
+
     // Ground scroll from worldY (wrapped so the plane appears infinite).
     if (this.ground) {
       const scroll = ((src.worldY % GROUND_SCROLL_WRAP) + GROUND_SCROLL_WRAP) % GROUND_SCROLL_WRAP;

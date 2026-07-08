@@ -19,11 +19,13 @@ export interface PlayerSourceItem {
 export interface PlayerBridgeUpdate extends BridgeUpdateArgs<THREE.Scene> {
   source: PlayerSourceItem[];
   cam: CameraView;
+  dt?: number;
 }
 
 export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   private cam: CameraView = { scrollX: 0, scrollY: 0, zoom: 1 };
   private readonly cfg: OrthoConfig;
+  private elapsed = 0;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -37,6 +39,7 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     const src = args.source;
     if (!src) return;
     this.cam = args.cam;
+    this.elapsed += args.dt || 16;
     super.update({ source: src, host: args.host });
   }
 
@@ -82,6 +85,14 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
       // Mirror Phaser rotation on Y axis
       group.rotation.y = -sprite.rotation;
       group.scale.set(sprite.scaleX, 1, 1);
+
+      // Spin wheels based on elapsed time
+      const spinSpeed = 0.03;
+      group.traverse(child => {
+        if (child.name === 'wheel' && child instanceof THREE.Mesh) {
+          child.rotation.x = this.elapsed * spinSpeed;
+        }
+      });
     }
   }
 
@@ -113,11 +124,13 @@ export function createPlayerVehicleMesh(type: VehicleType): THREE.Group {
     wheelGeom.rotateZ(Math.PI / 2);
     const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.9 });
     const frontWheel = new THREE.Mesh(wheelGeom, wheelMat);
+    frontWheel.name = 'wheel';
     frontWheel.position.set(0, 5, 8);
     group.add(frontWheel);
 
     // Back Wheel
     const backWheel = new THREE.Mesh(wheelGeom, wheelMat);
+    backWheel.name = 'wheel';
     backWheel.position.set(0, 5, -8);
     group.add(backWheel);
   } else if (type === VehicleType.Skateboard) {
@@ -141,6 +154,7 @@ export function createPlayerVehicleMesh(type: VehicleType): THREE.Group {
     ];
     for (const pos of wheelPositions) {
       const w = new THREE.Mesh(wheelGeom, wheelMat);
+      w.name = 'wheel';
       w.position.set(pos[0], pos[1], pos[2]);
       group.add(w);
     }
@@ -163,10 +177,12 @@ export function createPlayerVehicleMesh(type: VehicleType): THREE.Group {
     const wheelZOffsets = [-3, -1, 1, 3];
     for (const z of wheelZOffsets) {
       const wL = new THREE.Mesh(wheelGeom, wheelMat);
+      wL.name = 'wheel';
       wL.position.set(-3, 1, z);
       group.add(wL);
 
       const wR = new THREE.Mesh(wheelGeom, wheelMat);
+      wR.name = 'wheel';
       wR.position.set(3, 1, z);
       group.add(wR);
     }
