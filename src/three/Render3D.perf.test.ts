@@ -91,17 +91,19 @@ describe('3D bridge perf guard (headless, no GPU)', () => {
 
     const envSource = [{ houses: makeHouses(), worldY: 0 }];
     const fxSource = makeEffectsSource([{ x: 480, y: 270, intensity: 1 }]);
-    const playerSource: PlayerSourceItem[] = [{
-      vehicle: 'skateboard',
-      sprite: {
-        x: 480,
-        y: 270,
-        rotation: 0.1,
-        scaleX: 1,
-        visible: true,
-        setVisible: () => {},
+    const playerSource: PlayerSourceItem[] = [
+      {
+        vehicle: 'skateboard',
+        sprite: {
+          x: 480,
+          y: 270,
+          rotation: 0.1,
+          scaleX: 1,
+          visible: true,
+          setVisible: () => {},
+        },
       },
-    }];
+    ];
     const zombieSource = makeZombies();
 
     const FRAMES = 300;

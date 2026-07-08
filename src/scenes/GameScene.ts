@@ -87,7 +87,7 @@ import {
 import { createEffectsBridge, type EffectsBridgeSource } from '../three/bridges/EffectsBridge';
 import type { KillEvent } from '../three/bridges/EffectsBridge';
 import { PlayerBridge, type PlayerSourceItem } from '../three/bridges/PlayerBridge';
-import { ZombieBridge, type ZombieSourceItem } from '../three/bridges/ZombieBridge';
+import { ZombieBridge } from '../three/bridges/ZombieBridge';
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -585,10 +585,10 @@ export class GameScene extends Phaser.Scene {
         this.effectsBridge.create();
         this.effectsBridge.setEnabled(true);
 
-        this.playerBridge = new PlayerBridge(scene, this.render3d.getConfig(), reducedMotion);
+        this.playerBridge = new PlayerBridge(scene, this.render3d.getConfig());
         this.playerBridge.setEnabled(true);
 
-        this.zombieBridge = new ZombieBridge(scene, this.render3d.getConfig(), reducedMotion);
+        this.zombieBridge = new ZombieBridge(scene, this.render3d.getConfig());
         this.zombieBridge.setEnabled(true);
       }
     } catch (err) {

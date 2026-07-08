@@ -156,14 +156,14 @@ describe('Render3DManager', () => {
       },
       style: {},
     } as unknown as HTMLCanvasElement;
-    
+
     const renderer = {
       render: vi.fn(),
       setSize: vi.fn(),
       dispose: vi.fn(),
       domElement,
     };
-    
+
     const rendererFactory = vi.fn(() => renderer);
     const mount = {
       appendChild: vi.fn(),

@@ -27,8 +27,7 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
 
   constructor(
     private readonly scene: THREE.Scene,
-    cfg: OrthoConfig,
-    private readonly reducedMotion = false
+    cfg: OrthoConfig
   ) {
     super();
     this.cfg = cfg;
@@ -79,7 +78,7 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
       group.position.x = p.x;
       group.position.z = p.z;
       group.position.y = 0;
-      
+
       // Mirror Phaser rotation on Y axis
       group.rotation.y = -sprite.rotation;
       group.scale.set(sprite.scaleX, 1, 1);
@@ -149,7 +148,7 @@ export function createPlayerVehicleMesh(type: VehicleType): THREE.Group {
     // RollerBlades
     const bootGeom = new THREE.BoxGeometry(3, 8, 8);
     const bootMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.5 });
-    
+
     const leftBoot = new THREE.Mesh(bootGeom, bootMat);
     leftBoot.position.set(-3, 5, 0);
     group.add(leftBoot);
@@ -174,7 +173,7 @@ export function createPlayerVehicleMesh(type: VehicleType): THREE.Group {
   }
 
   // Torso / Head human rider box model
-  const baseHeight = type === VehicleType.Bicycle ? 8 : (type === VehicleType.Skateboard ? 3 : 5);
+  const baseHeight = type === VehicleType.Bicycle ? 8 : type === VehicleType.Skateboard ? 3 : 5;
   const torsoGeom = new THREE.BoxGeometry(6, 10, 4);
   const torsoMat = new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.7 });
   const torso = new THREE.Mesh(torsoGeom, torsoMat);

@@ -29,8 +29,7 @@ export class ZombieBridge extends SyncBridge<THREE.Group, THREE.Scene> {
 
   constructor(
     private readonly scene: THREE.Scene,
-    cfg: OrthoConfig,
-    private readonly reducedMotion = false
+    cfg: OrthoConfig
   ) {
     super();
     this.cfg = cfg;
@@ -79,7 +78,7 @@ export class ZombieBridge extends SyncBridge<THREE.Group, THREE.Scene> {
       const group = live[i];
       group.position.x = p.x;
       group.position.z = p.z;
-      
+
       // Dynamic Bobbing
       const speed = item.type === ZombieType.Runner ? 12 : 6;
       const height = item.type === ZombieType.Runner ? 2.5 : 1.5;
@@ -129,7 +128,7 @@ export function createZombieMesh(type: ZombieType, elite: boolean): THREE.Group 
   // Arms reaching out forward (Z+)
   const armGeom = new THREE.BoxGeometry(1.5, 1.5, 8);
   const armMat = new THREE.MeshStandardMaterial({ color });
-  
+
   const leftArm = new THREE.Mesh(armGeom, armMat);
   leftArm.position.set(-3.5, 10, 3);
   group.add(leftArm);
@@ -144,7 +143,7 @@ export function createZombieMesh(type: ZombieType, elite: boolean): THREE.Group 
     const glowMat = new THREE.MeshStandardMaterial({
       color: 0xff0000,
       emissive: 0xff3333,
-      emissiveIntensity: 2.0,
+      emissiveIntensity: 3.0, // brighter so UnrealBloom picks up the elite glow (P3)
     });
     const visor = new THREE.Mesh(glowGeom, glowMat);
     visor.position.set(0, 16.5, 2.5); // face

@@ -66,11 +66,11 @@ describe('ZombieBridge', () => {
 
     expect(group.position.x).toBeCloseTo(expected.x);
     expect(group.position.z).toBeCloseTo(expected.z);
-    
+
     // Bobbing is active, y must be positive
     expect(group.position.y).toBeGreaterThan(0);
     expect(group.rotation.y).toBeCloseTo(-Math.PI / 6);
-    
+
     // Elite scale is 1.25
     expect(group.scale.x).toBeCloseTo(1.25);
   });

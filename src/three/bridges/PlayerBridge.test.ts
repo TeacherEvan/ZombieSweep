@@ -11,7 +11,14 @@ function makeSprite(
   y: number,
   rotation = 0,
   scaleX = 1
-): { x: number; y: number; rotation: number; scaleX: number; visible: boolean; setVisible: (v: boolean) => void } {
+): {
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  visible: boolean;
+  setVisible: (v: boolean) => void;
+} {
   return {
     x,
     y,

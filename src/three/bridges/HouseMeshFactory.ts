@@ -82,7 +82,21 @@ export function createHouseMesh(opts: HouseMeshOptions): THREE.Group {
   roof.position.set(0, height + roofHeight / 2, 0);
   group.add(roof);
 
-  // 2. Door on Ground Floor (Center)
+  // 2b. Emissive roofline trim — a thin glowing band that UnrealBloom catches,
+  // giving each house a readable "lit" silhouette at night-apocalypse mood.
+  const trimGeom = new THREE.BoxGeometry(width * 0.92, 1.5, depth * 0.92);
+  const trimMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0a0a,
+    emissive: 0x6fd0ff, // cool cyan accent
+    emissiveIntensity: 1.1,
+    roughness: 0.3,
+    metalness: 0.6,
+  });
+  const trim = new THREE.Mesh(trimGeom, trimMat);
+  trim.position.set(0, height + 1, 0);
+  group.add(trim);
+
+  // 2c. Door on Ground Floor (Center)
   const doorWidth = 10;
   const doorHeight = 16;
   const doorDepth = 1.5;
@@ -103,7 +117,7 @@ export function createHouseMesh(opts: HouseMeshOptions): THREE.Group {
   const windowMat = new THREE.MeshStandardMaterial({
     color: 0x1f2d3d,
     emissive: 0xffd56b, // warm amber light
-    emissiveIntensity: 0.75,
+    emissiveIntensity: 1.4, // brighter so UnrealBloom picks it up (design P3)
     roughness: 0.1,
     metalness: 0.9,
   });

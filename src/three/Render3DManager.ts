@@ -130,7 +130,7 @@ export class Render3DManager {
     if (!this.renderer || !this.scene || !this.camera) return;
     if (!(this.renderer instanceof THREE.WebGLRenderer)) return;
     try {
-      const composer = new EffectComposer(this.renderer as unknown as THREE.WebGLRenderer);
+      const composer = new EffectComposer(this.renderer);
       composer.addPass(new RenderPass(this.scene, this.camera));
       const bloom = new UnrealBloomPass(
         new THREE.Vector2(this.cfg.viewWidth, this.cfg.viewHeight),
