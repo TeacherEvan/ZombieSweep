@@ -121,11 +121,11 @@ The repository uses Vitest for behavior-focused tests around pure-logic modules.
 
 ## Performance
 
-Hot-path optimizations in `GameScene` are documented in [docs/plans/2026-07-07-game-scene-hot-path-optimization.md](docs/plans/2026-07-07-game-scene-hot-path-optimization.md). Patterns applied without behavior change: cache the vehicle control profile once instead of per-frame, maintain an incremental delivery counter instead of re-filtering the deliveries array every frame/wave, and hoist repeated index reads out of conditional branches.
+Hot-path optimizations in `GameScene` are documented in [docs/plans/.archive/2026-07-07-game-scene-hot-path-optimization.md](docs/plans/.archive/2026-07-07-game-scene-hot-path-optimization.md). Patterns applied without behavior change: cache the vehicle control profile once instead of per-frame, maintain an incremental delivery counter instead of re-filtering the deliveries array every frame/wave, and hoist repeated index reads out of conditional branches.
 
 ## 3D Scene-Replacement (Implemented, flag-gated)
 
-> **Status:** Implemented, flag-gated (off by default), zero-regression. See [docs/plans/2026-07-07-3d-scene-bridge-design.md](docs/plans/2026-07-07-3d-scene-bridge-design.md).
+> **Status:** Implemented, flag-gated (off by default), zero-regression. See [docs/plans/.archive/2026-07-07-3d-scene-bridge-design.md](docs/plans/.archive/2026-07-07-3d-scene-bridge-design.md).
 
 A parallel Three.js renderer replaces selected 2D sprite groups (environment houses/ground,
 combat effects) in-place. The 2D `GameScene` remains the canonical source of truth for

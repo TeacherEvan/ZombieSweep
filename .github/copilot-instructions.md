@@ -55,7 +55,7 @@ src/
 ## Testing
 
 - Run tests: `npm test` (vitest run) or `npm run test:watch`
-- 182 tests across 15 test files — all pure-logic modules covered
+- 424 tests across 41 test files — all pure-logic modules covered
 - Tests should be **practical and behavior-focused**: test what the code does for the player, not just property values
 - Use `beforeEach` for fresh state in stateful modules
 

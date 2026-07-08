@@ -1,7 +1,7 @@
 # ZombieSweep — 3D Scene-Replacement Bridge (Design v2)
 
 **Date:** 2026-07-07
-**Status:** Implemented — Environment (Phase 2), Effects (Phase 3), and sync foundation (Phase 0/1) all shipped & flag-gated. Vehicle bridge (Phase 1) deferred; vehicles + NPCs remain 2D.
+**Status:** ✅ **Archived — Implemented & Verified** (July 2026) | Environment (Phase 2), Effects (Phase 3), and sync foundation (Phase 0/1) all shipped & flag-gated. Vehicle bridge (Phase 1) deferred; vehicles + NPCs remain 2D.
 **Author:** Evan + Hermes (superpowers workflow)
 
 ## Goal

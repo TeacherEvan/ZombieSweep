@@ -8,8 +8,8 @@
 
 ## Code Quality ✅
 
-- [x] All tests pass (415/415) — default run (`npm run test`)
-- [x] Lint: 0 errors, 18 warnings (`unbound-method`, non-blocking, pre-existing)
+- [x] All tests pass (424/424) — default run (`npm run test`)
+- [x] Lint: 0 errors, 0 warnings
 - [x] Format: Prettier compliant
 - [x] TypeScript: Strict mode, no errors
 - [x] Build: Production bundle generated
@@ -56,7 +56,7 @@
 | `onlineCoop` | OFF | Enable CO-OP multiplayer |
 | `onlineVersus` | OFF | Enable VERSUS multiplayer |
 | `debugMetrics` | DEV only | Exposes `__ZOMBIESWEEP_OBSERVABILITY__` in console |
-| `render3d` | OFF | Implemented, flag-gated (zero-regression). Behind `VITE_RENDER3D=true`: bridges the **environment** layer (houses/ground, Phase 2), the **effects** layer (projectile sprites, death-burst particle pool, combo point-light pulse, all pooled + hard-capped at 200 live particles, Phase 3), and the sync layer (Phase 0/1). Vehicles remain 2D; the 2D simulation is the source of truth and is untouched when the flag is OFF. See `docs/plans/2026-07-07-3d-scene-bridge-design.md`. |
+| `render3d` | OFF | Implemented, flag-gated (zero-regression). Behind `VITE_RENDER3D=true`: bridges the **environment** layer (houses/ground, Phase 2), the **effects** layer (projectile sprites, death-burst particle pool, combo point-light pulse, all pooled + hard-capped at 200 live particles, Phase 3), and the sync layer (Phase 0/1). Vehicles remain 2D; the 2D simulation is the source of truth and is untouched when the flag is OFF. See `docs/plans/.archive/2026-07-07-3d-scene-bridge-design.md`. |
 
 ---
 

@@ -1,6 +1,7 @@
 # GameScene Hot-Path Optimization
 
 **Date:** 2026-07-07
+**Status:** ✅ **Archived — Implemented & Verified** (July 2026)
 **Scope:** `src/scenes/GameScene.ts` (per-frame update loop + delivery accounting)
 **Type:** Performance / runtime (no feature or visual changes)
 
