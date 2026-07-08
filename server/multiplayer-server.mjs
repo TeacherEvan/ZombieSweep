@@ -27,17 +27,17 @@ const metrics = {
   errorsTotal: 0,
   roomsCreated: 0,
   roomsActive: 0,
-  latencySamples: [] as number[],
+  latencySamples: [],
 };
 
-function recordLatency(start: number) {
+function recordLatency(start) {
   metrics.latencySamples.push(Date.now() - start);
   if (metrics.latencySamples.length > 1000) {
     metrics.latencySamples.shift();
   }
 }
 
-function log(level: "info" | "warn" | "error", event: string, fields: Record<string, unknown> = {}) {
+function log(level, event, fields = {}) {
   const entry = {
     timestamp: new Date().toISOString(),
     level,
@@ -56,26 +56,26 @@ function randomRoomCode() {
   return roomCode;
 }
 
-function send(socket: WebSocket, message: unknown) {
+function send(socket, message) {
   if (socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify(message));
     metrics.messagesSent++;
   }
 }
 
-function getSocketState(socket: WebSocket) {
+function getSocketState(socket) {
   return sockets.get(socket) ?? null;
 }
 
-function setSocketState(socket: WebSocket, state: unknown) {
+function setSocketState(socket, state) {
   sockets.set(socket, state);
 }
 
-function getClientIP(socket: WebSocket) {
+function getClientIP(socket) {
   return socket._socket?.remoteAddress?.replace(/^::ffff:/, "") ?? "unknown";
 }
 
-function checkRateLimit(ip: string) {
+function checkRateLimit(ip) {
   const now = Date.now();
   const windowStart = now - 1000;
 
@@ -101,18 +101,18 @@ function checkRateLimit(ip: string) {
   return true;
 }
 
-function validateRoomCode(code: unknown) {
+function validateRoomCode(code) {
   return typeof code === "string" && ROOM_CODE_REGEX.test(code);
 }
 
-function validateMode(mode: unknown) {
+function validateMode(mode) {
   return mode === "coop" || mode === "versus";
 }
 
-function sanitizeConfig(config: unknown) {
+function sanitizeConfig(config) {
   if (!config || typeof config !== "object") return null;
   const allowedKeys = ["difficulty", "map", "vehicle", "day"];
-  const sanitized: Record<string, unknown> = {};
+  const sanitized = {};
   for (const key of allowedKeys) {
     if (config[key] !== undefined) {
       sanitized[key] = config[key];
@@ -121,7 +121,7 @@ function sanitizeConfig(config: unknown) {
   return Object.keys(sanitized).length > 0 ? sanitized : null;
 }
 
-function removeRoom(roomCode: string) {
+function removeRoom(roomCode) {
   const room = rooms.get(roomCode);
   if (!room) return;
   if (room.guest) {
@@ -156,7 +156,7 @@ setInterval(() => {
   log("info", "metrics_snapshot", getMetricsSnapshot());
 }, 60000);
 
-server.on("connection", (socket: WebSocket) => {
+server.on("connection", (socket) => {
   const start = Date.now();
   const ip = getClientIP(socket);
   const requestId = crypto.randomUUID();

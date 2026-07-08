@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import Phaser from 'phaser';
 import { createNewspaper } from '../entities/Newspaper';
 import { DayManager } from '../systems/DayManager';

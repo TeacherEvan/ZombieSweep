@@ -39,5 +39,11 @@ export default tseslint.config(
       'no-useless-assignment': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     },
+  },
+  {
+    files: ['src/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+    },
   }
 );

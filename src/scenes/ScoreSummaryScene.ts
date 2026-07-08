@@ -283,7 +283,6 @@ export class ScoreSummaryScene extends Phaser.Scene {
         delay: 900,
         ease: 'Quart.easeOut',
       });
-      y += 40;
     }
 
     // Navigation prompt

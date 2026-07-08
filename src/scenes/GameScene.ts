@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import Phaser from 'phaser';
 import { GAME } from '../config/constants';
 import { VEHICLE_STATS, WeaponSlot } from '../config/vehicles';
