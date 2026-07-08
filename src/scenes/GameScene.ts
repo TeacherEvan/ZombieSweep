@@ -65,6 +65,7 @@ import {
   floatingText,
   isTouchPrimary,
   meleeSwingArc,
+  prefersReducedMotion,
   screenShake,
 } from '../utils/animations';
 import type { MeleeWeapon, RangedWeapon } from '../weapons/Weapon';
@@ -82,6 +83,8 @@ import {
   createEnvironmentBridge,
   type EnvironmentBridgeSource,
 } from '../three/bridges/EnvironmentBridge';
+import { createEffectsBridge, type EffectsBridgeSource } from '../three/bridges/EffectsBridge';
+import type { KillEvent } from '../three/bridges/EffectsBridge';
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -134,7 +137,12 @@ export class GameScene extends Phaser.Scene {
   /** Optional 3D environment layer. Null unless FEATURE_FLAGS.render3d is on. */
   private render3d: Render3DManager | null = null;
   private envBridge = null as ReturnType<typeof createEnvironmentBridge> | null;
+  private effectsBridge = null as ReturnType<typeof createEffectsBridge> | null;
   private comboTracker!: ComboTracker;
+  /** Buffered kill events for the current frame (drained into the effects bridge). */
+  private pendingKillEvents: KillEvent[] = [];
+  /** Current combo tier captured at the last kill (0 = no combo). */
+  private lastComboTier = 0;
   private subscriberTotal = 0;
   private viewportContext = resolveBroadcastViewportContext(960, 540, false);
   private nextZombieId = 1;
@@ -276,17 +284,7 @@ export class GameScene extends Phaser.Scene {
     this.spawnCitizens();
 
     // Optional 3D environment layer (flag-gated; zero 2D effect when off).
-    if (FEATURE_FLAGS.render3d) {
-      const { width, height } = this.cameras.main;
-      this.render3d = new Render3DManager({ viewWidth: width, viewHeight: height });
-      this.render3d.create();
-      const scene = this.render3d.getScene();
-      if (scene) {
-        this.envBridge = createEnvironmentBridge(scene, this.render3d.getConfig());
-        this.envBridge.create();
-        this.envBridge.setEnabled(true);
-      }
-    }
+    this.initRender3DLayer();
 
     // Place hazards
     this.spawnHazards();
@@ -359,12 +357,7 @@ export class GameScene extends Phaser.Scene {
       this.unsubscribeCoopMessage?.();
       this.unsubscribeCoopClose?.();
       // Tear down the 3D layer (safe no-op when flag was off).
-      if (this.envBridge) {
-        this.envBridge.teardown();
-        this.envBridge = null;
-      }
-      this.render3d?.teardown();
-      this.render3d = null;
+      this.destroyRender3DLayer();
     });
 
     if (!this.isGunnerRole()) {
@@ -467,24 +460,7 @@ export class GameScene extends Phaser.Scene {
     this.worldY += this.scrollSpeed;
 
     // Feed the 3D environment bridge (no-op unless render3d flag is on).
-    if (this.envBridge) {
-      const cam = this.cameras.main;
-      const source: EnvironmentBridgeSource[] = [
-        {
-          houses: this.houseSprites.map(hp => ({
-            house: { type: hp.house.type },
-            sprite: hp.sprite,
-          })),
-          worldY: this.worldY,
-        },
-      ];
-      this.envBridge.update({
-        source,
-        host: this.render3d!.getScene()!,
-        cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
-      });
-      this.render3d!.update(delta);
-    }
+    this.syncRender3DLayer(delta);
 
     // Throw newspaper left/right
     if (
@@ -561,6 +537,110 @@ export class GameScene extends Phaser.Scene {
       this.pushDriverSnapshot();
       this.lastSnapshotSentAt = this.time.now;
     }
+  }
+
+  /**
+   * Initialize the optional 3D environment layer. Flag-gated: when
+   * FEATURE_FLAGS.render3d is OFF this is a complete no-op (no renderer, no
+   * scene, no bridge). Touching it must never alter 2D game state. Any failure
+   * (e.g. WebGL unavailable) degrades gracefully to a 2D-only run (P4.3).
+   */
+  initRender3DLayer(): void {
+    if (!FEATURE_FLAGS.render3d) return;
+    try {
+      const { width, height } = this.cameras.main;
+      const reducedMotion = prefersReducedMotion();
+      this.render3d = new Render3DManager({
+        viewWidth: width,
+        viewHeight: height,
+        reducedMotion,
+      });
+      this.render3d.create();
+      const scene = this.render3d.getScene();
+      if (scene) {
+        this.envBridge = createEnvironmentBridge(scene, this.render3d.getConfig(), reducedMotion);
+        this.envBridge.create();
+        this.envBridge.setEnabled(true);
+
+        this.effectsBridge = createEffectsBridge(scene, this.render3d.getConfig(), reducedMotion);
+        this.effectsBridge.create();
+        this.effectsBridge.setEnabled(true);
+      }
+    } catch (err) {
+      console.warn('[GameScene] 3D layer init failed — continuing in 2D only.', err);
+      this.render3d = null;
+      this.envBridge = null;
+      this.effectsBridge = null;
+    }
+  }
+
+  /** Push per-frame 2D state into the 3D layer. No-op when the flag is off. */
+  syncRender3DLayer(delta: number): void {
+    if (!this.envBridge) {
+      // Flag OFF: nothing consumes the kill buffer, so drain it each frame to
+      // avoid unbounded growth over a session.
+      this.pendingKillEvents = [];
+      this.lastComboTier = 0;
+      return;
+    }
+    const cam = this.cameras.main;
+    const source: EnvironmentBridgeSource[] = [
+      {
+        houses: this.houseSprites.map(hp => ({
+          house: { type: hp.house.type },
+          sprite: hp.sprite,
+        })),
+        worldY: this.worldY,
+      },
+    ];
+    this.envBridge.update({
+      source,
+      host: this.render3d!.getScene()!,
+      cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
+    });
+
+    // Effects: projectiles (live sprites) + buffered kill bursts + combo tier.
+    if (this.effectsBridge) {
+      const projectiles = this.newspaperSprites.getChildren().map(obj => {
+        const np = obj as Phaser.Physics.Arcade.Sprite;
+        return { x: np.x, y: np.y, angle: (np.angle * Math.PI) / 180 };
+      });
+      const effectsSource: EffectsBridgeSource = {
+        projectiles,
+        killEvents: this.pendingKillEvents,
+        comboTier: this.lastComboTier,
+      };
+      this.effectsBridge.update({
+        source: [effectsSource],
+        host: this.render3d!.getScene()!,
+        cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
+      });
+    }
+
+    // P4.2: feed the live 2D camera shake offset into the 3D ortho camera so
+    // the 3D view shakes in sync. Phaser stores the live offset in the private
+    // shakeEffect._offsetX/_offsetY; read defensively (no public accessor).
+    const shake = (cam as unknown as { shakeEffect?: { _offsetX?: number; _offsetY?: number } })
+      .shakeEffect;
+    this.render3d?.setCameraShake?.(shake?._offsetX ?? 0, shake?._offsetY ?? 0);
+
+    this.render3d!.update(delta);
+  }
+
+  /** Tear down the 3D layer on scene shutdown. Safe no-op when the flag was off. */
+  destroyRender3DLayer(): void {
+    if (this.envBridge) {
+      this.envBridge.teardown();
+      this.envBridge = null;
+    }
+    if (this.effectsBridge) {
+      this.effectsBridge.teardown();
+      this.effectsBridge = null;
+    }
+    this.pendingKillEvents = [];
+    this.lastComboTier = 0;
+    this.render3d?.teardown();
+    this.render3d = null;
   }
 
   private throwNewspaper(direction: 'left' | 'right'): void {
@@ -684,6 +764,9 @@ export class GameScene extends Phaser.Scene {
 
     // Combo tracking
     const result = this.comboTracker.registerKill(this.time.now);
+    // Buffer the kill event + current combo tier for the 3D effects bridge.
+    this.pendingKillEvents.push({ x, y, intensity: isElite ? 1.6 : 1 });
+    this.lastComboTier = result.comboCount;
     if (result.isCombo) {
       const size = Math.min(12 + result.comboCount * 2, 24);
       const bonus = result.comboCount * 10;

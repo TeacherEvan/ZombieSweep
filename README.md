@@ -119,15 +119,39 @@ In co-op, the gunner can cycle targets with the keyboard and fire targeted range
 
 The repository uses Vitest for behavior-focused tests around pure-logic modules. Phaser scenes are intended for browser-based integration testing rather than unit tests.
 
-## 3D Scene-Replacement (Planned)
+## Performance
 
-> **Status:** Design complete, not yet shipped. See [docs/plans/2026-07-07-3d-scene-bridge-design.md](docs/plans/2026-07-07-3d-scene-bridge-design.md).
+Hot-path optimizations in `GameScene` are documented in [docs/plans/2026-07-07-game-scene-hot-path-optimization.md](docs/plans/2026-07-07-game-scene-hot-path-optimization.md). Patterns applied without behavior change: cache the vehicle control profile once instead of per-frame, maintain an incremental delivery counter instead of re-filtering the deliveries array every frame/wave, and hoist repeated index reads out of conditional branches.
 
-A planned enhancement adds real 3D visual elements via a parallel Three.js renderer that
-replaces selected 2D sprite groups (player vehicle, environment houses/ground, combat
-effects) in-place. The 2D `GameScene` remains the canonical source of truth for gameplay;
-the 3D layer is a per-frame projection of 2D state, gated behind the `render3d` feature
-flag (off by default) for zero-regression rollout. NPCs stay 2D.
+## 3D Scene-Replacement (Implemented, flag-gated)
+
+> **Status:** Implemented, flag-gated (off by default), zero-regression. See [docs/plans/2026-07-07-3d-scene-bridge-design.md](docs/plans/2026-07-07-3d-scene-bridge-design.md).
+
+A parallel Three.js renderer replaces selected 2D sprite groups (environment houses/ground,
+combat effects) in-place. The 2D `GameScene` remains the canonical source of truth for
+gameplay; the 3D layer is a per-frame projection of 2D state, gated behind the `render3d`
+feature flag (off by default) for zero-regression rollout.
+
+**Current state (2026-07-07):** the `render3d` flag is fully wired and ships three bridges
+behind `VITE_RENDER3D=true`:
+- **sync bridge** (Phase 0/1) — reprojection + matched ortho camera;
+- **environment bridge** (Phase 2) — instanced houses + scrolling ground;
+- **effects bridge** (Phase 3) — flying-projectile sprites, a pooled death-burst particle
+  system (hard-capped at 200 live particles), and a combo point-light pulse.
+
+**Cross-cutting (Phase 4, all done):**
+- **P4.1 Unified depth sort** — every mesh is placed in a gameplay depth band via
+  `renderOrder` + `depthZOffset`, with a parity test proving houses sit behind projectiles.
+- **P4.2 Camera shake sync** — the live 2D Phaser camera-shake offset is fed into the 3D
+  ortho camera each frame so the 3D view shakes in sync (no accumulation/drift).
+- **P4.3 Graceful fallback** — flag OFF is a complete no-op; if WebGL is unavailable or the
+  renderer fails to construct, `initRender3DLayer()` degrades to a 2D-only run via try/catch,
+  leaving all 2D render objects untouched.
+- **P4.5 Reduced-motion / low-power** — `prefers-reduced-motion` is read defensively and
+  threaded into both bridges (fewer particles, no fog/shadows).
+
+The 2D `GameScene` stays the source of truth; when the flag is OFF none of the 3D bridges
+are created or synced (proven by tests). Vehicles and NPCs remain 2D in all cases.
 
 ## Deployment
 

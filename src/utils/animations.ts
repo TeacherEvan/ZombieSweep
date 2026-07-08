@@ -314,7 +314,9 @@ export function countUp(
 // Respect prefers-reduced-motion
 export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mql = window.matchMedia;
+  if (typeof mql !== 'function') return false;
+  return mql('(prefers-reduced-motion: reduce)').matches;
 }
 
 // ── Newspaper Confetti ──

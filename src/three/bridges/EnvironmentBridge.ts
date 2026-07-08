@@ -3,6 +3,7 @@ import { SyncBridge, type BridgeUpdateArgs } from './SyncBridge';
 import { createHouseMesh, HOUSE_FOOTPRINT, type HouseMeshOptions } from './HouseMeshFactory';
 import type { HouseType } from '../../entities/House';
 import { worldToThree, type CameraView, type OrthoConfig } from '../projection';
+import { depthRenderOrder, depthZOffset } from '../depthBand';
 
 /** A single house source item: the 2D House plus its live sprite transform. */
 export interface HouseSourceItem {
@@ -45,7 +46,8 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
 
   constructor(
     private readonly scene: THREE.Scene,
-    cfg: OrthoConfig
+    cfg: OrthoConfig,
+    private readonly reducedMotion = false
   ) {
     super();
     this.cfg = cfg;
@@ -57,11 +59,17 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     const ambient = new THREE.AmbientLight(0x404654, 1.1);
     const dir = new THREE.DirectionalLight(0xfff0d0, 1.4);
     dir.position.set(-0.5, 1, 0.8);
+    // Reduced-motion / low-power: no shadow casting (no shadow maps to render).
+    if (!this.reducedMotion) {
+      dir.castShadow = false;
+    }
     this.scene.add(ambient);
     this.scene.add(dir);
 
-    // Apocalypse mood fog.
-    this.scene.fog = new THREE.Fog(0x2a2a2a, 300, 1400);
+    // Apocalypse mood fog — skipped in reduced-motion mode.
+    if (!this.reducedMotion) {
+      this.scene.fog = new THREE.Fog(0x2a2a2a, 300, 1400);
+    }
 
     const groundGeom = new THREE.PlaneGeometry(GROUND_WIDTH, GROUND_DEPTH);
     const groundMat = new THREE.MeshStandardMaterial({
@@ -71,6 +79,9 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     });
     this.ground = new THREE.Mesh(groundGeom, groundMat);
     this.ground.rotation.x = -Math.PI / 2; // lay flat (XZ plane)
+    // Back-most depth band: ground never occludes gameplay meshes.
+    this.ground.renderOrder = depthRenderOrder('ground');
+    this.ground.position.z = depthZOffset('ground');
     this.scene.add(this.ground);
     this.built = true;
   }
@@ -99,7 +110,10 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   protected createMesh(item: unknown): THREE.Group {
     const houseItem = item as HouseSourceItem;
     const opts: HouseMeshOptions = { type: houseItem.house.type };
-    return createHouseMesh(opts);
+    const group = createHouseMesh(opts);
+    // Mid-back depth band: houses sit in front of ground, behind projectiles.
+    group.renderOrder = depthRenderOrder('house');
+    return group;
   }
 
   protected onAddToHost(mesh: THREE.Group, host: THREE.Scene): void {
@@ -160,8 +174,12 @@ function disposeGroup(group: THREE.Group): void {
   });
 }
 
-export function createEnvironmentBridge(scene: THREE.Scene, cfg: OrthoConfig): EnvironmentBridge {
-  return new EnvironmentBridge(scene, cfg);
+export function createEnvironmentBridge(
+  scene: THREE.Scene,
+  cfg: OrthoConfig,
+  reducedMotion = false
+): EnvironmentBridge {
+  return new EnvironmentBridge(scene, cfg, reducedMotion);
 }
 
 // Re-export so callers can size footprints if needed.

@@ -8,8 +8,8 @@
 
 ## Code Quality ✅
 
-- [x] All tests pass (356/356)
-- [x] Lint: 0 errors, 11 warnings (pre-existing, non-blocking)
+- [x] All tests pass (415/415) — default run (`npm run test`)
+- [x] Lint: 0 errors, 18 warnings (`unbound-method`, non-blocking, pre-existing)
 - [x] Format: Prettier compliant
 - [x] TypeScript: Strict mode, no errors
 - [x] Build: Production bundle generated
@@ -42,7 +42,7 @@
 ## Infrastructure ✅
 
 - [x] Vercel configuration (vercel.json)
-- [x] GitHub Actions CI pipeline (lint → typecheck → test → build → security-audit)
+- [x] GitHub Actions CI pipeline (lint → format → typecheck/build → test → test:3d → security-audit)
 - [x] Multiplayer relay server (WebSocket, ws://0.0.0.0:2567)
 - [x] Asset caching headers (1 year immutable for /assets/)
 - [x] Health check: `GET /` returns 200 with game HTML
@@ -56,7 +56,7 @@
 | `onlineCoop` | OFF | Enable CO-OP multiplayer |
 | `onlineVersus` | OFF | Enable VERSUS multiplayer |
 | `debugMetrics` | DEV only | Exposes `__ZOMBIESWEEP_OBSERVABILITY__` in console |
-| `render3d` | OFF (planned) | *Planned* — Three.js scene-replacement bridge for 3D vehicles/environment/effects. See `docs/plans/2026-07-07-3d-scene-bridge-design.md`. Not yet shipped. |
+| `render3d` | OFF | Implemented, flag-gated (zero-regression). Behind `VITE_RENDER3D=true`: bridges the **environment** layer (houses/ground, Phase 2), the **effects** layer (projectile sprites, death-burst particle pool, combo point-light pulse, all pooled + hard-capped at 200 live particles, Phase 3), and the sync layer (Phase 0/1). Vehicles remain 2D; the 2D simulation is the source of truth and is untouched when the flag is OFF. See `docs/plans/2026-07-07-3d-scene-bridge-design.md`. |
 
 ---
 

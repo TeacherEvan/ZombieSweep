@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "multiplayer:server": "node server/multiplayer-server.mjs",
     "test": "vitest run",
+    "test:3d": "vitest run --config vitest.config.3d.ts",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",

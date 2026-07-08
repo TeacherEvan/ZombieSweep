@@ -8,9 +8,12 @@ import { fileURLToPath } from "node:url";
 // headless tests that import Phaser can load. No runtime code path exercises
 // the WebGL renderer in this project.
 const phaser3spectorStub = fileURLToPath(
-  new URL("./src/test/phaser3spectorjs-stub.js", import.meta.url)
+  new URL("./src/test/phaser3spectorjs-stub.js", import.meta.url),
 );
 
+// Render3D smoke config: injects VITE_RENDER3D=true so the feature-flag-gated
+// 3D bridges are exercised end-to-end through the real GameScene wiring.
+// (design P5.1/P5.3: full suite green with render3d ON and OFF.)
 export default defineConfig({
   resolve: {
     alias: {
@@ -20,6 +23,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    env: {
+      VITE_RENDER3D: "true",
+    },
     alias: {
       phaser3spectorjs: phaser3spectorStub,
     },

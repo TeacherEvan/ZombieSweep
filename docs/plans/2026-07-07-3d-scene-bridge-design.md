@@ -1,7 +1,7 @@
 # ZombieSweep — 3D Scene-Replacement Bridge (Design v2)
 
 **Date:** 2026-07-07
-**Status:** Design v2 (revised after review)
+**Status:** Implemented — Environment (Phase 2), Effects (Phase 3), and sync foundation (Phase 0/1) all shipped & flag-gated. Vehicle bridge (Phase 1) deferred; vehicles + NPCs remain 2D.
 **Author:** Evan + Hermes (superpowers workflow)
 
 ## Goal
@@ -42,12 +42,18 @@ Three element groups get their own bridge (parallel tracks):
   GameScene canvas      road/background graphics + HIDDEN sprite groups
 ```
 **Key fix (v2):** Today the HUD lives inside `GameScene` at depth 50–60 with
-`setScrollFactor(0)`. A single Three canvas stacked on top would occlude it. Solution:
-extract HUD/PauseMenu/TouchControls/reticle into a **`UIScene`** launched in parallel
-(`this.scene.launch('UIScene')`), rendered above the Three canvas. `GameScene` keeps
-only gameplay + background. The Three canvas is inserted between the two Phaser
-canvases in the DOM (`#game-root`). This preserves correct paint order with no
-per-frame reordering hacks.
+`setScrollFactor(0)`. A single Three canvas stacked on top would occlude it. Intended
+solution: extract HUD/PauseMenu/TouchControls/reticle into a **`UIScene`** launched in
+parallel (`this.scene.launch('UIScene')`), rendered above the Three canvas. `GameScene`
+keeps only gameplay + background. The Three canvas is inserted between the two Phaser
+canvases in the DOM (`#game-root`).
+
+> **Implementation note (2026-07-07):** The `UIScene` extraction (P0.6) was **deferred**.
+> The shipped MVP inserts the Three.js canvas between `GameScene` and the UI band but keeps
+> the HUD inside `GameScene`; the Three canvas sits at the bottom of the gameplay depth band
+> and the HUD (depth 50–60) still paints above it. This preserves paint order without the
+> `UIScene` split. If the Vehicle/Effects bridges are later added above the HUD band, the
+> `UIScene` extraction must be revisited.
 
 ### Coordinate projection (`projection.ts`) — camera decision
 - **Use an ORTHOGRAPHIC Three camera matched to the Phaser viewport**, not perspective.
@@ -134,6 +140,17 @@ per-frame reordering hacks.
       instantiated in-browser; in tests we inject a **stub renderer/scene** so bridge
       sync logic is exercised without a GPU. No WebGL context required in CI.
 - P5.4 `LAUNCH_CHECKLIST.md` + `README.md` updated with 3D mode + flag.
+
+## Phase Status (as of 2026-07-07)
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| P0 Foundation | ✅ Done | projection, SyncBridge + mesh pool, FEATURE_FLAGS.render3d, Render3DManager lifecycle, UIScene split deferred (HUD kept in GameScene; 3D canvas sits in gameplay depth band below HUD) |
+| P1 Vehicle Bridge | ⏸ Deferred | Player vehicle remains 2D. Out of scope for the current launch. |
+| P2 Environment Bridge | ✅ Done | Instanced houses + scrolling ground + lighting/fog rig. |
+| P3 Effects Bridge | ✅ Done | Projectiles (P3.1), death-burst pool (P3.2), combo light pulse (P3.3), hard cap 200 (P3.4). |
+| P4 Cross-Cutting | ✅ Done | P4.1 depth band (renderOrder + depthZOffset) with parity test; P4.2 camera-shake offset synced into the 3D ortho camera each frame; P4.3 graceful fallback (flag-off no-op + `isWebGLAvailable()` guard + renderer-construct try/catch, all degrade to 2D); P4.5 reduced-motion threaded into both bridges. |
+| P5 Stability & Launch | ✅ Done | Suite green on+off (`npm run test` + `npm run test:3d`), headless perf guard (P5.2), CI smoke path (P5.3), docs (P5.4). |
 
 ## Risks & Mitigations
 | Risk | Mitigation |

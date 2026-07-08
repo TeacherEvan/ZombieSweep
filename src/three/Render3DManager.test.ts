@@ -101,4 +101,50 @@ describe('Render3DManager', () => {
     manager.create();
     expect(() => manager.teardown()).not.toThrow();
   });
+
+  it('P4.2: setCameraShake offsets the ortho camera each frame', () => {
+    const renderer = makeStubRenderer();
+    const rendererFactory = vi.fn(() => renderer);
+    const manager = new Render3DManager({
+      enabled: true,
+      rendererFactory,
+      host: makeHost(),
+    });
+    manager.create();
+    const camera = manager.getCamera()!;
+    expect(camera).toBeTruthy();
+
+    // Zero offset → camera centered at origin (z pulled in for the ortho view).
+    manager.update(16);
+    expect(camera.position.x).toBe(0);
+    expect(camera.position.y).toBe(0);
+    expect(camera.position.z).toBe(10);
+
+    // Non-zero offset is applied on the next update and restored (no drift).
+    manager.setCameraShake(7, -11);
+    manager.update(16);
+    expect(camera.position.x).toBe(7);
+    expect(camera.position.y).toBe(-11);
+    expect(camera.position.z).toBe(10);
+
+    // Clearing returns to center on the following frame (no accumulation).
+    manager.setCameraShake(0, 0);
+    manager.update(16);
+    expect(camera.position.x).toBe(0);
+    expect(camera.position.y).toBe(0);
+    expect(renderer.render).toHaveBeenCalledTimes(3);
+  });
+
+  it('P4.3: rendererFactory throwing degrades to inactive without throwing', () => {
+    const failingFactory = () => {
+      throw new Error('WebGL context lost');
+    };
+    const manager = new Render3DManager({
+      enabled: true,
+      rendererFactory: failingFactory,
+      host: makeHost(),
+    });
+    expect(() => manager.create()).not.toThrow();
+    expect(manager.isActive()).toBe(false);
+  });
 });
