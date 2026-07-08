@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { SyncBridge, type BridgeUpdateArgs } from './SyncBridge';
 import { worldToThree, type CameraView, type OrthoConfig } from '../projection';
 import { depthRenderOrder, depthZOffset } from '../depthBand';
+import { createProjectileMeshForVehicle } from './WeaponMeshFactory';
+import type { VehicleType } from '../../config/vehicles';
+import { ParticlePool, spawnGoreBurst, spawnAcidSplash } from './ParticleFactory';
 
 /** Hard cap on simultaneously-live gore particles (design P3.4). */
 export const PARTICLE_POOL_CAP = 200;
@@ -25,12 +28,21 @@ export interface KillEvent {
   intensity: number;
 }
 
+/** A Spitter death event — its acid sac bursts (separate green particle pool). */
+export interface AcidEvent {
+  x: number;
+  y: number;
+}
+
 /** Per-frame source for the effects bridge. */
 export interface EffectsBridgeSource {
   projectiles: ProjectileSourceItem[];
   killEvents: KillEvent[];
+  /** Spitter acid-sac bursts (separate green pool). */
+  acidEvents?: AcidEvent[];
   /** Current combo tier from `comboTracker` (0 = no combo). */
   comboTier: number;
+  vehicleType?: VehicleType;
 }
 
 export interface EffectsBridgeUpdate extends BridgeUpdateArgs<THREE.Scene> {
@@ -52,14 +64,6 @@ export function comboLightIntensity(tier: number): number {
   return Math.min(0.4 + tier * 0.25, 2);
 }
 
-interface Particle {
-  mesh: THREE.Mesh;
-  ttl: number;
-  vx: number;
-  vy: number;
-  vz: number;
-}
-
 /**
  * Effects bridge: projectiles (P3.1) + death-burst particle pool (P3.2) +
  * combo light pulse (P3.3). All particle counts are hard-capped (P3.4) and
@@ -67,18 +71,18 @@ interface Particle {
  * reprojects into the matched ortho camera. When disabled, every mesh/particle
  * is released and the combo light is dark — the 2D layer is untouched.
  */
-export class EffectsBridge extends SyncBridge<THREE.Mesh, THREE.Scene> {
+export class EffectsBridge extends SyncBridge<THREE.Object3D, THREE.Scene> {
   private readonly scene: THREE.Scene;
   private readonly cfg: OrthoConfig;
   private readonly reducedMotion: boolean;
   private readonly particlePoolCap: number;
   private cam: CameraView = { scrollX: 0, scrollY: 0, zoom: 1 };
+  private _vehicleType?: VehicleType;
 
   // Projectiles are reconciled by the base SyncBridge against `source`.
   // Particles are event-spawned + time-expired (not count-reconciled) so they
   // get a dedicated pooled lifecycle with a hard cap.
-  private freeParticles: THREE.Mesh[] = [];
-  private active: Particle[] = [];
+  private readonly particlePool: ParticlePool;
   private comboLight: THREE.PointLight;
 
   constructor(scene: THREE.Scene, cfg: OrthoConfig, reducedMotion = false) {
@@ -87,6 +91,7 @@ export class EffectsBridge extends SyncBridge<THREE.Mesh, THREE.Scene> {
     this.cfg = cfg;
     this.reducedMotion = reducedMotion;
     this.particlePoolCap = reducedMotion ? REDUCED_PARTICLE_POOL_CAP : PARTICLE_POOL_CAP;
+    this.particlePool = new ParticlePool(this.particlePoolCap);
     this.comboLight = new THREE.PointLight(0xffcc66, 0, 400);
     this.comboLight.position.set(0, 120, 0);
   }
@@ -107,13 +112,13 @@ export class EffectsBridge extends SyncBridge<THREE.Mesh, THREE.Scene> {
     return this.liveMeshes.length;
   }
 
-  getProjectileMeshes(): readonly THREE.Mesh[] {
+  getProjectileMeshes(): readonly THREE.Object3D[] {
     return this.liveMeshes;
   }
 
   /** Currently-flying gore particles. */
   getActiveParticleCount(): number {
-    return this.active.length;
+    return this.particlePool.liveCount;
   }
 
   /** Reconcile projectiles, spawn bursts, advance particles, drive combo light. */
@@ -121,6 +126,7 @@ export class EffectsBridge extends SyncBridge<THREE.Mesh, THREE.Scene> {
     const src = args.source[0];
     if (!src) return;
     this.cam = args.cam;
+    this._vehicleType = src.vehicleType;
 
     // Projectile reconciliation (base contract).
     super.update({ source: src.projectiles, host: args.host });
@@ -132,29 +138,41 @@ export class EffectsBridge extends SyncBridge<THREE.Mesh, THREE.Scene> {
     }
 
     this.spawnBursts(src.killEvents);
-    this.advanceParticles(args.dt ?? 16);
+    this.spawnAcid(src.acidEvents ?? []);
+    this.particlePool.tick(this.scene, args.dt ?? 16);
     const lit = comboLightIntensity(src.comboTier);
     // Reduced-motion: keep the combo pulse but dim it for low-power comfort.
     this.comboLight.intensity = this.reducedMotion ? lit * 0.5 : lit;
   }
 
-  protected createMesh(item: unknown): THREE.Mesh {
+  protected createMesh(item: unknown): THREE.Object3D {
     const p = item as ProjectileSourceItem;
     void p;
-    const mesh = new THREE.Mesh(PARTICLE_GEOM, PARTICLE_MAT);
-    mesh.userData = { kind: 'projectile' };
-    mesh.renderOrder = depthRenderOrder('projectile');
-    return mesh;
+    let obj: THREE.Object3D;
+    if (this._vehicleType !== undefined) {
+      obj = createProjectileMeshForVehicle(this._vehicleType);
+    } else {
+      obj = new THREE.Mesh(PARTICLE_GEOM, PARTICLE_MAT);
+    }
+    obj.userData = { kind: 'projectile' };
+    obj.renderOrder = depthRenderOrder('projectile');
+    return obj;
   }
 
-  protected onAddToHost(mesh: THREE.Mesh, host: THREE.Scene): void {
+  protected onAddToHost(mesh: THREE.Object3D, host: THREE.Scene): void {
     host.add(mesh);
   }
 
-  protected onRemoveFromHost(mesh: THREE.Mesh, host: THREE.Scene): void {
+  protected onRemoveFromHost(mesh: THREE.Object3D, host: THREE.Scene): void {
     host.remove(mesh);
-    mesh.geometry.dispose();
-    (mesh.material as THREE.Material).dispose();
+    mesh.traverse(obj => {
+      if (obj instanceof THREE.Mesh) {
+        obj.geometry.dispose();
+        const mat = obj.material;
+        if (Array.isArray(mat)) mat.forEach(m => m.dispose());
+        else mat.dispose();
+      }
+    });
   }
 
   protected syncMeshes(source: unknown[]): void {
@@ -171,64 +189,28 @@ export class EffectsBridge extends SyncBridge<THREE.Mesh, THREE.Scene> {
 
   // --- Particle pool -------------------------------------------------------
 
-  private acquireMesh(): THREE.Mesh {
-    const reused = this.freeParticles.pop();
-    if (reused) {
-      this.scene.add(reused);
-      return reused;
-    }
-    const mesh = new THREE.Mesh(PARTICLE_GEOM, PARTICLE_MAT);
-    this.scene.add(mesh);
-    return mesh;
-  }
-
-  private releaseMesh(mesh: THREE.Mesh): void {
-    this.scene.remove(mesh);
-    this.freeParticles.push(mesh);
-  }
-
   private spawnBursts(events: KillEvent[]): void {
+    // Reduced-motion: skip heavy gore/particle effects entirely (plan Global
+    // Constraint). The combo light still pulses (dimmed) for feedback.
+    if (this.reducedMotion) return;
     for (const ev of events) {
-      // Reduced-motion: fewer gore particles per kill; always hard-capped.
-      const perKill = this.reducedMotion ? 2 : 5;
-      const count = Math.round(perKill * ev.intensity);
-      for (let i = 0; i < count; i++) {
-        if (this.active.length >= this.particlePoolCap) return; // hard cap
-        const mesh = this.acquireMesh();
-        const pos = worldToThree(ev.x, ev.y, this.cam, this.cfg);
-        mesh.renderOrder = depthRenderOrder('particle');
-        mesh.position.set(pos.x, 6, pos.z + depthZOffset('particle'));
-        this.active.push({
-          mesh,
-          ttl: 300,
-          vx: (Math.random() - 0.5) * 40,
-          vy: Math.random() * 30 + 10,
-          vz: (Math.random() - 0.5) * 40,
-        });
-      }
+      // Reproject to 3D world coordinate
+      const pos = worldToThree(ev.x, ev.y, this.cam, this.cfg);
+      spawnGoreBurst(this.scene, this.particlePool, pos.x, 6, ev.intensity);
     }
   }
 
-  private advanceParticles(dt: number): void {
-    const dtSec = dt / 1000;
-    for (let i = this.active.length - 1; i >= 0; i--) {
-      const part = this.active[i];
-      part.ttl -= dt;
-      part.mesh.position.x += part.vx * dtSec;
-      part.mesh.position.y += part.vy * dtSec;
-      part.mesh.position.z += part.vz * dtSec;
-      if (part.ttl <= 0) {
-        this.releaseMesh(part.mesh);
-        this.active.splice(i, 1);
-      }
+  private spawnAcid(events: AcidEvent[]): void {
+    // Same reduced-motion guard as gore: skip heavy particle effects.
+    if (this.reducedMotion) return;
+    for (const ev of events) {
+      const pos = worldToThree(ev.x, ev.y, this.cam, this.cfg);
+      spawnAcidSplash(this.scene, this.particlePool, pos.x, 6);
     }
   }
 
   private clearParticles(): void {
-    for (const part of this.active) {
-      this.releaseMesh(part.mesh);
-    }
-    this.active = [];
+    this.particlePool.clear(this.scene);
   }
 
   /** Tear down: clear projectiles, particles, combo light. Safe when inactive. */

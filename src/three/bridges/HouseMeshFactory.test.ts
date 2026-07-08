@@ -65,5 +65,26 @@ describe('HouseMeshFactory', () => {
       expect(data.type).toBe(HouseType.Colonial);
       expect(data.stories).toBe(2);
     });
+
+    it('ranch house has window children', () => {
+      const g = createHouseMesh({ type: HouseType.Ranch });
+      expect(g.children.filter(c => c.name === 'window').length).toBeGreaterThan(0);
+    });
+
+    it('colonial house has chimney child', () => {
+      const g = createHouseMesh({ type: HouseType.Colonial });
+      expect(g.children.find(c => c.name === 'chimney')).toBeDefined();
+    });
+
+    it('victorian house has porch child', () => {
+      const g = createHouseMesh({ type: HouseType.Victorian });
+      expect(g.children.find(c => c.name === 'porch')).toBeDefined();
+    });
+
+    it('all house types have mailbox', () => {
+      [HouseType.Ranch, HouseType.Colonial, HouseType.Victorian].forEach(t => {
+        expect(createHouseMesh({ type: t }).children.find(c => c.name === 'mailbox')).toBeDefined();
+      });
+    });
   });
 });

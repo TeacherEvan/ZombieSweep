@@ -4,10 +4,22 @@ import { createHouseMesh, HOUSE_FOOTPRINT, type HouseMeshOptions } from './House
 import type { HouseType } from '../../entities/House';
 import { worldToThree, type CameraView, type OrthoConfig } from '../projection';
 import { depthRenderOrder, depthZOffset } from '../depthBand';
+import { createHazardMeshForType } from './HazardMeshFactory';
+import type { HazardType } from '../../entities/Hazard';
 
 /** A single house source item: the 2D House plus its live sprite transform. */
 export interface HouseSourceItem {
   house: { type: HouseType };
+  sprite: {
+    x: number;
+    y: number;
+    visible: boolean;
+    setVisible(v: boolean): void;
+  };
+}
+
+export interface HazardSourceItem {
+  hazardType: HazardType;
   sprite: {
     x: number;
     y: number;
@@ -21,6 +33,7 @@ export interface EnvironmentBridgeSource {
   houses: HouseSourceItem[];
   /** Route scroll position (GameScene.worldY) driving ground scroll. */
   worldY: number;
+  hazards?: HazardSourceItem[];
 }
 
 export interface EnvironmentBridgeUpdate extends BridgeUpdateArgs<THREE.Scene> {
@@ -43,6 +56,7 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   private built = false;
   private cam: CameraView = { scrollX: 0, scrollY: 0, zoom: 1 };
   private readonly cfg: OrthoConfig;
+  private hazardMeshes: THREE.Group[] = [];
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -143,6 +157,41 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     // House group reconciliation (base SyncBridge contract).
     super.update({ source: src.houses, host: args.host });
 
+    const hazards = src.hazards ?? [];
+
+    if (!this.isEnabled()) {
+      hazards.forEach(h => h.sprite.setVisible(true));
+      while (this.hazardMeshes.length > 0) {
+        const hGroup = this.hazardMeshes.pop()!;
+        this.scene.remove(hGroup);
+        disposeGroup(hGroup);
+      }
+      return;
+    }
+
+    // Reconcile hazards
+    while (this.hazardMeshes.length < hazards.length) {
+      const hItem = hazards[this.hazardMeshes.length];
+      const hGroup = createHazardMeshForType(hItem.hazardType);
+      hGroup.renderOrder = depthRenderOrder('house');
+      this.hazardMeshes.push(hGroup);
+      this.scene.add(hGroup);
+    }
+    while (this.hazardMeshes.length > hazards.length) {
+      const hGroup = this.hazardMeshes.pop()!;
+      this.scene.remove(hGroup);
+      disposeGroup(hGroup);
+    }
+
+    // Sync hazards
+    for (let i = 0; i < hazards.length; i++) {
+      const hItem = hazards[i];
+      hItem.sprite.setVisible(false);
+      const pos = worldToThree(hItem.sprite.x, hItem.sprite.y, this.cam, this.cfg);
+      const hGroup = this.hazardMeshes[i];
+      hGroup.position.set(pos.x, 0, pos.z);
+    }
+
     // Dynamic flickering of window materials
     const time = performance.now();
     for (let i = 0; i < this.liveMeshes.length; i++) {
@@ -215,6 +264,11 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   /** Tear down: clear houses, remove ground + fog. Safe to call when inactive. */
   override teardown(): void {
     super.teardown(this.scene);
+    while (this.hazardMeshes.length > 0) {
+      const hGroup = this.hazardMeshes.pop()!;
+      this.scene.remove(hGroup);
+      disposeGroup(hGroup);
+    }
     if (this.ground) {
       this.scene.remove(this.ground);
       this.ground.geometry.dispose();

@@ -3,6 +3,12 @@ import { SyncBridge, type BridgeUpdateArgs } from './SyncBridge';
 import { VehicleType } from '../../config/vehicles';
 import { worldToThree, type CameraView, type OrthoConfig } from '../projection';
 import { depthRenderOrder, depthZOffset } from '../depthBand';
+import { createPlayerMeshForVehicle } from './PlayerMeshFactory';
+import {
+  animateBicycleRider,
+  animateSkateboardRider,
+  animateRollerbladeRider,
+} from './AnimationRig';
 
 export interface PlayerSourceItem {
   vehicle: VehicleType;
@@ -45,7 +51,7 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
 
   protected createMesh(item: unknown): THREE.Group {
     const playerItem = item as PlayerSourceItem;
-    const group = createPlayerVehicleMesh(playerItem.vehicle);
+    const group = createPlayerMeshForVehicle(playerItem.vehicle);
     group.renderOrder = depthRenderOrder('player');
     // Align z-offset in depthBand.
     const baseZ = depthZOffset('player');
@@ -86,123 +92,24 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
       group.rotation.y = -sprite.rotation;
       group.scale.set(sprite.scaleX, 1, 1);
 
-      // Spin wheels based on elapsed time
-      const spinSpeed = 0.03;
-      group.traverse(child => {
-        if (child.name === 'wheel' && child instanceof THREE.Mesh) {
-          child.rotation.x = this.elapsed * spinSpeed;
-        }
-      });
+      // Per-vehicle rig (plan Goal: detailed per-vehicle animation).
+      switch (item.vehicle) {
+        case VehicleType.Bicycle:
+          animateBicycleRider(group, this.elapsed, 8);
+          break;
+        case VehicleType.Skateboard:
+          animateSkateboardRider(group, this.elapsed, 8);
+          break;
+        case VehicleType.RollerBlades:
+          animateRollerbladeRider(group, this.elapsed, 8);
+          break;
+      }
     }
   }
 
   override teardown(): void {
     super.teardown(this.scene);
   }
-}
-
-export function createPlayerVehicleMesh(type: VehicleType): THREE.Group {
-  const group = new THREE.Group();
-
-  if (type === VehicleType.Bicycle) {
-    // Frame
-    const frameGeom = new THREE.BoxGeometry(2, 6, 16);
-    const frameMat = new THREE.MeshStandardMaterial({ color: 0xd93838, roughness: 0.5 });
-    const frame = new THREE.Mesh(frameGeom, frameMat);
-    frame.position.y = 8;
-    group.add(frame);
-
-    // Handlebars
-    const barGeom = new THREE.BoxGeometry(12, 1, 2);
-    const barMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 });
-    const bar = new THREE.Mesh(barGeom, barMat);
-    bar.position.set(0, 12, 6);
-    group.add(bar);
-
-    // Front Wheel
-    const wheelGeom = new THREE.CylinderGeometry(5, 5, 1.5, 8);
-    wheelGeom.rotateZ(Math.PI / 2);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.9 });
-    const frontWheel = new THREE.Mesh(wheelGeom, wheelMat);
-    frontWheel.name = 'wheel';
-    frontWheel.position.set(0, 5, 8);
-    group.add(frontWheel);
-
-    // Back Wheel
-    const backWheel = new THREE.Mesh(wheelGeom, wheelMat);
-    backWheel.name = 'wheel';
-    backWheel.position.set(0, 5, -8);
-    group.add(backWheel);
-  } else if (type === VehicleType.Skateboard) {
-    // Deck
-    const deckGeom = new THREE.BoxGeometry(8, 1.5, 20);
-    const deckMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.6 });
-    const deck = new THREE.Mesh(deckGeom, deckMat);
-    deck.position.y = 3;
-    group.add(deck);
-
-    // Wheels
-    const wheelGeom = new THREE.CylinderGeometry(1.5, 1.5, 1, 8);
-    wheelGeom.rotateZ(Math.PI / 2);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3 });
-
-    const wheelPositions = [
-      [-3, 1.5, 6],
-      [3, 1.5, 6],
-      [-3, 1.5, -6],
-      [3, 1.5, -6],
-    ];
-    for (const pos of wheelPositions) {
-      const w = new THREE.Mesh(wheelGeom, wheelMat);
-      w.name = 'wheel';
-      w.position.set(pos[0], pos[1], pos[2]);
-      group.add(w);
-    }
-  } else {
-    // RollerBlades
-    const bootGeom = new THREE.BoxGeometry(3, 8, 8);
-    const bootMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.5 });
-
-    const leftBoot = new THREE.Mesh(bootGeom, bootMat);
-    leftBoot.position.set(-3, 5, 0);
-    group.add(leftBoot);
-
-    const rightBoot = new THREE.Mesh(bootGeom, bootMat);
-    rightBoot.position.set(3, 5, 0);
-    group.add(rightBoot);
-
-    const wheelGeom = new THREE.SphereGeometry(1, 8, 8);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
-
-    const wheelZOffsets = [-3, -1, 1, 3];
-    for (const z of wheelZOffsets) {
-      const wL = new THREE.Mesh(wheelGeom, wheelMat);
-      wL.name = 'wheel';
-      wL.position.set(-3, 1, z);
-      group.add(wL);
-
-      const wR = new THREE.Mesh(wheelGeom, wheelMat);
-      wR.name = 'wheel';
-      wR.position.set(3, 1, z);
-      group.add(wR);
-    }
-  }
-
-  // Torso / Head human rider box model
-  const baseHeight = type === VehicleType.Bicycle ? 8 : type === VehicleType.Skateboard ? 3 : 5;
-  const torsoGeom = new THREE.BoxGeometry(6, 10, 4);
-  const torsoMat = new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.7 });
-  const torso = new THREE.Mesh(torsoGeom, torsoMat);
-  torso.position.set(0, baseHeight + 5, 0);
-  group.add(torso);
-
-  const headGeom = new THREE.SphereGeometry(3, 8, 8);
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.8 });
-  const head = new THREE.Mesh(headGeom, headMat);
-  head.position.set(0, baseHeight + 12, 0);
-  group.add(head);
-
-  return group;
 }
 
 function disposeGroup(group: THREE.Group): void {

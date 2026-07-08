@@ -8,6 +8,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { GameScene } from './GameScene';
 import { FEATURE_FLAGS } from '../config/featureFlags';
 import { HouseType } from '../entities/House';
+import { VehicleType } from '../config/vehicles';
 
 // The real FEATURE_FLAGS is `as const` (read-only). For the test we treat it as
 // a mutable record so we can flip render3d on/off per case.
@@ -170,8 +171,17 @@ function makeScene(): GameScene {
   (scene as unknown as { zombieSprites: { getChildren: () => unknown[] } }).zombieSprites = {
     getChildren: () => [],
   };
+  // Hazard wiring added by the visual overhaul reads hazardSprites every sync
+  // frame once the env bridge exists.
+  (scene as unknown as { hazardSprites: { getChildren: () => unknown[] } }).hazardSprites = {
+    getChildren: () => [],
+  };
   (scene as unknown as { render3d: unknown }).render3d = null;
   (scene as unknown as { envBridge: unknown }).envBridge = null;
+  // effects wiring reads gameState.vehicle (VehicleType) when building the source.
+  (scene as unknown as { gameState: { vehicle: VehicleType } }).gameState = {
+    vehicle: VehicleType.Skateboard,
+  };
   return scene;
 }
 
@@ -333,21 +343,29 @@ describe('GameScene 3D Environment Bridge wiring', () => {
     expect(effectsSingleton.enabled).toBe(true);
     expect((scene as unknown as { effectsBridge: unknown }).effectsBridge).not.toBeNull();
 
-    // Drive a kill to populate the combo tier + buffered kill event.
+    // Drive a Spitter kill to populate the acid buffer + buffered kill event.
     const onKill = scene as unknown as {
       pendingKillEvents: Array<{ x: number; y: number; intensity: number }>;
+      pendingAcidEvents: Array<{ x: number; y: number }>;
       lastComboTier: number;
     };
     onKill.pendingKillEvents.push({ x: 480, y: 270, intensity: 1 });
+    onKill.pendingAcidEvents.push({ x: 480, y: 270 });
     onKill.lastComboTier = 3;
 
     scene.syncRender3DLayer(16);
     expect(effectsSingleton.updateArgs.length).toBe(1);
     const synced = effectsSingleton.updateArgs[0] as {
-      source: Array<{ projectiles: unknown[]; killEvents: unknown[]; comboTier: number }>;
+      source: Array<{
+        projectiles: unknown[];
+        killEvents: unknown[];
+        acidEvents: unknown[];
+        comboTier: number;
+      }>;
     };
     expect(synced.source[0].projectiles.length).toBe(1);
     expect(synced.source[0].killEvents.length).toBe(1);
+    expect(synced.source[0].acidEvents.length).toBe(1);
     expect(synced.source[0].comboTier).toBe(3);
 
     scene.destroyRender3DLayer();

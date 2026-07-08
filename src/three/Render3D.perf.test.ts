@@ -10,6 +10,7 @@ import {
 import { PlayerBridge, type PlayerSourceItem } from './bridges/PlayerBridge';
 import { ZombieBridge, type ZombieSourceItem } from './bridges/ZombieBridge';
 import { ZombieType } from '../entities/Zombie';
+import { VehicleType } from '../config/vehicles';
 import { defaultOrthoConfig, type CameraView } from './projection';
 import { HouseType } from '../entities/House';
 
@@ -93,7 +94,7 @@ describe('3D bridge perf guard (headless, no GPU)', () => {
     const fxSource = makeEffectsSource([{ x: 480, y: 270, intensity: 1 }]);
     const playerSource: PlayerSourceItem[] = [
       {
-        vehicle: 'skateboard',
+        vehicle: VehicleType.Skateboard,
         sprite: {
           x: 480,
           y: 270,

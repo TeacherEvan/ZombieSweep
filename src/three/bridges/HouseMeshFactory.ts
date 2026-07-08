@@ -157,6 +157,53 @@ export function createHouseMesh(opts: HouseMeshOptions): THREE.Group {
     }
   }
 
+  // Mailbox (for all)
+  const post = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 10, 1.5),
+    new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9 })
+  );
+  post.name = 'mailboxPost';
+  post.position.set(width / 2 + 5, 5, 0);
+  group.add(post);
+
+  const mailbox = new THREE.Mesh(
+    new THREE.BoxGeometry(7, 5, 5),
+    new THREE.MeshStandardMaterial({ color: 0x1565c0, roughness: 0.5, metalness: 0.3 })
+  );
+  mailbox.name = 'mailbox';
+  mailbox.position.set(width / 2 + 5, 11.5, 0);
+  group.add(mailbox);
+
+  // Chimney (for Colonial and Victorian)
+  if (opts.type === HouseType.Colonial || opts.type === HouseType.Victorian) {
+    const chimney = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 18, 8),
+      new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.95 })
+    );
+    chimney.name = 'chimney';
+    chimney.position.set(width * 0.25, height + 9, 0);
+    group.add(chimney);
+  }
+
+  // Porch (for Victorian)
+  if (opts.type === HouseType.Victorian) {
+    const porch = new THREE.Mesh(
+      new THREE.BoxGeometry(width * 0.6, 3, 20),
+      new THREE.MeshStandardMaterial({ color: 0xd7ccc8, roughness: 0.85 })
+    );
+    porch.name = 'porch';
+    porch.position.set(0, 1.5, depth / 2 + 10);
+    group.add(porch);
+
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
+    [-width * 0.25, width * 0.25].forEach(x => {
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 18, 8), pillarMat);
+      p.name = 'pillar';
+      p.position.set(x, 9, depth / 2 + 10);
+      group.add(p);
+    });
+  }
+
   const userData: HouseMeshUserData = { type: opts.type, stories };
   group.userData = userData;
   return group;

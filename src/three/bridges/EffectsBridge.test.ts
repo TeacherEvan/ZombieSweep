@@ -8,6 +8,7 @@ import {
   type ProjectileSourceItem,
   type KillEvent,
 } from './EffectsBridge';
+import { VehicleType } from '../../config/vehicles';
 import { defaultOrthoConfig, worldToThree, type CameraView } from '../projection';
 import { depthZOffset } from '../depthBand';
 
@@ -26,7 +27,9 @@ function makeSource(partial: Partial<EffectsBridgeSource> = {}): EffectsBridgeSo
   return {
     projectiles: partial.projectiles ?? [],
     killEvents: partial.killEvents ?? [],
+    acidEvents: partial.acidEvents ?? [],
     comboTier: partial.comboTier ?? 0,
+    vehicleType: partial.vehicleType,
   };
 }
 
@@ -74,6 +77,20 @@ describe('EffectsBridge — projectiles (P3.1)', () => {
       cam,
     });
     expect(bridge.getProjectileCount()).toBe(1);
+  });
+
+  it('uses vehicle-appropriate mesh when vehicleType is specified', () => {
+    const scene = new THREE.Scene();
+    const bridge = createEffectsBridge(scene, cfg);
+    bridge.setEnabled(true);
+    const src = makeSource({ projectiles: [projectile(480, 270, 0)] });
+    src.vehicleType = VehicleType.Bicycle;
+    bridge.update({ source: [src], host: scene, cam });
+
+    expect(bridge.getProjectileCount()).toBe(1);
+    const mesh = bridge.getProjectileMeshes()[0];
+    expect(mesh).toBeInstanceOf(THREE.Group);
+    expect(mesh.children.find(c => c.name === 'roll')).toBeDefined();
   });
 });
 
@@ -145,6 +162,70 @@ describe('EffectsBridge — combo light pulse (P3.3)', () => {
     bridge.update({ source: [makeSource({ comboTier: 3 })], host: scene, cam });
     expect(bridge.getComboLight()).not.toBeNull();
     expect(bridge.getComboLight().intensity).toBeGreaterThan(0);
+  });
+});
+
+describe('EffectsBridge — reduced-motion (Global Constraint)', () => {
+  it('skips heavy gore/particle bursts under reduced motion', () => {
+    const scene = new THREE.Scene();
+    const bridge = createEffectsBridge(scene, cfg, true); // reducedMotion = true
+    bridge.setEnabled(true);
+    bridge.update({
+      source: [makeSource({ killEvents: [kill(100, 100, 1), kill(200, 200, 1)] })],
+      host: scene,
+      cam,
+    });
+    // Plan: "Reduced-motion path must skip heavy particle effects."
+    expect(bridge.getActiveParticleCount()).toBe(0);
+    // Combo light still pulses (dimmed) for feedback.
+    bridge.update({ source: [makeSource({ comboTier: 3 })], host: scene, cam });
+    expect(bridge.getComboLight().intensity).toBeGreaterThan(0);
+  });
+
+  it('spawns gore under normal motion', () => {
+    const scene = new THREE.Scene();
+    const bridge = createEffectsBridge(scene, cfg, false);
+    bridge.setEnabled(true);
+    bridge.update({
+      source: [makeSource({ killEvents: [kill(100, 100, 1)] })],
+      host: scene,
+      cam,
+    });
+    expect(bridge.getActiveParticleCount()).toBe(5);
+  });
+});
+
+describe('EffectsBridge — Spitter acid-sac bursts', () => {
+  it('spawns acid particles for each Spitter death (reuses the same pool)', () => {
+    const scene = new THREE.Scene();
+    const bridge = createEffectsBridge(scene, cfg, false);
+    bridge.setEnabled(true);
+    bridge.update({
+      source: [
+        makeSource({
+          acidEvents: [
+            { x: 100, y: 100 },
+            { x: 200, y: 200 },
+          ],
+        }),
+      ],
+      host: scene,
+      cam,
+    });
+    // 2 spitter deaths * 5 acid particles = 10 active.
+    expect(bridge.getActiveParticleCount()).toBe(10);
+  });
+
+  it('skips acid particles under reduced motion', () => {
+    const scene = new THREE.Scene();
+    const bridge = createEffectsBridge(scene, cfg, true);
+    bridge.setEnabled(true);
+    bridge.update({
+      source: [makeSource({ acidEvents: [{ x: 100, y: 100 }] })],
+      host: scene,
+      cam,
+    });
+    expect(bridge.getActiveParticleCount()).toBe(0);
   });
 });
 

@@ -3,6 +3,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
 import { FEATURE_FLAGS } from '../config/featureFlags';
 import { defaultOrthoConfig, type CameraView, type OrthoConfig } from './projection';
 
@@ -78,6 +79,12 @@ export class Render3DManager {
   private renderer: RendererStub | null = null;
   private composer: EffectComposer | null = null;
   private active = false;
+  private bloomPass: UnrealBloomPass | null = null;
+  private _bloomStrength = 0.8;
+
+  get _passCount(): number {
+    return this.composer?.passes.length ?? 0;
+  }
 
   /** Live camera shake offset (world units), fed from the 2D Phaser shake. */
   private shakeX = 0;
@@ -132,14 +139,15 @@ export class Render3DManager {
     try {
       const composer = new EffectComposer(this.renderer);
       composer.addPass(new RenderPass(this.scene, this.camera));
-      const bloom = new UnrealBloomPass(
+      this.bloomPass = new UnrealBloomPass(
         new THREE.Vector2(this.cfg.viewWidth, this.cfg.viewHeight),
-        0.6, // strength — moderate; emissive windows/combo light glow
+        this._bloomStrength, // strength
         0.5, // radius
         0.85 // threshold — only bright pixels bloom
       );
-      composer.addPass(bloom);
+      composer.addPass(this.bloomPass);
       composer.addPass(new OutputPass());
+      composer.addPass(new FilmPass(0.25));
       composer.setSize(this.cfg.viewWidth, this.cfg.viewHeight);
       this.composer = composer;
     } catch (err) {
@@ -216,6 +224,13 @@ export class Render3DManager {
   setCameraShake(x: number, y: number): void {
     this.shakeX = x;
     this.shakeY = y;
+  }
+
+  setBloomStrength(strength: number): void {
+    this._bloomStrength = Math.max(0, Math.min(3, strength));
+    if (this.bloomPass) {
+      this.bloomPass.strength = this._bloomStrength;
+    }
   }
 
   /** Per-frame tick. Renders when active; safe no-op otherwise. */

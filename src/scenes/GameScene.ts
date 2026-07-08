@@ -85,9 +85,10 @@ import {
   type EnvironmentBridgeSource,
 } from '../three/bridges/EnvironmentBridge';
 import { createEffectsBridge, type EffectsBridgeSource } from '../three/bridges/EffectsBridge';
-import type { KillEvent } from '../three/bridges/EffectsBridge';
+import type { AcidEvent, KillEvent } from '../three/bridges/EffectsBridge';
 import { PlayerBridge, type PlayerSourceItem } from '../three/bridges/PlayerBridge';
 import { ZombieBridge } from '../three/bridges/ZombieBridge';
+import { CitizenBridge } from '../three/bridges/CitizenBridge';
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -143,9 +144,11 @@ export class GameScene extends Phaser.Scene {
   private effectsBridge = null as ReturnType<typeof createEffectsBridge> | null;
   private playerBridge: PlayerBridge | null = null;
   private zombieBridge: ZombieBridge | null = null;
+  private citizenBridge: CitizenBridge | null = null;
   private comboTracker!: ComboTracker;
   /** Buffered kill events for the current frame (drained into the effects bridge). */
   private pendingKillEvents: KillEvent[] = [];
+  private pendingAcidEvents: AcidEvent[] = [];
   /** Current combo tier captured at the last kill (0 = no combo). */
   private lastComboTier = 0;
   private subscriberTotal = 0;
@@ -590,6 +593,9 @@ export class GameScene extends Phaser.Scene {
 
         this.zombieBridge = new ZombieBridge(scene, this.render3d.getConfig());
         this.zombieBridge.setEnabled(true);
+
+        this.citizenBridge = new CitizenBridge(scene, this.render3d.getConfig());
+        this.citizenBridge.setEnabled(true);
       }
     } catch (err) {
       console.warn('[GameScene] 3D layer init failed — continuing in 2D only.', err);
@@ -598,6 +604,7 @@ export class GameScene extends Phaser.Scene {
       this.effectsBridge = null;
       this.playerBridge = null;
       this.zombieBridge = null;
+      this.citizenBridge = null;
     }
   }
 
@@ -607,10 +614,24 @@ export class GameScene extends Phaser.Scene {
       // Flag OFF: nothing consumes the kill buffer, so drain it each frame to
       // avoid unbounded growth over a session.
       this.pendingKillEvents = [];
+      this.pendingAcidEvents = [];
       this.lastComboTier = 0;
       return;
     }
     const cam = this.cameras.main;
+    const hazards = this.hazardSprites.getChildren().map(obj => {
+      const sprite = obj as Phaser.Physics.Arcade.Sprite;
+      const h = sprite.getData('hazard');
+      return {
+        hazardType: h.type,
+        sprite: {
+          x: sprite.x,
+          y: sprite.y,
+          visible: sprite.visible,
+          setVisible: (v: boolean) => sprite.setVisible(v),
+        },
+      };
+    });
     const source: EnvironmentBridgeSource[] = [
       {
         houses: this.houseSprites.map(hp => ({
@@ -618,6 +639,7 @@ export class GameScene extends Phaser.Scene {
           sprite: hp.sprite,
         })),
         worldY: this.worldY,
+        hazards,
       },
     ];
     this.envBridge.update({
@@ -635,7 +657,9 @@ export class GameScene extends Phaser.Scene {
       const effectsSource: EffectsBridgeSource = {
         projectiles,
         killEvents: this.pendingKillEvents,
+        acidEvents: this.pendingAcidEvents,
         comboTier: this.lastComboTier,
+        vehicleType: this.gameState.vehicle,
       };
       this.effectsBridge.update({
         source: [effectsSource],
@@ -694,6 +718,29 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
+    if (this.citizenBridge && this.citizenSprites) {
+      const citizens = this.citizenSprites.getChildren().map(obj => {
+        const sprite = obj as Phaser.Physics.Arcade.Sprite;
+        const c = sprite.getData('citizen') as Citizen;
+        return {
+          type: c.type,
+          sprite: {
+            x: sprite.x,
+            y: sprite.y,
+            rotation: sprite.rotation,
+            visible: sprite.visible,
+            setVisible: (v: boolean) => sprite.setVisible(v),
+          },
+        };
+      });
+      this.citizenBridge.update({
+        source: citizens,
+        host: this.render3d!.getScene()!,
+        cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
+        dt: delta,
+      });
+    }
+
     // P4.2: feed the live 2D camera shake offset into the 3D ortho camera so
     // the 3D view shakes in sync. Phaser stores the live offset in the private
     // shakeEffect._offsetX/_offsetY; read defensively (no public accessor).
@@ -722,7 +769,12 @@ export class GameScene extends Phaser.Scene {
       this.zombieBridge.teardown();
       this.zombieBridge = null;
     }
+    if (this.citizenBridge) {
+      this.citizenBridge.teardown();
+      this.citizenBridge = null;
+    }
     this.pendingKillEvents = [];
+    this.pendingAcidEvents = [];
     this.lastComboTier = 0;
     this.render3d?.teardown();
     this.render3d = null;
@@ -830,6 +882,11 @@ export class GameScene extends Phaser.Scene {
       this.versusRivalScore += scoreRivalKill(zombie.basePoints, this.gameState.difficulty, {
         elite: isElite,
       });
+    }
+
+    if (zombie.type === ZombieType.Spitter) {
+      // Spitter's acid sac bursts on death — feed the 3D acid-splash pool.
+      this.pendingAcidEvents.push({ x, y });
     }
 
     if (isElite) {
