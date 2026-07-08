@@ -87,6 +87,7 @@ import {
 import { createEffectsBridge, type EffectsBridgeSource } from '../three/bridges/EffectsBridge';
 import type { KillEvent } from '../three/bridges/EffectsBridge';
 import { PlayerBridge, type PlayerSourceItem } from '../three/bridges/PlayerBridge';
+import { ZombieBridge, type ZombieSourceItem } from '../three/bridges/ZombieBridge';
 
 interface PlayerSprite extends Phaser.Physics.Arcade.Sprite {
   paperCount: number;
@@ -141,6 +142,7 @@ export class GameScene extends Phaser.Scene {
   private envBridge = null as ReturnType<typeof createEnvironmentBridge> | null;
   private effectsBridge = null as ReturnType<typeof createEffectsBridge> | null;
   private playerBridge: PlayerBridge | null = null;
+  private zombieBridge: ZombieBridge | null = null;
   private comboTracker!: ComboTracker;
   /** Buffered kill events for the current frame (drained into the effects bridge). */
   private pendingKillEvents: KillEvent[] = [];
@@ -585,6 +587,9 @@ export class GameScene extends Phaser.Scene {
 
         this.playerBridge = new PlayerBridge(scene, this.render3d.getConfig(), reducedMotion);
         this.playerBridge.setEnabled(true);
+
+        this.zombieBridge = new ZombieBridge(scene, this.render3d.getConfig(), reducedMotion);
+        this.zombieBridge.setEnabled(true);
       }
     } catch (err) {
       console.warn('[GameScene] 3D layer init failed — continuing in 2D only.', err);
@@ -592,6 +597,7 @@ export class GameScene extends Phaser.Scene {
       this.envBridge = null;
       this.effectsBridge = null;
       this.playerBridge = null;
+      this.zombieBridge = null;
     }
   }
 
@@ -657,6 +663,36 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
+    if (this.zombieBridge && this.zombieSprites) {
+      interface ZombieRenderState {
+        elite?: boolean;
+        id: number;
+        eliteLabel?: string;
+      }
+      const zombies = this.zombieSprites.getChildren().map(obj => {
+        const sprite = obj as Phaser.Physics.Arcade.Sprite;
+        const z = sprite.getData('zombie') as Zombie;
+        const renderState = sprite.getData('zombieRenderState') as ZombieRenderState;
+        return {
+          type: z.type,
+          elite: !!renderState?.elite,
+          sprite: {
+            x: sprite.x,
+            y: sprite.y,
+            rotation: sprite.rotation,
+            visible: sprite.visible,
+            setVisible: (v: boolean) => sprite.setVisible(v),
+          },
+        };
+      });
+      this.zombieBridge.update({
+        source: zombies,
+        host: this.render3d!.getScene()!,
+        cam: { scrollX: cam.scrollX, scrollY: cam.scrollY, zoom: cam.zoom },
+        dt: delta,
+      });
+    }
+
     // P4.2: feed the live 2D camera shake offset into the 3D ortho camera so
     // the 3D view shakes in sync. Phaser stores the live offset in the private
     // shakeEffect._offsetX/_offsetY; read defensively (no public accessor).
@@ -680,6 +716,10 @@ export class GameScene extends Phaser.Scene {
     if (this.playerBridge) {
       this.playerBridge.teardown();
       this.playerBridge = null;
+    }
+    if (this.zombieBridge) {
+      this.zombieBridge.teardown();
+      this.zombieBridge = null;
     }
     this.pendingKillEvents = [];
     this.lastComboTier = 0;

@@ -167,6 +167,9 @@ function makeScene(): GameScene {
   (scene as unknown as { newspaperSprites: { getChildren: () => unknown[] } }).newspaperSprites = {
     getChildren: () => [],
   };
+  (scene as unknown as { zombieSprites: { getChildren: () => unknown[] } }).zombieSprites = {
+    getChildren: () => [],
+  };
   (scene as unknown as { render3d: unknown }).render3d = null;
   (scene as unknown as { envBridge: unknown }).envBridge = null;
   return scene;
