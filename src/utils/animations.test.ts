@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Scene } from 'phaser';
-import { STATION_BREAK, fadeIn, prefersReducedMotion } from './animations';
+import { STATION_BREAK, fadeIn, hitFlash, prefersReducedMotion } from './animations';
 
 // Mock Phaser — its module-level init requires `window` which doesn't exist in Node
 vi.mock('phaser', () => ({ default: {} }));
@@ -82,6 +82,75 @@ describe('animations', () => {
         })
       );
       expect(destroy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('hitFlash', () => {
+    function makeSprite(baseScale = 1) {
+      return {
+        scaleX: baseScale,
+        scaleY: baseScale,
+        setTint: vi.fn(),
+        clearTint: vi.fn(),
+        setScale: vi.fn(),
+      };
+    }
+
+    it('applies a tint, pops scale to 1.25×, and resets on complete', () => {
+      const sprite = makeSprite(1);
+      const tweenAdd = vi.fn(({ onComplete }: { onComplete?: () => void }) => {
+        onComplete?.();
+      });
+      const scene = {
+        tweens: { add: tweenAdd },
+      } as unknown as Scene;
+
+      hitFlash(scene, sprite as never);
+
+      expect(sprite.setTint).toHaveBeenCalledWith(0xffffff);
+      expect(tweenAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          targets: sprite,
+          scaleX: 1.25,
+          scaleY: 1.25,
+          yoyo: true,
+          duration: 70,
+        })
+      );
+      // onComplete resets scale + clears tint
+      expect(sprite.setScale).toHaveBeenCalledWith(1, 1);
+      expect(sprite.clearTint).toHaveBeenCalledTimes(1);
+    });
+
+    it("scales relative to the sprite's current scale", () => {
+      const sprite = makeSprite(2);
+      const tweenAdd = vi.fn(({ onComplete }: { onComplete?: () => void }) => {
+        onComplete?.();
+      });
+      const scene = { tweens: { add: tweenAdd } } as unknown as Scene;
+
+      hitFlash(scene, sprite as never);
+
+      expect(tweenAdd).toHaveBeenCalledWith(expect.objectContaining({ scaleX: 2.5, scaleY: 2.5 }));
+      expect(sprite.setScale).toHaveBeenCalledWith(2, 2);
+    });
+
+    it('is a no-op under prefers-reduced-motion (no tint, no tween)', () => {
+      const sprite = makeSprite(1);
+      const tweenAdd = vi.fn();
+      const scene = { tweens: { add: tweenAdd } } as unknown as Scene;
+      const origWindow = globalThis.window;
+      // @ts-expect-error - test shim
+      globalThis.window = {
+        matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }),
+      };
+
+      hitFlash(scene, sprite as never);
+
+      expect(sprite.setTint).not.toHaveBeenCalled();
+      expect(tweenAdd).not.toHaveBeenCalled();
+
+      globalThis.window = origWindow;
     });
   });
 });

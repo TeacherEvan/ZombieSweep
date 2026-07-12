@@ -68,6 +68,36 @@ export function floatingText(
   return txt;
 }
 
+// ── Hit Flash ──
+// Entity struck but not killed: brief white tint flash + scale pop, then
+// settle back to normal. Makes every landed hit read clearly without
+// obscuring the sprite. No-op for prefers-reduced-motion users.
+export function hitFlash(
+  scene: Phaser.Scene,
+  sprite: Phaser.GameObjects.Sprite | Phaser.Physics.Arcade.Sprite,
+  tint = 0xffffff
+): void {
+  if (prefersReducedMotion()) return;
+
+  const baseScaleX = sprite.scaleX;
+  const baseScaleY = sprite.scaleY;
+
+  sprite.setTint(tint);
+
+  scene.tweens.add({
+    targets: sprite,
+    scaleX: baseScaleX * 1.25,
+    scaleY: baseScaleY * 1.25,
+    duration: 70,
+    yoyo: true,
+    ease: EASE_OUT_QUART,
+    onComplete: () => {
+      sprite.setScale(baseScaleX, baseScaleY);
+      sprite.clearTint();
+    },
+  });
+}
+
 // ── Death Flash ──
 // Entity death: brief white flash, scale down, fade out, then destroy
 export function deathFlash(

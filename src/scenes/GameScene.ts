@@ -64,6 +64,7 @@ import {
   fadeIn,
   fadeToScene,
   floatingText,
+  hitFlash,
   isTouchPrimary,
   meleeSwingArc,
   prefersReducedMotion,
@@ -524,13 +525,16 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    // Move zombies toward player
+    // Move zombies toward player (skip homing while staggered so a knockback
+    // impulse actually gets to throw its weight around instead of being
+    // instantly overridden by moveToObject).
     this.zombieSprites.getChildren().forEach(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
       const zombie = sprite.getData('zombie') as Zombie;
       if (!zombie || zombie.isDead()) {
         return;
       }
+      if (this.isZombieStaggered(sprite)) return;
       this.physics.moveToObject(sprite, this.player, zombie.speed * 20);
     });
 
@@ -543,6 +547,12 @@ export class GameScene extends Phaser.Scene {
     // Update HUD
     this.hud.setPaperCount(this.player.paperCount);
     this.hud.setAmmoCount(this.player.rangedWeapon.ammo);
+    this.hud.setIntensity(this.gameState.getAdaptiveMultiplier());
+    this.hud.setCombo(
+      this.comboTracker.count,
+      this.comboTracker.remainingMs(this.time.now),
+      this.comboTracker.windowMs
+    );
     this.hud.update();
     this.updateVersusScoreboard();
 
@@ -769,6 +779,7 @@ export class GameScene extends Phaser.Scene {
 
   private throwNewspaper(direction: 'left' | 'right'): void {
     this.player.paperCount--;
+    this.gameState.liveThrows++;
     const isSunday = this.dayManager.isSunday(this.gameState.day);
     const np = createNewspaper(this.player.x, this.player.y, direction, isSunday);
 
@@ -792,9 +803,12 @@ export class GameScene extends Phaser.Scene {
       if (dist < range) {
         const zombie = sprite.getData('zombie') as Zombie;
         zombie.takeDamage(damage);
+        this.applyKnockback(sprite, damage > 0 ? this.player.meleeWeapon.knockback : 0);
         if (zombie.isDead()) {
           this.awardZombieKill(zombie, sprite, source);
           deathFlash(this, sprite);
+        } else {
+          hitFlash(this, sprite);
         }
       }
     });
@@ -834,10 +848,14 @@ export class GameScene extends Phaser.Scene {
 
     if (nearest) {
       const zombie = nearest.getData('zombie') as Zombie;
+      const weaponKnockback = damage > 0 ? this.player.rangedWeapon.knockback : 0;
       zombie.takeDamage(damage);
+      this.applyKnockback(nearest, weaponKnockback);
       if (zombie.isDead()) {
         this.awardZombieKill(zombie, nearest, source);
         deathFlash(this, nearest);
+      } else {
+        hitFlash(this, nearest);
       }
     }
   }
@@ -865,6 +883,8 @@ export class GameScene extends Phaser.Scene {
           this.scoreManager.spitterKill();
           break;
       }
+      // Driver-side kills feed the live adaptive-difficulty signal.
+      this.gameState.liveKills++;
     } else {
       this.versusRivalScore += scoreRivalKill(zombie.basePoints, this.gameState.difficulty, {
         elite: isElite,
@@ -1106,6 +1126,7 @@ export class GameScene extends Phaser.Scene {
     const stability = VEHICLE_STATS[this.gameState.vehicle].stability;
     this.startInvulnerability(stability);
     this.gameState.loseLife();
+    this.gameState.liveHitsTaken++;
     screenShake(this, 0.009 + (3 - stability) * 0.003, 200);
     damageFlash(this, 180);
     headlineLifeLost();
@@ -1131,6 +1152,7 @@ export class GameScene extends Phaser.Scene {
 
     this.startInvulnerability(stability);
     this.gameState.loseLife();
+    this.gameState.liveHitsTaken++;
     screenShake(this, 0.011 + (3 - stability) * 0.003, 250);
     damageFlash(this, 200);
     headlineLifeLost();
@@ -1175,10 +1197,13 @@ export class GameScene extends Phaser.Scene {
 
     zombie.takeDamage(np.stunDamage);
     npSprite.destroy();
+    this.gameState.liveHits++;
 
     if (zombie.isDead()) {
       this.awardZombieKill(zombie, zombieSprite);
       deathFlash(this, zombieSprite);
+    } else {
+      hitFlash(this, zombieSprite);
     }
   }
 
@@ -1428,6 +1453,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     const sprite = this.physics.add.sprite(x, y, textureKey);
+    // Drag so a knockback impulse decays naturally while the zombie is
+    // staggered (the homing force is skipped during stagger). Normal homing
+    // re-sets velocity every frame, so drag only bites during the stun.
+    const zbody = sprite.body as Phaser.Physics.Arcade.Body;
+    zbody.setDrag(320, 320);
     const renderState: ZombieRenderState = {
       elite,
       id: forcedId ?? this.nextZombieId++,
@@ -1872,6 +1902,34 @@ export class GameScene extends Phaser.Scene {
     }
 
     return null;
+  }
+
+  /**
+   * Applies knockback + a short hit-stun to a zombie when struck by a weapon.
+   * The `knockback` stat was defined per-weapon but previously never consumed;
+   * wiring it here gives attacks real weight and the iconic arcade "juice" of
+   * enemies being shoved back and briefly unable to re-home. Elites shrug off
+   * most of the impulse (they are bigger/heavier), scaled by elite scale.
+   */
+  private applyKnockback(sprite: Phaser.Physics.Arcade.Sprite, knockback: number): void {
+    if (knockback <= 0) return;
+    const body = sprite.body as Phaser.Physics.Arcade.Body;
+    if (!body) return;
+
+    const renderState = sprite.getData('zombieRenderState') as ZombieRenderState | undefined;
+    const eliteScale = renderState?.elite ? 1.6 : 1;
+    const impulse = (knockback / eliteScale) * 240;
+    const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, sprite.x, sprite.y);
+    body.setVelocity(Math.cos(angle) * impulse, Math.sin(angle) * impulse);
+
+    // Stagger window: homing is skipped while staggered so the impulse lands.
+    const staggerMs = Math.min(900, 180 + knockback * 90);
+    sprite.setData('staggerUntil', this.time.now + staggerMs);
+  }
+
+  private isZombieStaggered(sprite: Phaser.Physics.Arcade.Sprite): boolean {
+    const until = sprite.getData('staggerUntil') as number | undefined;
+    return typeof until === 'number' && this.time.now < until;
   }
 
   private updateGunnerTargetIndicator(): void {
