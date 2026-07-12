@@ -414,3 +414,81 @@ export function isTouchPrimary(): boolean {
     window.matchMedia('(pointer: coarse)').matches
   );
 }
+
+// ── Screen Reader Accessibility Announcer ──
+// Writes announcements to the hidden aria-live region.
+export function announceToScreenReader(message: string): void {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('game-announcer');
+  if (el) {
+    el.textContent = '';
+    // Use a small timeout to force a DOM update that screen readers detect
+    setTimeout(() => {
+      el.textContent = message;
+    }, 50);
+  }
+}
+
+export interface ExportableGameState {
+  day: number;
+  lives: number;
+  score: number;
+  subscribers: number;
+  difficulty: string;
+  vehicle: string;
+  accuracyHistory?: number[];
+}
+
+export interface ExportableDeliveryData {
+  house: { isSubscriber: boolean };
+  delivered: boolean;
+}
+
+// ── Teacher Dashboard Data Export ──
+// Generates and downloads a JSON report of the student's metrics.
+export function exportReport(
+  gameState: ExportableGameState,
+  deliveryData?: ExportableDeliveryData[]
+): void {
+  if (typeof window === 'undefined') return;
+
+  const subscriberHouses = deliveryData ? deliveryData.filter(d => d.house?.isSubscriber) : [];
+  const successfulDeliveries = subscriberHouses.filter(d => d.delivered).length;
+  const accuracy = subscriberHouses.length > 0 ? successfulDeliveries / subscriberHouses.length : 0;
+
+  const report = {
+    game: 'ZombieSweep',
+    version: '0.1.0',
+    timestamp: new Date().toISOString(),
+    sessionStats: {
+      difficulty: gameState.difficulty,
+      vehicle: gameState.vehicle,
+      score: gameState.score,
+      livesRemaining: gameState.lives,
+      subscribersRemaining: gameState.subscribers,
+      accuracyHistory: gameState.accuracyHistory || [],
+    },
+    levelStats: deliveryData
+      ? {
+          day: gameState.day - 1, // day was already advanced in ScoreSummaryScene
+          totalSubscribers: subscriberHouses.length,
+          successfulDeliveries,
+          missedDeliveries: subscriberHouses.length - successfulDeliveries,
+          accuracy: Math.round(accuracy * 100) + '%',
+        }
+      : null,
+  };
+
+  const filename = deliveryData
+    ? `zombiesweep-report-day-${gameState.day - 1}.json`
+    : `zombiesweep-final-report.json`;
+
+  const dataStr =
+    'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(report, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute('href', dataStr);
+  downloadAnchor.setAttribute('download', filename);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+}

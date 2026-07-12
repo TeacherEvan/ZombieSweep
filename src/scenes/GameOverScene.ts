@@ -14,7 +14,15 @@ import {
   createDataRow,
 } from '../ui/broadcast-styles';
 import { headlineGameOver, headlineVictory } from '../ui/ticker-bridge';
-import { countUp, fadeIn, fadeToScene, newspaperConfetti, tvStatic } from '../utils/animations';
+import {
+  countUp,
+  fadeIn,
+  fadeToScene,
+  newspaperConfetti,
+  tvStatic,
+  exportReport,
+  announceToScreenReader,
+} from '../utils/animations';
 
 export class GameOverScene extends Phaser.Scene {
   private gameState!: GameState;
@@ -33,6 +41,7 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     this.gameState = getOrCreateGameState(this.registry);
+    this.gameState.clearLocalStorage();
     const scoreManager = new ScoreManager(this.gameState);
     this.cameras.main.setBackgroundColor(BC.BG);
     fadeIn(this);
@@ -341,6 +350,24 @@ export class GameOverScene extends Phaser.Scene {
 
     this.time.delayedCall(950, () => this.updateButtonSelection());
 
+    const exportPrompt = this.add
+      .text(cx, height - 24, 'PRESS T TO EXPORT FINAL REPORT', {
+        fontFamily: BROADCAST_FONT,
+        fontSize: '11px',
+        fontStyle: '600',
+        color: BC.TEXT_MUTED,
+        letterSpacing: 2,
+      })
+      .setOrigin(0.5);
+
+    this.tweens.add({
+      targets: exportPrompt,
+      alpha: 0.3,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+    });
+
     // Keyboard
     this.input.keyboard?.on('keydown-UP', () => {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
@@ -363,6 +390,10 @@ export class GameOverScene extends Phaser.Scene {
     });
     this.input.keyboard?.on('keydown-SPACE', () => {
       this.buttons[this.selectedIndex]?.hitArea.emit('pointerdown');
+    });
+    this.input.keyboard?.on('keydown-T', () => {
+      exportReport(this.gameState);
+      announceToScreenReader('Final student report exported successfully.');
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

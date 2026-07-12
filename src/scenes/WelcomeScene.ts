@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getOrCreateGameState } from '../systems/GameState';
 import { BC, BROADCAST_FONT, createBroadcastButton, createChyron } from '../ui/broadcast-styles';
 import { resolveBroadcastViewportContext } from '../ui/broadcast-viewport';
 import {
@@ -7,6 +8,7 @@ import {
   isTouchPrimary,
   prefersReducedMotion,
   pulse,
+  announceToScreenReader,
 } from '../utils/animations';
 import { isFeatureEnabled, type FeatureFlag } from '../config/featureFlags';
 
@@ -15,6 +17,7 @@ export class WelcomeScene extends Phaser.Scene {
   private menuItems: ReturnType<typeof createBroadcastButton>[] = [];
   private reducedMotion = false;
   private transitioning = false;
+  private overlayActive = false;
 
   constructor() {
     super({ key: 'WelcomeScene' });
@@ -101,17 +104,38 @@ export class WelcomeScene extends Phaser.Scene {
     });
 
     // ── Menu buttons: broadcast-style rows ──
+    const gameState = getOrCreateGameState(this.registry);
+    let hasSave = false;
+    let saveDay = 1;
+    if (typeof window !== 'undefined') {
+      const raw = window.localStorage.getItem('zombiesweep_savestate');
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.day === 'number') {
+            saveDay = parsed.day;
+            hasSave = true;
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+      }
+    }
+
     const menuDefs: Array<{
       text: string;
       scene?: string;
       action?: string;
       featureFlag?: FeatureFlag;
-    }> = [
-      { text: 'NEW GAME', scene: 'VehicleSelectScene' },
-      { text: 'ONLINE PLAY', scene: 'OnlineCoopScene', featureFlag: 'onlineCoop' },
-      { text: 'CONTROLS', action: 'controls' },
-      { text: 'CREDITS', action: 'credits' },
-    ];
+    }> = [];
+
+    if (hasSave) {
+      menuDefs.push({ text: `CONTINUE (DAY ${saveDay})`, action: 'continue' });
+    }
+    menuDefs.push({ text: 'NEW GAME', scene: 'VehicleSelectScene' });
+    menuDefs.push({ text: 'ONLINE PLAY', scene: 'OnlineCoopScene', featureFlag: 'onlineCoop' });
+    menuDefs.push({ text: 'CONTROLS', action: 'controls' });
+    menuDefs.push({ text: 'CREDITS', action: 'credits' });
 
     const filteredDefs = menuDefs.filter(
       item => !item.featureFlag || isFeatureEnabled(item.featureFlag)
@@ -147,9 +171,24 @@ export class WelcomeScene extends Phaser.Scene {
         this.updateMenuSelection(true);
       });
       btn.hitArea.on('pointerdown', () => {
-        if (item.scene) {
-          if (this.transitioning) return;
+        if (this.transitioning) return;
+        if (item.action === 'continue') {
           this.transitioning = true;
+          const loaded = gameState.loadFromLocalStorage();
+          if (loaded) {
+            announceToScreenReader(`Continuing route coverage for day ${gameState.day}.`);
+            fadeToScene(this, 'GameScene');
+          } else {
+            // Fallback in case of save corruption
+            gameState.reset();
+            fadeToScene(this, 'VehicleSelectScene');
+          }
+        } else if (item.scene) {
+          this.transitioning = true;
+          if (item.scene === 'VehicleSelectScene') {
+            gameState.reset();
+            gameState.clearLocalStorage();
+          }
           fadeToScene(this, item.scene);
         } else if (item.action === 'controls') {
           this.showControls(width, height);
@@ -161,27 +200,36 @@ export class WelcomeScene extends Phaser.Scene {
 
     this.time.delayedCall(compact ? 450 : 600, () => this.updateMenuSelection(true));
 
+    // Update max index for keyboard selection
+    const maxIndex = filteredDefs.length - 1;
+
     // ── Keyboard navigation ──
     this.input.keyboard?.on('keydown-UP', () => {
+      if (this.transitioning || this.overlayActive) return;
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateMenuSelection(true);
     });
     this.input.keyboard?.on('keydown-DOWN', () => {
-      this.selectedIndex = Math.min(menuDefs.length - 1, this.selectedIndex + 1);
+      if (this.transitioning || this.overlayActive) return;
+      this.selectedIndex = Math.min(maxIndex, this.selectedIndex + 1);
       this.updateMenuSelection(true);
     });
     this.input.keyboard?.on('keydown-W', () => {
+      if (this.transitioning || this.overlayActive) return;
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateMenuSelection(true);
     });
     this.input.keyboard?.on('keydown-S', () => {
-      this.selectedIndex = Math.min(menuDefs.length - 1, this.selectedIndex + 1);
+      if (this.transitioning || this.overlayActive) return;
+      this.selectedIndex = Math.min(maxIndex, this.selectedIndex + 1);
       this.updateMenuSelection(true);
     });
     this.input.keyboard?.on('keydown-ENTER', () => {
+      if (this.transitioning || this.overlayActive) return;
       this.menuItems[this.selectedIndex]?.hitArea.emit('pointerdown');
     });
     this.input.keyboard?.on('keydown-SPACE', () => {
+      if (this.transitioning || this.overlayActive) return;
       this.menuItems[this.selectedIndex]?.hitArea.emit('pointerdown');
     });
 
@@ -287,6 +335,9 @@ export class WelcomeScene extends Phaser.Scene {
   }
 
   private showControls(width: number, height: number): void {
+    this.overlayActive = true;
+    announceToScreenReader('Controls screen opened. Press escape or click anywhere to close.');
+
     const overlay = this.add
       .rectangle(width / 2, height / 2, width, height, 0x000000, 0)
       .setInteractive();
@@ -375,6 +426,8 @@ export class WelcomeScene extends Phaser.Scene {
     const closeOverlay = () => {
       this.input.keyboard?.off('keydown-ESC', closeOverlay);
       allElements.forEach(el => el.destroy());
+      this.overlayActive = false;
+      announceToScreenReader('Controls screen closed.');
     };
 
     overlay.on('pointerdown', closeOverlay);
@@ -382,6 +435,9 @@ export class WelcomeScene extends Phaser.Scene {
   }
 
   private showCredits(width: number, height: number): void {
+    this.overlayActive = true;
+    announceToScreenReader('Credits screen opened. Press escape or click anywhere to close.');
+
     const overlay = this.add
       .rectangle(width / 2, height / 2, width, height, 0x000000, 0)
       .setInteractive();
@@ -443,6 +499,8 @@ export class WelcomeScene extends Phaser.Scene {
     const closeOverlay = () => {
       this.input.keyboard?.off('keydown-ESC', closeOverlay);
       allElements.forEach(el => el.destroy());
+      this.overlayActive = false;
+      announceToScreenReader('Credits screen closed.');
     };
 
     overlay.on('pointerdown', closeOverlay);

@@ -14,7 +14,13 @@ import {
 } from '../ui/broadcast-styles';
 import { resolveBroadcastViewportContext } from '../ui/broadcast-viewport';
 import { headlinePerfectDay } from '../ui/ticker-bridge';
-import { fadeIn, fadeToScene, isTouchPrimary } from '../utils/animations';
+import {
+  fadeIn,
+  fadeToScene,
+  isTouchPrimary,
+  exportReport,
+  announceToScreenReader,
+} from '../utils/animations';
 
 interface DeliveryData {
   house: { isSubscriber: boolean };
@@ -309,8 +315,18 @@ export class ScoreSummaryScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0);
 
+    const exportPrompt = this.add
+      .text(cx, height - 20, 'PRESS T TO EXPORT REPORT', {
+        fontFamily: BROADCAST_FONT,
+        fontSize: compact ? `${Math.round(10 * scale)}px` : '11px',
+        fontStyle: '600',
+        color: BC.TEXT_MUTED,
+        letterSpacing: 2,
+      })
+      .setOrigin(0.5, 0);
+
     this.tweens.add({
-      targets: prompt,
+      targets: [prompt, exportPrompt],
       alpha: 0.3,
       duration: 600,
       yoyo: true,
@@ -320,7 +336,11 @@ export class ScoreSummaryScene extends Phaser.Scene {
     const goToGameOver = isLastDay || isSubsGone || this.gameState.isGameOver();
 
     if (!goToGameOver) {
+      const dayAccuracy =
+        subscriberHouses.length > 0 ? successfulDeliveries / subscriberHouses.length : 1.0;
+      this.gameState.accuracyHistory.push(dayAccuracy);
       this.gameState.advanceDay();
+      this.gameState.saveToLocalStorage();
     }
 
     const advance = () => {
@@ -335,6 +355,11 @@ export class ScoreSummaryScene extends Phaser.Scene {
 
     this.input.keyboard?.once('keydown-ENTER', advance);
     this.input.once('pointerdown', advance);
+
+    this.input.keyboard?.on('keydown-T', () => {
+      exportReport(this.gameState, this.deliveryData);
+      announceToScreenReader('Student report exported successfully.');
+    });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.removeAllListeners();
