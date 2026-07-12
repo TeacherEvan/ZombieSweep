@@ -43,6 +43,19 @@ const MAT = {
   jeans: markShared(
     new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.9, metalness: 0.0 })
   ),
+  cap: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7, metalness: 0.1 })
+  ),
+  goggles: markShared(
+    new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.2,
+      metalness: 0.6,
+    })
+  ),
+  satchel: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.8, metalness: 0.05 })
+  ),
 };
 
 function addRider(group: THREE.Group, baseY: number): void {
@@ -78,6 +91,25 @@ function addRider(group: THREE.Group, baseY: number): void {
   helmet.scale.set(1, 0.7, 1);
   helmet.position.set(0, baseY + 23.5, 0);
   group.add(helmet);
+
+  // Courier cap — sits on top of the head
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.6, 6.4), MAT.cap);
+  cap.name = 'cap';
+  cap.position.set(0, baseY + 24.6, 0);
+  group.add(cap);
+
+  // Goggles — band across the eyes
+  const goggles = new THREE.Mesh(new THREE.BoxGeometry(6, 1.4, 1.2), MAT.goggles);
+  goggles.name = 'goggles';
+  goggles.position.set(0, baseY + 21.4, 2.6);
+  group.add(goggles);
+
+  // Newspaper satchel — slung at the rider's side/back
+  const satchel = new THREE.Mesh(new THREE.BoxGeometry(5, 6, 3), MAT.satchel);
+  satchel.name = 'satchel';
+  satchel.position.set(4.5, baseY + 13, -2.5);
+  satchel.rotation.z = 0.15;
+  group.add(satchel);
 }
 
 export function createBicycleMesh(): THREE.Group {

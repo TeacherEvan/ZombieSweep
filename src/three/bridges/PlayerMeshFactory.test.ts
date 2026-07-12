@@ -38,3 +38,27 @@ describe('PlayerMeshFactory', () => {
     expect(createPlayerMeshForVehicle(VehicleType.Skateboard)).toBeInstanceOf(THREE.Group);
   });
 });
+
+describe('player courier details', () => {
+  it('rider has a cap', () => {
+    expect(createBicycleMesh().children.find(c => c.name === 'cap')).toBeDefined();
+  });
+  it('rider has a satchel (newspaper bag)', () => {
+    expect(createBicycleMesh().children.find(c => c.name === 'satchel')).toBeDefined();
+  });
+  it('rider has goggles', () => {
+    expect(createBicycleMesh().children.find(c => c.name === 'goggles')).toBeDefined();
+  });
+  it('all vehicles carry cap + satchel + goggles', () => {
+    [createBicycleMesh(), createSkateboardMesh(), createRollerBladesMesh()].forEach(g => {
+      expect(g.children.find(c => c.name === 'cap')).toBeDefined();
+      expect(g.children.find(c => c.name === 'satchel')).toBeDefined();
+      expect(g.children.find(c => c.name === 'goggles')).toBeDefined();
+    });
+  });
+  it('existing torso + wheel parts still present', () => {
+    const g = createBicycleMesh();
+    expect(g.children.find(c => c.name === 'torso')).toBeDefined();
+    expect(g.children.filter(c => c.name === 'wheel').length).toBeGreaterThanOrEqual(2);
+  });
+});
