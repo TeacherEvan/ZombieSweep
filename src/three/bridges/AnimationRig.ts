@@ -50,6 +50,17 @@ export function animateZombieWalk(group: THREE.Group, elapsed: number, type: Zom
       mat.emissiveIntensity = 2.0 + Math.sin(t * 8) * 1.0;
     }
   }
+
+  // Elite glowing eyes pulsate in sync with the visor
+  ['eyeGlowL', 'eyeGlowR'].forEach(eyeName => {
+    const eye = child(group, eyeName);
+    if (eye && eye instanceof THREE.Mesh) {
+      const m = eye.material as THREE.MeshStandardMaterial;
+      if (m && m.isMeshStandardMaterial) {
+        m.emissiveIntensity = 3.0 + Math.sin(t * 8) * 1.5;
+      }
+    }
+  });
 }
 
 export function animateSkateboardRider(group: THREE.Group, elapsed: number, speed: number): void {

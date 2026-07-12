@@ -49,3 +49,29 @@ describe('zombie gore details', () => {
     expect(createShamblerMesh(false).children.find(c => c.name === 'visor')).toBeUndefined();
   });
 });
+
+describe('elite zombie variants', () => {
+  it('elite shambler has eyeGlow + entrails + visor', () => {
+    const g = createShamblerMesh(true);
+    expect(g.children.find(c => c.name === 'visor')).toBeDefined();
+    expect(g.children.find(c => c.name === 'eyeGlowL')).toBeDefined();
+    expect(g.children.find(c => c.name === 'entrails')).toBeDefined();
+  });
+  it('elite is larger than non-elite (bounding box volume)', () => {
+    const vol = (b: THREE.Box3) => (b.max.x - b.min.x) * (b.max.y - b.min.y) * (b.max.z - b.min.z);
+    const elite = new THREE.Box3().setFromObject(createShamblerMesh(true));
+    const normal = new THREE.Box3().setFromObject(createShamblerMesh(false));
+    expect(vol(elite)).toBeGreaterThan(vol(normal));
+  });
+  it('non-elite has no eyeGlow/entrails', () => {
+    const g = createShamblerMesh(false);
+    expect(g.children.find(c => c.name === 'eyeGlowL')).toBeUndefined();
+    expect(g.children.find(c => c.name === 'entrails')).toBeUndefined();
+  });
+  it('all elite types carry eyeGlow + entrails', () => {
+    [createRunnerMesh(true), createSpitterMesh(true)].forEach(g => {
+      expect(g.children.find(c => c.name === 'eyeGlowL')).toBeDefined();
+      expect(g.children.find(c => c.name === 'entrails')).toBeDefined();
+    });
+  });
+});

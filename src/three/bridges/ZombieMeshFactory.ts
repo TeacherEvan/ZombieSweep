@@ -5,6 +5,8 @@ const BONE_WHITE = 0xede0c8;
 const GORE_RED = 0x8b0000;
 const EYE_DARK = 0x1a0000;
 const TEETH_WHITE = 0xd8d8c0;
+const ELITE_EYE_GLOW = 0xff2a2a;
+const ENTRAIL_RED = 0x5a0a0a;
 
 function mat(color: number, roughness = 0.8): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color, roughness, metalness: 0.05 });
@@ -74,7 +76,8 @@ function addCore(group: THREE.Group, bodyColor: number, torsoH: number, headR: n
   });
 }
 
-function addEliteVisor(group: THREE.Group, headY: number): void {
+function addEliteDetails(group: THREE.Group, headY: number, torsoH: number): void {
+  // Red pulsating visor (continuity with prior elite look; animated by AnimationRig)
   const visorMat = new THREE.MeshStandardMaterial({
     color: 0xff0000,
     emissive: new THREE.Color(0xff3333),
@@ -84,7 +87,35 @@ function addEliteVisor(group: THREE.Group, headY: number): void {
   visor.name = 'visor';
   visor.position.set(0, headY, 2.8);
   group.add(visor);
-  group.scale.setScalar(1.25);
+
+  // Glowing red eyes (pulsate via AnimationRig alongside the visor)
+  const glowMat = new THREE.MeshStandardMaterial({
+    color: ELITE_EYE_GLOW,
+    emissive: new THREE.Color(ELITE_EYE_GLOW),
+    emissiveIntensity: 4,
+  });
+  const glowGeom = new THREE.SphereGeometry(0.9, 8, 6);
+  [-1.7, 1.7].forEach((x, i) => {
+    const glow = new THREE.Mesh(glowGeom, glowMat);
+    glow.name = i === 0 ? 'eyeGlowL' : 'eyeGlowR';
+    glow.position.set(x, headY - 0.2, 2.7);
+    group.add(glow);
+  });
+
+  // Exposed entrails — a dark-red twisted mass at the torso
+  const entrailMat = new THREE.MeshStandardMaterial({
+    color: ENTRAIL_RED,
+    roughness: 0.5,
+    metalness: 0.05,
+  });
+  const entrails = new THREE.Mesh(new THREE.TorusGeometry(2.2, 1.1, 8, 12), entrailMat);
+  entrails.name = 'entrails';
+  entrails.position.set(0, torsoH * 0.55, 2.6);
+  entrails.rotation.set(Math.PI / 2, 0, 0.4);
+  group.add(entrails);
+
+  // Bulkier silhouette — modest uniform scale (rig still drives named parts)
+  group.scale.setScalar(1.2);
 }
 
 export function createShamblerMesh(elite: boolean): THREE.Group {
@@ -95,7 +126,7 @@ export function createShamblerMesh(elite: boolean): THREE.Group {
   shirt.name = 'shirt';
   shirt.position.set(0, 9, 2.4);
   group.add(shirt);
-  if (elite) addEliteVisor(group, 15);
+  if (elite) addEliteDetails(group, 15, 13);
   return group;
 }
 
@@ -107,7 +138,7 @@ export function createRunnerMesh(elite: boolean): THREE.Group {
   jacket.name = 'jacket';
   jacket.position.set(0, 11, 2.5);
   group.add(jacket);
-  if (elite) addEliteVisor(group, 18);
+  if (elite) addEliteDetails(group, 18, 16);
   return group;
 }
 
@@ -126,7 +157,7 @@ export function createSpitterMesh(elite: boolean): THREE.Group {
   acidSac.scale.set(1, 0.8, 0.9);
   acidSac.position.set(0, 4, 3);
   group.add(acidSac);
-  if (elite) addEliteVisor(group, 14);
+  if (elite) addEliteDetails(group, 14, 12);
   return group;
 }
 
