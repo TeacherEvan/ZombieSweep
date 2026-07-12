@@ -18,6 +18,11 @@ export const BC = {
   GREEN: 0x22aa44,
   AMBER: 0xcc8822,
 
+  // Broadcast-overlay tokens (live lower-third treatment)
+  SCAN: 0x9fb4c8, // cool CRT scanline tint
+  BUG_BG: 0x0a0d14, // station bug plate
+  BUG_EDGE: 0x2a2f3a,
+
   // Phaser text colors (CSS strings)
   TEXT: '#d8d0c4',
   TEXT_DIM: '#6a645c',
@@ -38,6 +43,10 @@ export const BC = {
 } as const;
 
 export const BROADCAST_FONT = "'Barlow Condensed', 'Arial Narrow', sans-serif" as const;
+
+// Mono stack for numeric tallies — reads like a teleprompter / data terminal,
+// distinct from the condensed broadcast labels. No new webfont load (system mono).
+export const MONO_FONT = "'Roboto Mono', 'Courier New', monospace" as const;
 
 // ── Shared Text Styles ──
 
@@ -404,4 +413,68 @@ export function createAlertBanner(
 
   container.add([bg, label]);
   return container;
+}
+
+// ── Station Bug ──
+// Live-broadcast "you're on air" mark: REC dot + call-sign plate, switchable
+// to a BREAKING state when the courier is cornered. The signature HUD element.
+export function createStationBug(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  options: { scale?: number } = {}
+): {
+  container: Phaser.GameObjects.Container;
+  recDot: Phaser.GameObjects.Graphics;
+  label: Phaser.GameObjects.Text;
+  setBreaking: (breaking: boolean) => void;
+} {
+  const s = options.scale ?? 1;
+  const plateW = Math.round(116 * s);
+  const plateH = Math.round(20 * s);
+  const container = scene.add.container(x, y).setScrollFactor(0).setDepth(103);
+
+  const bg = scene.add.graphics();
+  bg.fillStyle(BC.BUG_BG, 0.92);
+  bg.fillRoundedRect(-plateW / 2, -plateH / 2, plateW, plateH, 3 * s);
+  bg.lineStyle(1, BC.BUG_EDGE, 1);
+  bg.strokeRoundedRect(-plateW / 2, -plateH / 2, plateW, plateH, 3 * s);
+
+  // REC dot (left of the plate)
+  const recDot = scene.add.graphics();
+  recDot.fillStyle(BC.RED_GLOW, 1);
+  recDot.fillCircle(-plateW / 2 - Math.round(9 * s), 0, Math.round(3.2 * s));
+
+  const label = scene.add
+    .text(-plateW / 2 + Math.round(8 * s), 0, 'WZMB 13 LIVE', {
+      fontFamily: MONO_FONT,
+      fontSize: `${Math.round(10 * s)}px`,
+      fontStyle: '700',
+      color: '#d8d0c4',
+      letterSpacing: 1,
+    })
+    .setOrigin(0, 0.5);
+
+  const setBreaking = (breaking: boolean) => {
+    bg.clear();
+    if (breaking) {
+      bg.fillStyle(BC.RED, 0.95);
+      bg.fillRoundedRect(-plateW / 2, -plateH / 2, plateW, plateH, 3 * s);
+      bg.lineStyle(1, BC.RED_GLOW, 1);
+      bg.strokeRoundedRect(-plateW / 2, -plateH / 2, plateW, plateH, 3 * s);
+      recDot.clear();
+      recDot.fillStyle(BC.RED_GLOW, 1);
+      recDot.fillCircle(-plateW / 2 - Math.round(9 * s), 0, Math.round(3.2 * s));
+      label.setText('● BREAKING').setColor('#ffffff');
+    } else {
+      bg.fillStyle(BC.BUG_BG, 0.92);
+      bg.fillRoundedRect(-plateW / 2, -plateH / 2, plateW, plateH, 3 * s);
+      bg.lineStyle(1, BC.BUG_EDGE, 1);
+      bg.strokeRoundedRect(-plateW / 2, -plateH / 2, plateW, plateH, 3 * s);
+      label.setText('WZMB 13 LIVE').setColor('#d8d0c4');
+    }
+  };
+
+  container.add([bg, recDot, label]);
+  return { container, recDot, label, setBreaking };
 }

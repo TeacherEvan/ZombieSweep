@@ -4,7 +4,7 @@ import { DayManager } from '../systems/DayManager';
 import type { GameState } from '../systems/GameState';
 import type { CombatAlertTone } from '../scenes/combat-authorship';
 import { isTouchPrimary, prefersReducedMotion, pulse } from '../utils/animations';
-import { BC, BROADCAST_FONT } from './broadcast-styles';
+import { BC, BROADCAST_FONT, MONO_FONT, createStationBug } from './broadcast-styles';
 import { resolveBroadcastViewportContext } from './broadcast-viewport';
 
 export class HUD {
@@ -18,13 +18,27 @@ export class HUD {
   private papersText!: Phaser.GameObjects.Text;
   private ammoText!: Phaser.GameObjects.Text;
   private subscribersText!: Phaser.GameObjects.Text;
+  private intensityText!: Phaser.GameObjects.Text;
+  private comboText!: Phaser.GameObjects.Text;
+  private comboBar!: Phaser.GameObjects.Graphics;
   private deliveryBar!: Phaser.GameObjects.Graphics;
   private deliveryCountText!: Phaser.GameObjects.Text;
   private combatAlertBg!: Phaser.GameObjects.Graphics;
   private combatAlertText!: Phaser.GameObjects.Text;
 
+  // Broadcast-overlay layer (live lower-third treatment)
+  private scanline!: Phaser.GameObjects.Graphics;
+  private stationBug!: {
+    container: Phaser.GameObjects.Container;
+    recDot: Phaser.GameObjects.Graphics;
+    label: Phaser.GameObjects.Text;
+    setBreaking: (breaking: boolean) => void;
+  };
+  private bugBreaking = false;
+
   private paperCount: number;
   private ammoCount: number;
+  private intensity = 1.0;
   private compactLayout = false;
   private viewportScale = 1;
   private spacingScale = 1;
@@ -43,6 +57,10 @@ export class HUD {
   private lastPaperCount = 0;
   private lastAmmoCount = 0;
   private lastSubscribers = 0;
+  private lastIntensity = 1.0;
+  private comboCount = 0;
+  private comboRemainingMs = 0;
+  private comboWindowMs = 2000;
   private deliveryCompleted = 0;
   private deliveryTotal = 0;
   private lastDeliveryCompleted = -1;
@@ -111,7 +129,7 @@ export class HUD {
       letterSpacing: this.labelSpacing,
     };
     const valueCfg: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontFamily: BROADCAST_FONT,
+      fontFamily: MONO_FONT,
       fontSize: this.valueFontSize,
       fontStyle: '700',
       color: BC.TEXT,
@@ -126,7 +144,7 @@ export class HUD {
       .setDepth(100)
       .setOrigin(0, 0.5);
     this.scene.add
-      .text(x, cy + 7, this.cachedDayString, valueCfg)
+      .text(x, cy + 7, this.cachedDayString, { ...valueCfg, fontFamily: BROADCAST_FONT })
       .setScrollFactor(0)
       .setDepth(100)
       .setOrigin(0, 0.5);
@@ -169,6 +187,36 @@ export class HUD {
       .setDepth(100)
       .setOrigin(0, 0.5);
     x += Math.round((this.compactLayout ? 72 : 80) * this.spacingScale);
+
+    // Intensity (live adaptive difficulty) — separate field
+    this.scene.add
+      .text(x, cy - 5, 'INTENSITY', labelCfg)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    this.intensityText = this.scene.add
+      .text(x, cy + 7, 'NORMAL', valueCfg)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    x += Math.round((this.compactLayout ? 80 : 88) * this.spacingScale);
+
+    // Combo (kill-chain indicator with a depleting timer bar)
+    this.scene.add
+      .text(x, cy - 5, 'COMBO', labelCfg)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5);
+    this.comboText = this.scene.add
+      .text(x, cy + 7, '—', valueCfg)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setOrigin(0, 0.5)
+      .setVisible(false);
+    this.comboBar = this.scene.add.graphics();
+    this.comboBar.setScrollFactor(0).setDepth(100).setVisible(false);
+    this.comboBarX = x;
+    x += Math.round((this.compactLayout ? 80 : 88) * this.spacingScale);
 
     // Ammo (separate field)
     this.scene.add
@@ -230,6 +278,31 @@ export class HUD {
       .setDepth(102)
       .setVisible(false);
 
+    // ── Broadcast overlay: CRT scanlines across the strip ──
+    // Faint horizontal lines + a top highlight so the readout reads as live
+    // footage rather than a menu. Static (no flicker) to respect reduced-motion.
+    this.scanline = this.scene.add.graphics();
+    this.scanline.setScrollFactor(0).setDepth(99);
+    const scanH = this.hudHeight;
+    const scanStep = Math.max(2, Math.round(2 * this.viewportScale));
+    this.scanline.fillStyle(BC.SCAN, 0.05);
+    for (let sy = 0; sy < scanH; sy += scanStep * 2) {
+      this.scanline.fillRect(0, sy, width, scanStep);
+    }
+    // Subtle top highlight (screen glare)
+    this.scanline.fillStyle(BC.SCAN, 0.06);
+    this.scanline.fillRect(0, 0, width, Math.max(1, Math.round(this.viewportScale)));
+
+    // ── Station bug (signature "you're on air" mark) ──
+    const bugScale = this.compactLayout ? Math.min(this.viewportScale, 1.1) : this.viewportScale;
+    const bugPlateW = Math.round(116 * bugScale);
+    this.stationBug = createStationBug(
+      this.scene,
+      width - bugPlateW / 2 - Math.round(8 * this.viewportScale),
+      this.hudHeight / 2,
+      { scale: bugScale }
+    );
+
     // Set initial values (avoids empty text on first frame)
     this.scoreText.setText(`${this.gameState.score}`);
     this.papersText.setText(`${this.paperCount}`);
@@ -243,6 +316,20 @@ export class HUD {
 
   setAmmoCount(count: number): void {
     this.ammoCount = count;
+  }
+
+  setIntensity(multiplier: number): void {
+    this.intensity = multiplier;
+  }
+
+  /**
+   * Drives the combo indicator. `remainingMs` is the time left in the current
+   * combo window; when it hits 0 the indicator hides (chain broken).
+   */
+  setCombo(count: number, remainingMs: number, windowMs: number): void {
+    this.comboCount = count;
+    this.comboRemainingMs = remainingMs;
+    this.comboWindowMs = windowMs;
   }
 
   setDeliveryProgress(completed: number, total: number): void {
@@ -328,6 +415,22 @@ export class HUD {
       this.lastSubscribers = this.gameState.subscribers;
     }
 
+    // Intensity (live adaptive difficulty)
+    if (this.intensity !== this.lastIntensity) {
+      const label = this.intensity > 1.05 ? 'RISING' : this.intensity < 0.95 ? 'EASING' : 'NORMAL';
+      const color =
+        this.intensity > 1.05
+          ? BC.css.RED_GLOW
+          : this.intensity < 0.95
+            ? BC.css.GREEN_BRIGHT
+            : BC.TEXT;
+      this.intensityText.setText(label).setColor(color);
+      this.lastIntensity = this.intensity;
+    }
+
+    // Combo indicator (kill chain + depleting timer bar)
+    this.updateCombo();
+
     // Delivery progress bar
     if (this.deliveryCompleted !== this.lastDeliveryCompleted) {
       this.drawDeliveryBar(this.deliveryBarX);
@@ -342,6 +445,20 @@ export class HUD {
       this.combatAlertBg.setVisible(false);
       this.combatAlertText.setVisible(false);
     }
+
+    // Broadcast overlay — station bug
+    // Distress "BREAKING" when the courier is cornered (out of papers/ammo).
+    const distressed = this.paperCount <= 1 || this.ammoCount <= 1;
+    if (distressed !== this.bugBreaking) {
+      this.bugBreaking = distressed;
+      this.stationBug.setBreaking(distressed);
+    }
+    // REC dot slow pulse (static under reduced-motion)
+    if (!prefersReducedMotion()) {
+      const t = this.scene.time.now * 0.004;
+      const a = 0.55 + Math.sin(t) * 0.45;
+      this.stationBug.recDot.setAlpha(a);
+    }
   }
 
   private drawLives(): void {
@@ -355,6 +472,7 @@ export class HUD {
   }
 
   private deliveryBarX = 0;
+  private comboBarX = 0;
 
   private drawDeliveryBar(x: number): void {
     this.deliveryBarX = x;
@@ -382,6 +500,36 @@ export class HUD {
     if (this.deliveryTotal > 0) {
       this.deliveryCountText.setText(`${this.deliveryCompleted}/${this.deliveryTotal}`);
     }
+  }
+
+  private updateCombo(): void {
+    const active = this.comboCount >= 2 && this.comboRemainingMs > 0;
+    if (!active) {
+      if (this.comboText.visible) this.comboText.setVisible(false);
+      if (this.comboBar.visible) this.comboBar.setVisible(false);
+      return;
+    }
+    this.comboText.setVisible(true).setText(`×${this.comboCount}`);
+    this.comboBar.setVisible(true);
+    this.drawComboBar();
+  }
+
+  private drawComboBar(): void {
+    const x = this.comboBarX;
+    const y = this.deliveryBarY;
+    const w = this.deliveryBarWidth;
+    const h = 6;
+    const frac = Math.max(0, Math.min(1, this.comboRemainingMs / this.comboWindowMs));
+    this.comboBar.clear();
+    // Track
+    this.comboBar.fillStyle(BC.CHROME_EDGE, 0.6);
+    this.comboBar.fillRect(x, y, w, h);
+    // Fill — warms from gold to red as it drains
+    const color = frac > 0.5 ? BC.GOLD : BC.RED;
+    this.comboBar.fillStyle(color, 0.95);
+    this.comboBar.fillRect(x, y, w * frac, h);
+    this.comboBar.lineStyle(1, BC.CHROME_EDGE, 0.8);
+    this.comboBar.strokeRect(x, y, w, h);
   }
 
   private redrawCombatAlert(): void {
