@@ -68,5 +68,17 @@ describe('arcade-rules', () => {
       expect(late.pickupDropChance).toBeGreaterThan(early.pickupDropChance);
       expect(late.surgeThreshold).toBeLessThanOrEqual(early.surgeThreshold);
     });
+
+    it('scales count and interval dynamically using adaptiveMultiplier', () => {
+      const standard = getZombieWaveSettings(3, Difficulty.MiddleRoad, 5, 10, 1.0);
+      const hardAdaptive = getZombieWaveSettings(3, Difficulty.MiddleRoad, 5, 10, 1.15);
+      const easyAdaptive = getZombieWaveSettings(3, Difficulty.MiddleRoad, 5, 10, 0.85);
+
+      expect(hardAdaptive.count).toBeGreaterThanOrEqual(standard.count);
+      expect(hardAdaptive.interval).toBeLessThanOrEqual(standard.interval);
+
+      expect(easyAdaptive.count).toBeLessThanOrEqual(standard.count);
+      expect(easyAdaptive.interval).toBeGreaterThanOrEqual(standard.interval);
+    });
   });
 });

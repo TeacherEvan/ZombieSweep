@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Difficulty } from '../config/difficulty';
 import { VehicleType } from '../config/vehicles';
@@ -291,6 +293,69 @@ describe('GameState', () => {
       const result = getOrCreateGameState(registry);
       expect(result).toBeInstanceOf(GameState);
       expect(stored).toBe(result);
+    });
+  });
+
+  describe('persistence', () => {
+    beforeEach(() => {
+      if (typeof window !== 'undefined') {
+        window.localStorage.clear();
+      }
+    });
+
+    it('saves and loads GameState to/from localStorage', () => {
+      state.day = 4;
+      state.score = 2500;
+      state.lives = 2;
+      state.subscribers = 8;
+      state.difficulty = Difficulty.MiddleRoad;
+      state.vehicle = VehicleType.Skateboard;
+      state.accuracyHistory = [0.9, 0.8, 0.95];
+
+      state.saveToLocalStorage();
+
+      const anotherState = new GameState();
+      const loaded = anotherState.loadFromLocalStorage();
+
+      expect(loaded).toBe(true);
+      expect(anotherState.day).toBe(4);
+      expect(anotherState.score).toBe(2500);
+      expect(anotherState.lives).toBe(2);
+      expect(anotherState.subscribers).toBe(8);
+      expect(anotherState.difficulty).toBe(Difficulty.MiddleRoad);
+      expect(anotherState.vehicle).toBe(VehicleType.Skateboard);
+      expect(anotherState.accuracyHistory).toEqual([0.9, 0.8, 0.95]);
+    });
+
+    it('clears GameState from localStorage', () => {
+      state.day = 2;
+      state.saveToLocalStorage();
+      state.clearLocalStorage();
+
+      const anotherState = new GameState();
+      const loaded = anotherState.loadFromLocalStorage();
+      expect(loaded).toBe(false);
+    });
+  });
+
+  describe('adaptive difficulty', () => {
+    it('returns 1.0 when accuracy history is empty', () => {
+      expect(state.getAdaptiveMultiplier()).toBe(1.0);
+    });
+
+    it('returns 1.15 when average accuracy is > 90%', () => {
+      state.accuracyHistory = [0.95, 0.92, 0.98];
+      expect(state.getAdaptiveMultiplier()).toBe(1.15);
+    });
+
+    it('returns 0.85 when average accuracy is < 70%', () => {
+      state.accuracyHistory = [0.6, 0.5, 0.7];
+      expect(state.getAdaptiveMultiplier()).toBe(0.85);
+    });
+
+    it('returns 1.0 when average accuracy is between 70% and 90%', () => {
+      state.accuracyHistory = [0.8, 0.85, 0.75];
+      expect(state.getAdaptiveMultiplier()).toBe(1.0);
     });
   });
 });
