@@ -5,6 +5,7 @@ import type { HouseType } from '../../entities/House';
 import { worldToThree, type CameraView, type OrthoConfig } from '../projection';
 import { depthRenderOrder, depthZOffset } from '../depthBand';
 import { createHazardMeshForType } from './HazardMeshFactory';
+import { disposeGroup } from './disposeGroup';
 import type { HazardType } from '../../entities/Hazard';
 
 /** A single house source item: the 2D House plus its live sprite transform. */
@@ -63,7 +64,11 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     cfg: OrthoConfig,
     private readonly reducedMotion = false
   ) {
-    super();
+    super({
+      // Houses are rebuilt each frame from getChildren(); key by the per-house
+      // `sprite` object (stable across frames for a given house).
+      getKey: (item: unknown) => (item as HouseSourceItem).sprite,
+    });
     this.cfg = cfg;
   }
 
@@ -244,17 +249,16 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     }
   }
 
-  protected syncMeshes(source: unknown[], host: THREE.Scene): void {
+  protected syncMeshes(_source: unknown[], host: THREE.Scene): void {
     void host;
-    const items = source as HouseSourceItem[];
-    const live = this.liveMeshes;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
+    const pairs = this.getSyncedPairs();
+    for (let i = 0; i < pairs.length; i++) {
+      const [rawItem, group] = pairs[i] as [HouseSourceItem, THREE.Group];
+      const item = rawItem;
       const sprite = item.sprite;
       // Hide the 2D sprite (body stays active — collisions preserved).
       sprite.setVisible(false);
       const p = worldToThree(sprite.x, sprite.y, this.cam, this.cfg);
-      const group = live[i];
       group.position.x = p.x;
       group.position.z = p.z;
       group.position.y = 0;
@@ -278,17 +282,6 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     this.scene.fog = null;
     this.built = false;
   }
-}
-
-function disposeGroup(group: THREE.Group): void {
-  group.traverse(obj => {
-    if (obj instanceof THREE.Mesh) {
-      obj.geometry.dispose();
-      const mat = obj.material;
-      if (Array.isArray(mat)) mat.forEach(m => m.dispose());
-      else mat.dispose();
-    }
-  });
 }
 
 export function createEnvironmentBridge(

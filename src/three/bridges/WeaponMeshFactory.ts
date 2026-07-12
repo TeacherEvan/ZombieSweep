@@ -1,19 +1,28 @@
 import * as THREE from 'three';
 import { VehicleType } from '../../config/vehicles';
+import { markShared } from './disposeObject3D';
 
+// Shared module singletons — reused by every projectile mesh instance. Marked
+// shared so per-mesh disposal (disposeObject3D) never frees them.
 const MAT = {
-  paper: new THREE.MeshStandardMaterial({ color: 0xfaf3e0, roughness: 0.9 }),
-  band: new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.8 }),
-  bolt: new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.4, metalness: 0.7 }),
-  boltTip: new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.2, metalness: 0.9 }),
-  fletch: new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.9 }),
-  pellet: new THREE.MeshStandardMaterial({
-    color: 0xd0a020,
-    roughness: 0.3,
-    metalness: 0.8,
-    emissive: new THREE.Color(0x804000),
-    emissiveIntensity: 0.6,
-  }),
+  paper: markShared(new THREE.MeshStandardMaterial({ color: 0xfaf3e0, roughness: 0.9 })),
+  band: markShared(new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.8 })),
+  bolt: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.4, metalness: 0.7 })
+  ),
+  boltTip: markShared(
+    new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.2, metalness: 0.9 })
+  ),
+  fletch: markShared(new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.9 })),
+  pellet: markShared(
+    new THREE.MeshStandardMaterial({
+      color: 0xd0a020,
+      roughness: 0.3,
+      metalness: 0.8,
+      emissive: new THREE.Color(0x804000),
+      emissiveIntensity: 0.6,
+    })
+  ),
 };
 
 export function createNewspaperMesh(): THREE.Group {

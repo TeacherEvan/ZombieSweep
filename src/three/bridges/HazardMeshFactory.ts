@@ -1,18 +1,23 @@
 import * as THREE from 'three';
 import { HazardType } from '../../entities/Hazard';
+import { markShared } from './disposeObject3D';
 
+// Shared module singletons — reused by every hazard mesh instance. Marked
+// shared so per-mesh disposal (disposeObject3D) never frees them.
 const MAT = {
-  dirt: new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.95 }),
-  pit: new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1.0 }),
-  log: new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }),
-  bark: new THREE.MeshStandardMaterial({ color: 0x4a3b32, roughness: 0.95 }),
-  ice: new THREE.MeshStandardMaterial({
-    color: 0xa5f3fc,
-    roughness: 0.05,
-    metalness: 0.9,
-    transparent: true,
-    opacity: 0.8,
-  }),
+  dirt: markShared(new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.95 })),
+  pit: markShared(new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1.0 })),
+  log: markShared(new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 })),
+  bark: markShared(new THREE.MeshStandardMaterial({ color: 0x4a3b32, roughness: 0.95 })),
+  ice: markShared(
+    new THREE.MeshStandardMaterial({
+      color: 0xa5f3fc,
+      roughness: 0.05,
+      metalness: 0.9,
+      transparent: true,
+      opacity: 0.8,
+    })
+  ),
 };
 
 export function createHoleMesh(): THREE.Group {

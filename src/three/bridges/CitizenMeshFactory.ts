@@ -1,15 +1,22 @@
 import * as THREE from 'three';
 import { CitizenType } from '../../entities/Citizen';
+import { markShared } from './disposeObject3D';
 
+// Shared module singletons — reused by every citizen mesh instance. Marked
+// shared so per-mesh disposal (disposeObject3D) never frees them.
 const MAT = {
-  skin: new THREE.MeshStandardMaterial({ color: 0xffd5a8, roughness: 0.85 }),
-  hair: new THREE.MeshStandardMaterial({ color: 0x4e3324, roughness: 0.9 }),
-  shirtBlue: new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.8 }),
-  shirtOrng: new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.8 }),
-  shirtGray: new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.6, metalness: 0.2 }),
-  pants: new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.9 }),
-  shoes: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 }),
-  gun: new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.3, metalness: 0.9 }),
+  skin: markShared(new THREE.MeshStandardMaterial({ color: 0xffd5a8, roughness: 0.85 })),
+  hair: markShared(new THREE.MeshStandardMaterial({ color: 0x4e3324, roughness: 0.9 })),
+  shirtBlue: markShared(new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.8 })),
+  shirtOrng: markShared(new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.8 })),
+  shirtGray: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.6, metalness: 0.2 })
+  ),
+  pants: markShared(new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.9 })),
+  shoes: markShared(new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 })),
+  gun: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.3, metalness: 0.9 })
+  ),
 };
 
 function buildHumanoid(shirtMat: THREE.MeshStandardMaterial): THREE.Group {

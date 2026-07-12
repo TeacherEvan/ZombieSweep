@@ -1,10 +1,11 @@
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import { SyncBridge, type BridgeUpdateArgs } from './SyncBridge';
 import { ZombieType } from '../../entities/Zombie';
 import { worldToThree, type CameraView, type OrthoConfig } from '../projection';
 import { depthRenderOrder, depthZOffset } from '../depthBand';
 import { createZombieMeshForType } from './ZombieMeshFactory';
 import { animateZombieWalk } from './AnimationRig';
+import { disposeGroup } from './disposeGroup';
 
 export interface ZombieSourceItem {
   type: ZombieType;
@@ -33,7 +34,14 @@ export class ZombieBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     private readonly scene: THREE.Scene,
     cfg: OrthoConfig
   ) {
-    super();
+    super({
+      // Key by the source item object itself. GameScene rebuilds the zombie
+      // source array each frame from getChildren(), but the per-sprite `sprite`
+      // object reference is stable across frames for a given zombie, so it is a
+      // reliable key. (If ZombieSourceItem were re-created each frame, this
+      // would need to key on the zombie's stable numeric id instead.)
+      getKey: (item: unknown) => (item as ZombieSourceItem).sprite,
+    });
     this.cfg = cfg;
   }
 
@@ -68,16 +76,15 @@ export class ZombieBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     }
   }
 
-  protected syncMeshes(source: unknown[]): void {
-    const items = source as ZombieSourceItem[];
-    const live = this.liveMeshes;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
+  protected syncMeshes(_source: unknown[]): void {
+    const pairs = this.getSyncedPairs();
+    for (let i = 0; i < pairs.length; i++) {
+      const [rawItem, group] = pairs[i] as [ZombieSourceItem, THREE.Group];
+      const item = rawItem;
       const sprite = item.sprite;
       sprite.setVisible(false);
 
       const p = worldToThree(sprite.x, sprite.y, this.cam, this.cfg);
-      const group = live[i];
       group.position.x = p.x;
       group.position.z = p.z;
 
@@ -96,15 +103,4 @@ export class ZombieBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   override teardown(): void {
     super.teardown(this.scene);
   }
-}
-
-function disposeGroup(group: THREE.Group): void {
-  group.traverse(obj => {
-    if (obj instanceof THREE.Mesh) {
-      obj.geometry.dispose();
-      const mat = obj.material;
-      if (Array.isArray(mat)) mat.forEach(m => m.dispose());
-      else mat.dispose();
-    }
-  });
 }

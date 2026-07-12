@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import { SyncBridge, type BridgeUpdateArgs } from './SyncBridge';
 import { VehicleType } from '../../config/vehicles';
 import { worldToThree, type CameraView, type OrthoConfig } from '../projection';
@@ -9,6 +9,7 @@ import {
   animateSkateboardRider,
   animateRollerbladeRider,
 } from './AnimationRig';
+import { disposeGroup } from './disposeGroup';
 
 export interface PlayerSourceItem {
   vehicle: VehicleType;
@@ -37,7 +38,10 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     private readonly scene: THREE.Scene,
     cfg: OrthoConfig
   ) {
-    super();
+    super({
+      // Player is a single stable sprite; key by it.
+      getKey: (item: unknown) => (item as PlayerSourceItem).sprite,
+    });
     this.cfg = cfg;
   }
 
@@ -74,16 +78,15 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
     }
   }
 
-  protected syncMeshes(source: unknown[]): void {
-    const items = source as PlayerSourceItem[];
-    const live = this.liveMeshes;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
+  protected syncMeshes(_source: unknown[]): void {
+    const pairs = this.getSyncedPairs();
+    for (let i = 0; i < pairs.length; i++) {
+      const [rawItem, group] = pairs[i] as [PlayerSourceItem, THREE.Group];
+      const item = rawItem;
       const sprite = item.sprite;
       sprite.setVisible(false);
 
       const p = worldToThree(sprite.x, sprite.y, this.cam, this.cfg);
-      const group = live[i];
       group.position.x = p.x;
       group.position.z = p.z;
       group.position.y = 0;
@@ -110,15 +113,4 @@ export class PlayerBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   override teardown(): void {
     super.teardown(this.scene);
   }
-}
-
-function disposeGroup(group: THREE.Group): void {
-  group.traverse(obj => {
-    if (obj instanceof THREE.Mesh) {
-      obj.geometry.dispose();
-      const mat = obj.material;
-      if (Array.isArray(mat)) mat.forEach(m => m.dispose());
-      else mat.dispose();
-    }
-  });
 }

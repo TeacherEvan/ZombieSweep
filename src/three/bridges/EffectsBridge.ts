@@ -5,6 +5,7 @@ import { depthRenderOrder, depthZOffset } from '../depthBand';
 import { createProjectileMeshForVehicle } from './WeaponMeshFactory';
 import type { VehicleType } from '../../config/vehicles';
 import { ParticlePool, spawnGoreBurst, spawnAcidSplash } from './ParticleFactory';
+import { disposeObject3D, markShared } from './disposeObject3D';
 
 /** Hard cap on simultaneously-live gore particles (design P3.4). */
 export const PARTICLE_POOL_CAP = 200;
@@ -54,9 +55,11 @@ export interface EffectsBridgeUpdate extends BridgeUpdateArgs<THREE.Scene> {
 
 const PROJECTILE_HEIGHT = 4;
 
-// Shared particle geometry/material — pooled, never disposed per-particle.
-const PARTICLE_GEOM = new THREE.SphereGeometry(2, 6, 6);
-const PARTICLE_MAT = new THREE.MeshBasicMaterial({ color: 0xaa2222 });
+// Shared fallback projectile geometry/material — reused by every fallback mesh
+// instance (only when no vehicleType is set). Marked shared so per-mesh
+// disposal (disposeObject3D) never frees them.
+const PARTICLE_GEOM = markShared(new THREE.SphereGeometry(2, 6, 6));
+const PARTICLE_MAT = markShared(new THREE.MeshBasicMaterial({ color: 0xaa2222 }));
 
 /** Pure mapping: combo tier → point-light intensity, capped at 2. */
 export function comboLightIntensity(tier: number): number {
@@ -86,7 +89,12 @@ export class EffectsBridge extends SyncBridge<THREE.Object3D, THREE.Scene> {
   private comboLight: THREE.PointLight;
 
   constructor(scene: THREE.Scene, cfg: OrthoConfig, reducedMotion = false) {
-    super();
+    super({
+      // Projectiles are rebuilt each frame from the 2D sprite group; key by the
+      // projectile object reference. (A more robust key would be the sprite's
+      // stable id, but projectiles are short-lived and the count reconciles.)
+      getKey: (item: unknown) => item as ProjectileSourceItem,
+    });
     this.scene = scene;
     this.cfg = cfg;
     this.reducedMotion = reducedMotion;
@@ -165,23 +173,15 @@ export class EffectsBridge extends SyncBridge<THREE.Object3D, THREE.Scene> {
 
   protected onRemoveFromHost(mesh: THREE.Object3D, host: THREE.Scene): void {
     host.remove(mesh);
-    mesh.traverse(obj => {
-      if (obj instanceof THREE.Mesh) {
-        obj.geometry.dispose();
-        const mat = obj.material;
-        if (Array.isArray(mat)) mat.forEach(m => m.dispose());
-        else mat.dispose();
-      }
-    });
+    disposeObject3D(mesh);
   }
 
-  protected syncMeshes(source: unknown[]): void {
-    const items = source as ProjectileSourceItem[];
-    const live = this.liveMeshes;
-    for (let i = 0; i < items.length; i++) {
-      const p = items[i];
+  protected syncMeshes(_source: unknown[]): void {
+    const pairs = this.getSyncedPairs();
+    for (let i = 0; i < pairs.length; i++) {
+      const [rawItem, mesh] = pairs[i] as [ProjectileSourceItem, THREE.Object3D];
+      const p = rawItem;
       const pos = worldToThree(p.x, p.y, this.cam, this.cfg);
-      const mesh = live[i];
       mesh.position.set(pos.x, PROJECTILE_HEIGHT, pos.z + depthZOffset('projectile'));
       mesh.rotation.y = p.angle;
     }

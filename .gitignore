@@ -33,3 +33,9 @@ coverage/
 
 # Package manager
 .npm/
+
+# Code-review skill artifacts (advisory, not project source)
+audit_report.md
+review_findings.md
+fix_summary.md
+investigation_report.md

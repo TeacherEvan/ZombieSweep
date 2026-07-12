@@ -5,7 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
 import { FEATURE_FLAGS } from '../config/featureFlags';
-import { defaultOrthoConfig, type CameraView, type OrthoConfig } from './projection';
+import { defaultOrthoConfig, type OrthoConfig } from './projection';
 
 /**
  * Probe for WebGL support without constructing a renderer. Returns false in
@@ -246,12 +246,6 @@ export class Render3DManager {
     } else {
       this.renderer.render(this.scene, this.camera);
     }
-  }
-
-  /** The matched orthographic camera view, for bridges to reproject against. */
-  getCameraView(): CameraView {
-    // The 2D camera is the source of truth; bridges supply live scroll/zoom.
-    return { scrollX: 0, scrollY: 0, zoom: 1 };
   }
 
   /** Tear down and dispose everything. Safe to call when inactive. */

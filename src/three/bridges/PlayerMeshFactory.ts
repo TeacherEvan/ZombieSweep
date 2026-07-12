@@ -1,25 +1,48 @@
 import * as THREE from 'three';
 import { VehicleType } from '../../config/vehicles';
+import { markShared } from './disposeObject3D';
 
+// Shared module singletons — reused by every player mesh instance. Marked
+// shared so per-mesh disposal (disposeObject3D) never frees them.
 const MAT = {
-  bicycleFrame: new THREE.MeshStandardMaterial({
-    color: 0xd93838,
-    roughness: 0.35,
-    metalness: 0.7,
-  }),
-  chrome: new THREE.MeshStandardMaterial({ color: 0xd0d8e0, roughness: 0.1, metalness: 0.95 }),
-  rubber: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95, metalness: 0.0 }),
-  skateboardDeck: new THREE.MeshStandardMaterial({
-    color: 0x3b82f6,
-    roughness: 0.55,
-    metalness: 0.1,
-  }),
-  trucks: new THREE.MeshStandardMaterial({ color: 0xa0a0a0, roughness: 0.25, metalness: 0.85 }),
-  bladeBoot: new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.45, metalness: 0.3 }),
-  skin: new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.85, metalness: 0.0 }),
-  shirt: new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.8, metalness: 0.0 }),
-  helmet: new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4, metalness: 0.5 }),
-  jeans: new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.9, metalness: 0.0 }),
+  bicycleFrame: markShared(
+    new THREE.MeshStandardMaterial({
+      color: 0xd93838,
+      roughness: 0.35,
+      metalness: 0.7,
+    })
+  ),
+  chrome: markShared(
+    new THREE.MeshStandardMaterial({ color: 0xd0d8e0, roughness: 0.1, metalness: 0.95 })
+  ),
+  rubber: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95, metalness: 0.0 })
+  ),
+  skateboardDeck: markShared(
+    new THREE.MeshStandardMaterial({
+      color: 0x3b82f6,
+      roughness: 0.55,
+      metalness: 0.1,
+    })
+  ),
+  trucks: markShared(
+    new THREE.MeshStandardMaterial({ color: 0xa0a0a0, roughness: 0.25, metalness: 0.85 })
+  ),
+  bladeBoot: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.45, metalness: 0.3 })
+  ),
+  skin: markShared(
+    new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.85, metalness: 0.0 })
+  ),
+  shirt: markShared(
+    new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.8, metalness: 0.0 })
+  ),
+  helmet: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4, metalness: 0.5 })
+  ),
+  jeans: markShared(
+    new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.9, metalness: 0.0 })
+  ),
 };
 
 function addRider(group: THREE.Group, baseY: number): void {
