@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { markShared } from './disposeObject3D';
 
 interface Particle {
   mesh: THREE.Mesh;
@@ -8,12 +9,15 @@ interface Particle {
   ttl: number;
 }
 
-const GEOM_GORE = new THREE.SphereGeometry(1.2, 5, 5);
-const GEOM_ACID = new THREE.SphereGeometry(1.8, 6, 6);
-const GEOM_PAPER = new THREE.BoxGeometry(1.5, 0.3, 2.5);
-const MAT_GORE = new THREE.MeshBasicMaterial({ color: 0x8b0000 });
-const MAT_ACID = new THREE.MeshBasicMaterial({ color: 0xb8e820 });
-const MAT_PAPER = new THREE.MeshBasicMaterial({ color: 0xfaf3e0 });
+// Shared module singletons — reused by every pooled particle mesh. Marked
+// shared so any future disposeObject3D path skips them (consistent with the
+// other factories' shared MAT bags).
+const GEOM_GORE = markShared(new THREE.SphereGeometry(1.2, 5, 5));
+const GEOM_ACID = markShared(new THREE.SphereGeometry(1.8, 6, 6));
+const GEOM_PAPER = markShared(new THREE.BoxGeometry(1.5, 0.3, 2.5));
+const MAT_GORE = markShared(new THREE.MeshBasicMaterial({ color: 0x8b0000 }));
+const MAT_ACID = markShared(new THREE.MeshBasicMaterial({ color: 0xb8e820 }));
+const MAT_PAPER = markShared(new THREE.MeshBasicMaterial({ color: 0xfaf3e0 }));
 
 export class ParticlePool {
   readonly cap: number;

@@ -8,6 +8,11 @@ import { createHazardMeshForType } from './HazardMeshFactory';
 import { disposeGroup } from './disposeGroup';
 import type { HazardType } from '../../entities/Hazard';
 
+/** A keyed SyncBridge that also exposes its live (item, mesh) pairs. */
+interface HazardSyncBridge extends SyncBridge<THREE.Group, THREE.Scene> {
+  getHazardPairs(): Array<[unknown, THREE.Group]>;
+}
+
 /** A single house source item: the 2D House plus its live sprite transform. */
 export interface HouseSourceItem {
   house: { type: HouseType };
@@ -57,7 +62,10 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   private built = false;
   private cam: CameraView = { scrollX: 0, scrollY: 0, zoom: 1 };
   private readonly cfg: OrthoConfig;
-  private hazardMeshes: THREE.Group[] = [];
+  /** Keyed reconcile of hazard meshes, so a mid-list hazard removal cannot
+   *  re-bind a mesh to the wrong entity (the same keyed contract the other
+   *  bridges use). Keyed on the stable Phaser sprite object. */
+  private readonly hazardBridge: HazardSyncBridge;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -70,6 +78,26 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
       getKey: (item: unknown) => (item as HouseSourceItem).sprite,
     });
     this.cfg = cfg;
+    this.hazardBridge = new (class extends SyncBridge<THREE.Group, THREE.Scene> {
+      protected createMesh(item: unknown): THREE.Group {
+        return createHazardMeshForType((item as HazardSourceItem).hazardType);
+      }
+      protected onAddToHost(mesh: THREE.Group, host: THREE.Scene): void {
+        host.add(mesh);
+      }
+      protected onRemoveFromHost(mesh: THREE.Group, host: THREE.Scene): void {
+        host.remove(mesh);
+        disposeGroup(mesh);
+      }
+      protected syncMeshes(): void {
+        /* hazards are positioned by the outer bridge's syncHazards */
+      }
+      /** Public view of the keyed (mesh, item) pairs for the outer bridge. */
+      getHazardPairs(): Array<[unknown, THREE.Group]> {
+        return this.getSyncedPairs();
+      }
+    })();
+    this.hazardBridge.setEnabled(true);
   }
 
   /** Inject lighting rig + fog + ground plane into the scene. Idempotent. */
@@ -166,35 +194,23 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
 
     if (!this.isEnabled()) {
       hazards.forEach(h => h.sprite.setVisible(true));
-      while (this.hazardMeshes.length > 0) {
-        const hGroup = this.hazardMeshes.pop()!;
-        this.scene.remove(hGroup);
-        disposeGroup(hGroup);
-      }
+      this.hazardBridge.teardown(this.scene);
       return;
     }
 
-    // Reconcile hazards
-    while (this.hazardMeshes.length < hazards.length) {
-      const hItem = hazards[this.hazardMeshes.length];
-      const hGroup = createHazardMeshForType(hItem.hazardType);
-      hGroup.renderOrder = depthRenderOrder('house');
-      this.hazardMeshes.push(hGroup);
-      this.scene.add(hGroup);
-    }
-    while (this.hazardMeshes.length > hazards.length) {
-      const hGroup = this.hazardMeshes.pop()!;
-      this.scene.remove(hGroup);
-      disposeGroup(hGroup);
-    }
+    // Keyed reconcile of hazard meshes (stable sprite key). Mid-list removal
+    // no longer re-binds a mesh to the wrong entity.
+    this.hazardBridge.update({ source: hazards, host: this.scene });
 
-    // Sync hazards
-    for (let i = 0; i < hazards.length; i++) {
-      const hItem = hazards[i];
+    // Sync hazards (position each live hazard mesh from its source item).
+    const pairs = this.hazardBridge.getHazardPairs();
+    for (let i = 0; i < pairs.length; i++) {
+      const [rawItem, hGroup] = pairs[i] as [HazardSourceItem, THREE.Group];
+      const hItem = rawItem;
       hItem.sprite.setVisible(false);
       const pos = worldToThree(hItem.sprite.x, hItem.sprite.y, this.cam, this.cfg);
-      const hGroup = this.hazardMeshes[i];
       hGroup.position.set(pos.x, 0, pos.z);
+      hGroup.renderOrder = depthRenderOrder('house');
     }
 
     // Dynamic flickering of window materials
@@ -268,11 +284,7 @@ export class EnvironmentBridge extends SyncBridge<THREE.Group, THREE.Scene> {
   /** Tear down: clear houses, remove ground + fog. Safe to call when inactive. */
   override teardown(): void {
     super.teardown(this.scene);
-    while (this.hazardMeshes.length > 0) {
-      const hGroup = this.hazardMeshes.pop()!;
-      this.scene.remove(hGroup);
-      disposeGroup(hGroup);
-    }
+    this.hazardBridge.teardown(this.scene);
     if (this.ground) {
       this.scene.remove(this.ground);
       this.ground.geometry.dispose();

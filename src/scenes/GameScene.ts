@@ -669,16 +669,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.playerBridge && this.player) {
+      // Pass the stable player sprite itself as `sprite` (not a fresh wrapper),
+      // so the bridge's key is stable across frames and the 3D mesh persists.
       const playerItem: PlayerSourceItem = {
         vehicle: this.gameState.vehicle,
-        sprite: {
-          x: this.player.x,
-          y: this.player.y,
-          rotation: this.player.rotation,
-          scaleX: this.player.scaleX,
-          visible: this.player.visible,
-          setVisible: (v: boolean) => this.player.setVisible(v),
-        },
+        sprite: this.player,
       };
       this.playerBridge.update({
         source: [playerItem],
@@ -698,16 +693,13 @@ export class GameScene extends Phaser.Scene {
         const sprite = obj as Phaser.Physics.Arcade.Sprite;
         const z = sprite.getData('zombie') as Zombie;
         const renderState = sprite.getData('zombieRenderState') as ZombieRenderState;
+        // Pass the STABLE Phaser sprite itself as `sprite` (not a fresh wrapper
+        // literal). The bridge keys on this object; a per-frame wrapper would
+        // give a new key every tick and force a full mesh teardown/rebuild.
         return {
           type: z.type,
           elite: !!renderState?.elite,
-          sprite: {
-            x: sprite.x,
-            y: sprite.y,
-            rotation: sprite.rotation,
-            visible: sprite.visible,
-            setVisible: (v: boolean) => sprite.setVisible(v),
-          },
+          sprite,
         };
       });
       this.zombieBridge.update({
@@ -722,15 +714,10 @@ export class GameScene extends Phaser.Scene {
       const citizens = this.citizenSprites.getChildren().map(obj => {
         const sprite = obj as Phaser.Physics.Arcade.Sprite;
         const c = sprite.getData('citizen') as Citizen;
+        // Stable Phaser sprite as the key (see zombie bridge note above).
         return {
           type: c.type,
-          sprite: {
-            x: sprite.x,
-            y: sprite.y,
-            rotation: sprite.rotation,
-            visible: sprite.visible,
-            setVisible: (v: boolean) => sprite.setVisible(v),
-          },
+          sprite,
         };
       });
       this.citizenBridge.update({

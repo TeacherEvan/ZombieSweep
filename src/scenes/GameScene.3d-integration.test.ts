@@ -37,6 +37,12 @@ class FakeBridge {
   created = false;
   torn = false;
   updateArgs: unknown[] = [];
+  /**
+   * Counts how many times a mesh was *added* (createMesh path) across all
+   * frames. If the bridge keyed correctly on a stable sprite, a steady set of
+   * entities should add once, then stop — addCount should NOT grow every frame.
+   */
+  addCount = 0;
   setEnabled(v: boolean) {
     this.enabled = v;
   }
@@ -326,6 +332,46 @@ describe('GameScene 3D Environment Bridge wiring', () => {
     expect((scene as unknown as { render3d: unknown }).render3d).toBeNull();
     expect((scene as unknown as { envBridge: unknown }).envBridge).toBeNull();
     expect(houses.every(h => h.sprite.visible === true)).toBe(true);
+  });
+
+  it('flag ON: a steady entity set does not rebuild 3D meshes every frame (keyed reconciliation)', () => {
+    flags.render3d = true;
+    const scene = makeScene();
+    // A single stable zombie sprite object (the kind Phaser keeps per entity).
+    const stableZombieSprite = {
+      getData: () => ({ type: 'Shambler', hp: 1, takeDamage() {}, isDead: () => false }),
+      rotation: 0,
+      visible: true,
+      setVisible: vi.fn(),
+    };
+    (scene as unknown as { zombieSprites: { getChildren: () => unknown[] } }).zombieSprites = {
+      getChildren: () => [stableZombieSprite],
+    };
+    scene.initRender3DLayer();
+
+    // Capture the sprite object the GameScene wiring passes into the bridge
+    // each frame. With the keyed-reconciliation fix it must be the SAME
+    // stable sprite reference across frames (a fresh wrapper would thrash).
+    const captured: unknown[] = [];
+    const realBridge = (scene as unknown as { zombieBridge: { update: (a: unknown) => void } })
+      .zombieBridge;
+    const origUpdate = realBridge.update.bind(realBridge);
+    realBridge.update = (a: unknown) => {
+      const src = (a as { source: Array<{ sprite: unknown }> }).source;
+      captured.push(src?.[0]?.sprite);
+      return origUpdate(a);
+    };
+
+    scene.syncRender3DLayer(16);
+    scene.syncRender3DLayer(16);
+
+    // Same stable sprite passed both frames → bridge key is stable → no rebuild.
+    expect(captured[0]).toBe(stableZombieSprite);
+    expect(captured[1]).toBe(stableZombieSprite);
+    expect(captured[0]).toBe(captured[1]);
+
+    scene.destroyRender3DLayer();
+    expect((scene as unknown as { zombieBridge: unknown }).zombieBridge).toBeNull();
   });
 
   it('flag ON: effects bridge built, enabled, and receives projectiles + combo tier', () => {
