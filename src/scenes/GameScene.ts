@@ -135,6 +135,7 @@ export class GameScene extends Phaser.Scene {
   private worldY = 0;
   private deliveries: boolean[] = [];
   private transitioning = false;
+  private invulnerable = false;
   private zombieKillCount = 0;
   private lastTickerKillCount = 0;
 
@@ -1099,7 +1100,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onHazardHit(): void {
+    if (this.invulnerable) return;
     const stability = VEHICLE_STATS[this.gameState.vehicle].stability;
+    this.startInvulnerability(stability);
     this.gameState.loseLife();
     screenShake(this, 0.009 + (3 - stability) * 0.003, 200);
     damageFlash(this, 180);
@@ -1111,12 +1114,6 @@ export class GameScene extends Phaser.Scene {
       } else {
         fadeToScene(this, 'GameOverScene');
       }
-    } else {
-      // Brief invincibility flash
-      this.player.setAlpha(0.5);
-      this.time.delayedCall(900 + (3 - stability) * 250, () => {
-        this.player.setAlpha(1);
-      });
     }
   }
 
@@ -1124,11 +1121,13 @@ export class GameScene extends Phaser.Scene {
     _player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
     zombieObj: Phaser.Types.Physics.Arcade.GameObjectWithBody
   ): void {
+    if (this.invulnerable) return;
     const stability = VEHICLE_STATS[this.gameState.vehicle].stability;
     const sprite = zombieObj as Phaser.Physics.Arcade.Sprite;
     const zombie = sprite.getData('zombie') as Zombie;
     if (!zombie || zombie.isDead()) return;
 
+    this.startInvulnerability(stability);
     this.gameState.loseLife();
     screenShake(this, 0.011 + (3 - stability) * 0.003, 250);
     damageFlash(this, 200);
@@ -1143,6 +1142,22 @@ export class GameScene extends Phaser.Scene {
         fadeToScene(this, 'GameOverScene');
       }
     }
+  }
+
+  /**
+   * Grants a brief post-hit invulnerability window so a single zombie/hazard
+   * contact cannot drain all lives in consecutive overlap frames. The window
+   * scales with vehicle stability (flimsier rides stay vulnerable longer).
+   */
+  private startInvulnerability(stability: number): void {
+    this.invulnerable = true;
+    this.player.setAlpha(0.5);
+    this.time.delayedCall(900 + (3 - stability) * 250, () => {
+      this.invulnerable = false;
+      if (this.player && this.player.active) {
+        this.player.setAlpha(1);
+      }
+    });
   }
 
   private onNewspaperHitZombie(
