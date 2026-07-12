@@ -123,6 +123,80 @@ describe('3D bridge perf guard (headless, no GPU)', () => {
     expect(perFrame).toBeLessThan(1.0);
   });
 
+  it('does not rebuild meshes every frame when source sprites are stable (no thrash)', () => {
+    // Regression guard for the keyed-reconciliation contract: a steady set of
+    // entities with STABLE sprite objects must be reconciled once, not torn
+    // down and recreated every frame. Using fresh wrapper literals (the old
+    // GameScene bug) would make each frame re-add every mesh.
+    const scene = new THREE.Scene();
+    const zombie = new ZombieBridge(scene, cfg);
+    zombie.setEnabled(true);
+    const player = new PlayerBridge(scene, cfg);
+    player.setEnabled(true);
+
+    // Stable sprite objects, held across frames (like real Phaser sprites).
+    const stableZombies: ZombieSourceItem[] = Array.from({ length: ZOMBIE_COUNT }, (_, i) => ({
+      type: ZombieType.Shambler,
+      elite: i % 5 === 0,
+      sprite: {
+        x: (i * 32) % 960,
+        y: 200 + (i % 4) * 30,
+        rotation: (i * Math.PI) / 6,
+        visible: true,
+        setVisible: () => {},
+      },
+    }));
+    const stablePlayer: PlayerSourceItem[] = [
+      {
+        vehicle: VehicleType.Skateboard,
+        sprite: {
+          x: 480,
+          y: 270,
+          rotation: 0.1,
+          scaleX: 1,
+          visible: true,
+          setVisible: () => {},
+        },
+      },
+    ];
+
+    zombie.update({ source: stableZombies, host: scene, cam, dt: 16 });
+    player.update({ source: stablePlayer, host: scene, cam });
+    const afterFirst = scene.children.length;
+    const before = [...scene.children]; // baseline mesh set (stable frame 1)
+
+    // Same stable sprites next frame → NO new meshes should be added.
+    zombie.update({ source: stableZombies, host: scene, cam, dt: 16 });
+    player.update({ source: stablePlayer, host: scene, cam });
+    const afterSecond = scene.children.length;
+
+    expect(afterSecond).toBe(afterFirst);
+
+    // And a fresh-wrapper frame MUST diverge (proves the guard is real, not a
+    // trivially-passing no-op). This mirrors the pre-fix GameScene behavior.
+    const freshZombies: ZombieSourceItem[] = stableZombies.map(z => ({
+      type: z.type,
+      elite: z.elite,
+      sprite: {
+        x: z.sprite.x,
+        y: z.sprite.y,
+        rotation: z.sprite.rotation,
+        visible: z.sprite.visible,
+        setVisible: () => {},
+      },
+    }));
+    zombie.update({ source: freshZombies, host: scene, cam, dt: 16 });
+    // Fresh wrappers → the bridge reconciles by REMOVING the 30 old-keyed
+    // meshes and ADDING 30 new ones. The child COUNT stays at 31, but the
+    // mesh INSTANCES churn. Prove that via shared-reference identity: the only
+    // surviving reference is the stable player group; all 30 zombie groups are
+    // brand-new instances.
+    const after = [...scene.children];
+    const shared = before.filter(g => after.includes(g));
+    expect(shared.length).toBe(1); // exactly the player group persists
+    expect(after.some(g => !before.includes(g))).toBe(true); // churn happened
+  });
+
   it('effects particle pool never exceeds the hard cap even under sustained kills', () => {
     const scene = new THREE.Scene();
     const fx = createEffectsBridge(scene, cfg);

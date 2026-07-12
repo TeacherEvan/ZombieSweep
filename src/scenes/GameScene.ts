@@ -622,14 +622,11 @@ export class GameScene extends Phaser.Scene {
     const hazards = this.hazardSprites.getChildren().map(obj => {
       const sprite = obj as Phaser.Physics.Arcade.Sprite;
       const h = sprite.getData('hazard');
+      // Pass the STABLE Phaser sprite as `sprite` (not a fresh wrapper literal)
+      // so the hazard bridge keys on it across frames and reuses the mesh.
       return {
         hazardType: h.type,
-        sprite: {
-          x: sprite.x,
-          y: sprite.y,
-          visible: sprite.visible,
-          setVisible: (v: boolean) => sprite.setVisible(v),
-        },
+        sprite,
       };
     });
     const source: EnvironmentBridgeSource[] = [
