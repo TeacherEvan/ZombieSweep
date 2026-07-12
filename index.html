@@ -11,6 +11,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' wss:; base-uri 'self'; form-action 'none';" />
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23cc1100'/><text x='16' y='22' font-size='16' font-weight='bold' text-anchor='middle' fill='white' font-family='sans-serif'>Z</text></svg>" />
+    <link rel="manifest" href="manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload"
@@ -751,6 +752,9 @@
 </head>
 
 <body>
+    <!-- Accessibility Announcer -->
+    <div id="game-announcer" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
     <!-- ═══ Loading Overlay ═══ -->
     <div id="loading-overlay" role="status" aria-live="polite">
         <div class="load-station">
