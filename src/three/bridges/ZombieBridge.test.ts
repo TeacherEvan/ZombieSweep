@@ -71,8 +71,8 @@ describe('ZombieBridge', () => {
     expect(group.position.y).toBeGreaterThan(0);
     expect(group.rotation.y).toBeCloseTo(-Math.PI / 6);
 
-    // Elite scale is 1.25
-    expect(group.scale.x).toBeCloseTo(1.25);
+    // Elite scale is 1.2 (bulkier silhouette)
+    expect(group.scale.x).toBeCloseTo(1.2);
   });
 
   it('re-shows 2D zombie sprite and removes meshes when disabled', () => {
