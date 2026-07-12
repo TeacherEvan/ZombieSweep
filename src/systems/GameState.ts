@@ -27,6 +27,7 @@ export class GameState {
   subscribers: number;
   difficulty: Difficulty;
   vehicle: VehicleType;
+  accuracyHistory: number[];
 
   constructor() {
     this.day = 1;
@@ -35,6 +36,7 @@ export class GameState {
     this.subscribers = GAME.STARTING_SUBSCRIBERS;
     this.difficulty = Difficulty.EasyStreet;
     this.vehicle = VehicleType.Bicycle;
+    this.accuracyHistory = [];
   }
 
   configure(difficulty: Difficulty, vehicle: VehicleType): void {
@@ -89,5 +91,53 @@ export class GameState {
     this.subscribers = GAME.STARTING_SUBSCRIBERS;
     this.difficulty = Difficulty.EasyStreet;
     this.vehicle = VehicleType.Bicycle;
+    this.accuracyHistory = [];
+  }
+
+  saveToLocalStorage(): void {
+    if (typeof window === 'undefined') return;
+    const saveState = {
+      day: this.day,
+      lives: this.lives,
+      score: this.score,
+      subscribers: this.subscribers,
+      difficulty: this.difficulty,
+      vehicle: this.vehicle,
+      accuracyHistory: this.accuracyHistory,
+    };
+    window.localStorage.setItem('zombiesweep_savestate', JSON.stringify(saveState));
+  }
+
+  loadFromLocalStorage(): boolean {
+    if (typeof window === 'undefined') return false;
+    const raw = window.localStorage.getItem('zombiesweep_savestate');
+    if (!raw) return false;
+    try {
+      const parsed = JSON.parse(raw);
+      this.day = parsed.day ?? 1;
+      this.lives = parsed.lives ?? GAME.STARTING_LIVES;
+      this.score = parsed.score ?? 0;
+      this.subscribers = parsed.subscribers ?? GAME.STARTING_SUBSCRIBERS;
+      this.difficulty = parsed.difficulty ?? this.difficulty;
+      this.vehicle = parsed.vehicle ?? this.vehicle;
+      this.accuracyHistory = parsed.accuracyHistory ?? [];
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  clearLocalStorage(): void {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem('zombiesweep_savestate');
+  }
+
+  getAdaptiveMultiplier(): number {
+    if (this.accuracyHistory.length === 0) return 1.0;
+    const sum = this.accuracyHistory.reduce((a, b) => a + b, 0);
+    const avg = sum / this.accuracyHistory.length;
+    if (avg > 0.9) return 1.15; // 15% harder
+    if (avg < 0.7) return 0.85; // 15% easier
+    return 1.0;
   }
 }

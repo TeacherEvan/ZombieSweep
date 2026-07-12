@@ -308,6 +308,7 @@ export class DifficultySelectScene extends Phaser.Scene {
     const gameState = getOrCreateGameState(this.registry);
     gameState.reset();
     gameState.configure(difficulty, this.vehicle);
+    gameState.saveToLocalStorage();
     this.registry.set('gameState', gameState);
 
     // "ADVISORY CONFIRMED" flash

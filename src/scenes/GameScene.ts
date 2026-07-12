@@ -1399,7 +1399,8 @@ export class GameScene extends Phaser.Scene {
       this.gameState.day,
       this.gameState.difficulty,
       this.deliveredCount,
-      this.zombieKillCount
+      this.zombieKillCount,
+      this.gameState.getAdaptiveMultiplier()
     );
   }
 
