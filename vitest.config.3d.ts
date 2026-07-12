@@ -29,5 +29,10 @@ export default defineConfig({
     alias: {
       phaser3spectorjs: phaser3spectorStub,
     },
+    server: {
+      deps: {
+        inline: ["phaser"],
+      },
+    },
   },
 });

@@ -27,8 +27,10 @@ export default defineConfig({
     // Vite's transform pipeline, which bypasses the esbuild dep optimizer that
     // bakes the `phaser3spectorjs` alias into the pre-bundled dist. Inline
     // Phaser so the alias is applied at transform time in every environment.
-    deps: {
-      inline: ["phaser"],
+    server: {
+      deps: {
+        inline: ["phaser"],
+      },
     },
   },
 });

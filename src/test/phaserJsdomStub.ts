@@ -3,6 +3,9 @@
 // Phaser module so the prototype is patched at eval time.
 const noop = () => undefined;
 
+// @ts-expect-error - Spector is a global inject for Phaser WebGLRenderer
+globalThis.Spector = {};
+
 HTMLCanvasElement.prototype.getContext = function getContext() {
   return {
     fillStyle: '#000',

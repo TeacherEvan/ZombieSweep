@@ -31,6 +31,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "jsdom": "^29.0.1",
+    "phaser3spectorjs": "^0.0.8",
     "prettier": "^3.8.4",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.61.0",
