@@ -240,16 +240,21 @@ export class GameScene extends Phaser.Scene {
     this.player.meleeWeapon = createMeleeWeapon(meleeConfig);
     this.player.rangedWeapon = createRangedWeapon(rangedConfig);
 
-    // Road background — dark asphalt with texture
-    if (FEATURE_FLAGS.render3d) {
+    // Road background — dark asphalt with texture.
+    // Initialize the optional 3D layer FIRST so we know whether it is actually
+    // active; only skip the 2D backdrop when the 3D world is genuinely
+    // rendering. If WebGL is unavailable the 3D layer degrades to null and we
+    // keep the 2D road so the playfield is never a black void (design P4.3).
+    this.initRender3DLayer();
+    if (this.render3d?.isActive()) {
       this.cameras.main.setBackgroundColor('rgba(0,0,0,0)');
     } else {
       this.cameras.main.setBackgroundColor('#2a2a2a');
     }
     fadeIn(this);
 
-    // Road surface detail — skipped if 3D layer is active
-    if (!FEATURE_FLAGS.render3d) {
+    // Road surface detail — skipped only when the 3D layer is active.
+    if (!this.render3d?.isActive()) {
       const roadGfx = this.add.graphics();
       roadGfx.setDepth(-10);
       // Center road area
@@ -297,9 +302,6 @@ export class GameScene extends Phaser.Scene {
     // Place houses on both sides of street
     this.spawnHouses();
     this.spawnCitizens();
-
-    // Optional 3D environment layer (flag-gated; zero 2D effect when off).
-    this.initRender3DLayer();
 
     // Place hazards
     this.spawnHazards();

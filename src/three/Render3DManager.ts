@@ -173,6 +173,9 @@ export class Render3DManager {
     }
 
     this.scene = new THREE.Scene();
+    // Non-black backdrop so the 3D view never reads as a pure-black void even
+    // before/if the ground plane draws (matches the 2D asphalt tone).
+    this.scene.background = new THREE.Color(0x2a2a2a);
     const aspect = this.cfg.viewWidth / this.cfg.viewHeight;
     const halfH = (this.cfg.viewHeight / 2) * this.cfg.unitsPerPixel;
     const halfW = halfH * aspect;
