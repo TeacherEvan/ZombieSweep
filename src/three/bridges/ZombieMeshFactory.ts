@@ -3,6 +3,8 @@ import { ZombieType } from '../../entities/Zombie';
 
 const BONE_WHITE = 0xede0c8;
 const GORE_RED = 0x8b0000;
+const EYE_DARK = 0x1a0000;
+const TEETH_WHITE = 0xd8d8c0;
 
 function mat(color: number, roughness = 0.8): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color, roughness, metalness: 0.05 });
@@ -38,6 +40,24 @@ function addCore(group: THREE.Group, bodyColor: number, torsoH: number, headR: n
   jaw.name = 'jaw';
   jaw.position.set(0, torsoH + headR * 0.5, headR * 0.6);
   group.add(jaw);
+
+  // Sunken eyes — dark recessed spheres on the face
+  const eyeGeom = new THREE.SphereGeometry(headR * 0.32, 8, 6);
+  [-headR * 0.45, headR * 0.45].forEach((x, i) => {
+    const eye = new THREE.Mesh(eyeGeom, mat(EYE_DARK, 0.95));
+    eye.name = i === 0 ? 'eyeL' : 'eyeR';
+    eye.position.set(x, torsoH + headR * 1.05, headR * 0.85);
+    group.add(eye);
+  });
+
+  // Teeth — a thin off-white strip in the jaw
+  const teeth = new THREE.Mesh(
+    new THREE.BoxGeometry(headR * 1.2, headR * 0.28, headR * 0.5),
+    mat(TEETH_WHITE, 0.6)
+  );
+  teeth.name = 'teeth';
+  teeth.position.set(0, torsoH + headR * 0.35, headR * 0.95);
+  group.add(teeth);
 
   // Arms
   const armGeom = new THREE.BoxGeometry(2, 2.5, 10);

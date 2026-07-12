@@ -35,3 +35,17 @@ describe('ZombieMeshFactory', () => {
     expect(createZombieMeshForType(ZombieType.Spitter, false)).toBeInstanceOf(THREE.Group);
   });
 });
+
+describe('zombie gore details', () => {
+  it('shambler has sunken eyes (eyeL, eyeR)', () => {
+    const g = createShamblerMesh(false);
+    expect(g.children.find(c => c.name === 'eyeL')).toBeDefined();
+    expect(g.children.find(c => c.name === 'eyeR')).toBeDefined();
+  });
+  it('shambler has teeth', () => {
+    expect(createShamblerMesh(false).children.find(c => c.name === 'teeth')).toBeDefined();
+  });
+  it('non-elite still has no visor (regression guard)', () => {
+    expect(createShamblerMesh(false).children.find(c => c.name === 'visor')).toBeUndefined();
+  });
+});
