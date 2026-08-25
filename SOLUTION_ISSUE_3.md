@@ -25,8 +25,8 @@ class ZombieSweepGame {
     this.gameOver = false;
     // Ensure correct CSS grid template columns/rows for layout fix
     this.container.style.display = 'grid';
-    this.container.style.gridTemplateColumns = `repeat(${this.cols}, 40px)`;
-    this.container.style.gridTemplateRows = `repeat(${this.rows}, 40px)`;
+    this.container.style.gridTemplateColumns = `repeat(${this.cols}, minmax(0, 1fr))`;
+    this.container.style.gridTemplateRows = `repeat(${this.rows}, minmax(0, 1fr))`;
     this.container.innerHTML = '';
 
     for (let r = 0; r < this.rows; r++) {
