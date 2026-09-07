@@ -1,6 +1,7 @@
 # ZombieSweep — 3D-as-Default Visual Overhaul — Implementation Plan
 
-**Design:** `2026-07-08-3d-default-visual-overhaul-design.md`
+**Design:** `docs/plans/.archive/2026-07-08-3d-default-visual-overhaul-design.md` (archived; design shipped)
+**Status (2026-09-07 verify):** Mostly shipped; T1 ("Flip 3D default ON") intentionally KEPT OFF — see featureFlags.ts comment. The black-canvas WebGL mount bug is real; flipping default is BLOCKED until that is fixed. T2..T10 done in code. See docs/.scratch-audit/verify-implementation-2026-09-07.txt.
 **Mode:** Direct for wiring (T1–T4, T7–T10) + parallel subagents for mesh bridges (T5, T6).
 **Rule:** TDD — failing test first, then implement, commit green after each task.
 

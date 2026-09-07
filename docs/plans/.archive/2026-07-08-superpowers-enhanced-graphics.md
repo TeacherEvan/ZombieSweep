@@ -1,5 +1,8 @@
 # Enhanced Graphics & Visual Display Implementation Plan
 
+> **Status:** ✅ Archived — Implemented & Verified (2026-09-07 verify). Code on main matches the plan; original plan was never ticked post-merge, so this banner corrects the stale status. See docs/.scratch-audit/verify-implementation-2026-09-07.txt.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Dramatically upgrade the visual fidelity of all in-game entities — characters (player, zombies, citizens), vehicles, weapons, effects, hazards, and houses — using richly-detailed Three.js 3D procedural models, high-quality particle systems, PBR materials, and per-entity animated limb rigs, while adding a one-command local install script for live hot-reload testing.

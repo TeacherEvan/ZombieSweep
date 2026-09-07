@@ -1,5 +1,8 @@
 # Character Visual Enhancement — Implementation Plan
 
+> **Status:** ✅ Archived — Implemented & Verified (2026-09-07 verify). Code on main matches the plan; original plan was never ticked post-merge, so this banner corrects the stale status. See docs/.scratch-audit/verify-implementation-2026-09-07.txt.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement task-by-task. Each task = write failing test → watch fail → implement → watch pass → commit.
 
 **Design doc:** `docs/plans/2026-07-13-character-visual-enhancement-design.md`

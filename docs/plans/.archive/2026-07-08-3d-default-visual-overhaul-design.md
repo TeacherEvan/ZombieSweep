@@ -1,5 +1,8 @@
 # ZombieSweep — 3D-as-Default Visual Overhaul (Design)
 
+> **Status:** ✅ Archived — Implemented & Verified (2026-09-07 verify). Code on main matches the plan; original plan was never ticked post-merge, so this banner corrects the stale status. See docs/.scratch-audit/verify-implementation-2026-09-07.txt.
+
+
 **Date:** 2026-07-08
 **Status:** 📝 Draft — Awaiting approval
 **Author:** Evan + Hermes (superpowers workflow)
