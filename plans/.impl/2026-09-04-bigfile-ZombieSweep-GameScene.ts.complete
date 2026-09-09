@@ -1,0 +1,12 @@
+{
+  "plan": "2026-09-04-bigfile-ZombieSweep-GameScene.ts.md",
+  "verdict": "READY-WITH-WARNINGS",
+  "started_at": "2026-09-09T22:20:58.707704+07:00",
+  "duration_s": 10.3,
+  "result": {
+    "returncode": 0,
+    "stdout_tail": "API call failed after 3 retries: HTTP 404: This model is unavailable for free. The paid version is available now - use this slug instead: minimax/minimax-m3",
+    "stderr_tail": "\u26a0 A previous `hermes update` pulled new code but did not restart running gateways.\n  Gateways may still be serving pre-update modules (mixed sys.modules).\n  Run `hermes update` or `hermes gateway restart`.\nhermes -z: ignoring unknown --toolsets entries: git"
+  },
+  "completed_at": "2026-09-09T22:21:08.960295+07:00"
+}
