@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { FEATURE_FLAGS, isFeatureEnabled } from './featureFlags';
 
-// The render3d flag defaults OFF (2D backdrop is the reliable renderer; the 3D
-// layer is re-enabled via VITE_RENDER3D=true). It is read from VITE_RENDER3D at
-// import time; undefined / 'false' (or any falsy) => OFF, 'true' => ON. Assert
-// the ACTUAL resolved value rather than a hard-coded boolean so the suite stays
-// green under both modes (design P5.1/P5.3).
-const render3dExpected = (import.meta.env.VITE_RENDER3D ?? 'false') === 'true';
+// The render3d flag defaults ON (3D layer is the primary renderer). It is read
+// from VITE_RENDER3D at import time; undefined => ON, 'false' => OFF, 'true' => ON.
+// Assert the ACTUAL resolved value rather than a hard-coded boolean so the suite
+// stays green under both modes (design P5.1/P5.3).
+const render3dExpected = (import.meta.env.VITE_RENDER3D ?? 'true') === 'true';
 
 describe('FEATURE_FLAGS', () => {
   it('render3d matches the injected env (off by default, on under test:3d)', () => {

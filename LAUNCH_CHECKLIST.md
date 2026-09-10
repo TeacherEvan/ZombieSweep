@@ -56,7 +56,7 @@
 | `onlineCoop` | OFF | Enable CO-OP multiplayer |
 | `onlineVersus` | OFF | Enable VERSUS multiplayer |
 | `debugMetrics` | DEV only | Exposes `__ZOMBIESWEEP_OBSERVABILITY__` in console |
-| `render3d` | ON | Default-on visual overhaul (rollback via `VITE_RENDER3D=false`). Bridges the environment layer (procedural 3D houses, ground lane dashes, rim/hemi light rig), effects layer (3D projectile meshes, death-burst particle pool, combo point-light pulse, capped at 200), player vehicles (3D bike, rollerblades, skateboard models), and zombie meshes (Shambler/Runner/Spitter models with vertical bobbing animations). 2D engine remains the underlying source of truth. See `docs/plans/2026-07-08-3d-default-visual-overhaul-design.md`. |
+| `render3d` | ON | Default-on visual overhaul (rollback via `VITE_RENDER3D=false`). Black-canvas mount bug fixed (transparent Phaser canvas + mount wiring). Bridges the environment layer (procedural 3D houses, ground lane dashes, rim/hemi light rig), effects layer (3D projectile meshes, death-burst particle pool, combo point-light pulse, capped at 200), player vehicles (3D bike, rollerblades, skateboard models), and zombie meshes (Shambler/Runner/Spitter models with vertical bobbing animations). 2D engine remains the underlying source of truth. See `docs/plans/2026-07-08-3d-default-visual-overhaul-design.md`. |
 
 ---
 

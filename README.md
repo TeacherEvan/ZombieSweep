@@ -125,7 +125,7 @@ Hot-path optimizations in `GameScene` are documented in [docs/plans/.archive/202
 
 ## 3D Scene-Replacement (Default-ON Visual Overhaul)
 
-> **Status:** Fully implemented, verified, default-on. Rollback/disable via `VITE_RENDER3D=false` or if WebGL is unavailable. See [docs/plans/2026-07-08-3d-default-visual-overhaul-design.md](docs/plans/2026-07-08-3d-default-visual-overhaul-design.md).
+> **Status:** Fully implemented, verified, default-on. The 3D layer renders through the (now transparent) Phaser canvas; the black-canvas mount bug is fixed. Rollback/disable via `VITE_RENDER3D=false` or if WebGL is unavailable. See [docs/plans/2026-07-08-3d-default-visual-overhaul-design.md](docs/plans/2026-07-08-3d-default-visual-overhaul-design.md).
 
 A parallel Three.js renderer replaces selected 2D sprite groups (environment houses/ground, players, zombies, combat effects) in-place. The 2D `GameScene` remains the canonical source of truth for gameplay; the 3D layer is a per-frame projection of 2D state, default-on for an immersive visual experience.
 

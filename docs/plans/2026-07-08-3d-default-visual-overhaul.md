@@ -1,7 +1,7 @@
 # ZombieSweep — 3D-as-Default Visual Overhaul — Implementation Plan
 
 **Design:** `docs/plans/.archive/2026-07-08-3d-default-visual-overhaul-design.md` (archived; design shipped)
-**Status (2026-09-07 verify):** Mostly shipped; T1 ("Flip 3D default ON") intentionally KEPT OFF — see featureFlags.ts comment. The black-canvas WebGL mount bug is real; flipping default is BLOCKED until that is fixed. T2..T10 done in code. See docs/.scratch-audit/verify-implementation-2026-09-07.txt.
+**Status (2026-09-10 verify):** ALL SHIPPED. T1 flipped ON and T3's `main.ts` edit (which was never applied — the root cause of the black-canvas bug) is now in place: `src/main.ts` has `transparent: true` and no opaque `backgroundColor`, so the opaque black Phaser canvas no longer paints over the WebGL world mounted behind it (z-index 0 vs 1). T2..T10 were already done in code. Gates: `npm test` 535/535, `npm run test:3d` green, `npm run lint` 0, `npm run build` OK. See `docs/.scratch-audit/review-2026-09-10.txt`.
 **Mode:** Direct for wiring (T1–T4, T7–T10) + parallel subagents for mesh bridges (T5, T6).
 **Rule:** TDD — failing test first, then implement, commit green after each task.
 

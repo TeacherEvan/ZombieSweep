@@ -1,12 +1,12 @@
 export const FEATURE_FLAGS = {
   onlineCoop: import.meta.env.VITE_ONLINE_COOP === 'true',
   onlineVersus: import.meta.env.VITE_ONLINE_VERSUS === 'true',
-  // Default OFF: the 2D broadcast backdrop is the proven, reliable renderer.
-  // The 3D layer (primary-renderer intent) currently fails to paint in some
-  // deployments (blank WebGL canvas behind a transparent Phaser canvas ->
-  // black playfield). Re-enable explicitly with VITE_RENDER3D=true once the 3D
-  // layer reliably renders. WebGL-unavailable already degrades to 2D.
-  render3d: (import.meta.env.VITE_RENDER3D ?? 'false') === 'true',
+  // Default ON: the 3D layer is the primary renderer. The transparent-canvas
+  // fix (main.ts T3) + mount wiring (Render3DManager T2) mean the WebGL world
+  // now shows through the Phaser canvas instead of painting black over it.
+  // Roll back with VITE_RENDER3D=false; WebGL-unavailable already degrades to
+  // 2D with zero regression.
+  render3d: (import.meta.env.VITE_RENDER3D ?? 'true') === 'true',
   debugMetrics: import.meta.env.DEV,
 } as const;
 

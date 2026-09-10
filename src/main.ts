@@ -56,7 +56,12 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'app',
   width: 960,
   height: 540,
-  backgroundColor: '#000000',
+  // Transparent canvas so the 3D layer (mounted behind, z-index:0) shows
+  // through. Without this the opaque black background paints over the WebGL
+  // world — the "black-canvas" mount bug that blocks flipping render3d ON
+  // (plan T3). backgroundColor is omitted because it is ignored when
+  // transparent is true.
+  transparent: true,
   physics: {
     default: 'arcade',
     arcade: {
