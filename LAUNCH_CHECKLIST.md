@@ -8,7 +8,7 @@
 
 ## Code Quality ✅
 
-- [x] All tests pass (424/424) — default run (`npm run test`)
+- [x] All tests pass (535/535) — default run (`npm run test`)
 - [x] Lint: 0 errors, 0 warnings
 - [x] Format: Prettier compliant
 - [x] TypeScript: Strict mode, no errors
