@@ -52,7 +52,9 @@ derived from the structural signals above — they name concrete extractions
 
 ## Objectives (12 tickable)
 
-### OBJ-001 — Hoist repeated literal `'RIVAL TARGET: SCANNING'` (×2) to a constant
+### OBJ-001 — Hoist repeated literal `'RIVAL TARGET: SCANNING'` (x2) to a constant
+- **Status:** DONE (commit 270ce6b)
+- **Evidence:** `rg -F 'RIVAL TARGET: SCANNING' src/scenes/GameScene.ts` -> 0; constant `TARGET_LABEL` added to `src/config/constants.ts:73`; imported at `src/scenes/GameScene.ts:3`; both ternaries replaced at lines 346, 1945. Gate: lint=0, tsc=0, test=535/535, build=ok.
 - **Target:** String literal appears 2× in `src/scenes/GameScene.ts`. Extract to
   `./constants.ts` (already exists per imports) or co-located `strings.ts`.
 - **Why:** Repeated literals indicate copy that should be localizable or reused.
@@ -62,6 +64,8 @@ derived from the structural signals above — they name concrete extractions
 - **Evidence:** grep before/after.
 
 ### OBJ-002 — Confirm `Citizen` (8 refs) is the right shared utility
+- **Status:** VERIFIED (no change needed)
+- **Evidence:** canonical home = `src/entities/Citizen.ts` (166 lines). Call sites: `GameScene.ts` (4), `CitizenBridge.ts` (8), `CitizenMeshFactory.ts` (3), `NpcAssets.ts` (1), `disposeObject3D.ts` (1). All entity/mesh/system - no feature-local duplication. No barrel exists (`find src -name index.ts` -> 0), so no stale re-export risk.
 - **Target:** `Citizen` is the most-referenced import in this file (8 uses).
 - **Action:** verify whether other dashboard pages also import it; if so, ensure it lives
   in a shared `lib/` or `@/components/ui/` and not in a feature-local path.
@@ -71,6 +75,8 @@ derived from the structural signals above — they name concrete extractions
 - **Evidence:** call-site map.
 
 ### OBJ-003 — Run knip / ts-prune against the page after extraction
+- **Status:** VERIFIED (knip 6.35.1 run, --reporter compact)
+- **Evidence:** knip flags 13 unused exports + 11 unused types repo-wide, but **zero** in `src/scenes/GameScene.ts` - `npx knip --reporter compact 2>&1 | grep GameScene` -> empty. All GameScene imports are live. Repo-wide dead exports pre-existing, out of scope for this plan.
 - **Target:** After OBJ-001 → OBJ-006 land, some imports in `src/scenes/GameScene.ts` will be unused.
 - **Tool:** `pnpm dlx knip --reporter compact` or `pnpm dlx ts-prune`.
 - **Acceptance:** zero unused exports; zero dead imports in `src/scenes/GameScene.ts`.
@@ -78,6 +84,9 @@ derived from the structural signals above — they name concrete extractions
 - **Evidence:** knip output diff before/after.
 
 ### OBJ-004 — Audit sibling `index.ts` barrels for circular / stale re-exports
+- **Status:** VERIFIED (no barrels exist)
+- **Evidence:**  → 0 files. Nothing to audit; no circular/stale re-export surface.
+ `index.ts` barrels for circular / stale re-exports
 - **Target:** `src/scenes/components/index.ts` (or its peer in
   any newly split directory).
 - **Acceptance:** barrel exports only symbols whose source file exists.
@@ -136,8 +145,11 @@ derived from the structural signals above — they name concrete extractions
 
 ## Definition of Done
 
-- [ ] Every OBJ-00X above has a Definition-of-Done entry below it filled in by the IMPLEMENT pass.
-- [ ] The original `src/scenes/GameScene.ts` either disappears (split into smaller modules) or shrinks materially while preserving behavior.
+- [x] OBJ-001 implemented + 4-gate verified (lint/tsc/test=535/build) + pushed 270ce6b
+- [x] OBJ-002 verified: Citizen canonical home confirmed
+- [x] OBJ-003 verified: knip clean for GameScene imports
+- [x] OBJ-004 verified: no barrels exist
+- [ ] OBJ-005-OBJ-012: **BLOCKED** - GameScene.ts remains 2,128 lines (target <=1064). Requires multi-file extraction (combat, vehicles, rendering, network) beyond the $2 budget / 30min wall. Re-plan for a dedicated refactor sprint.
 - [ ] `pnpm run type-check && pnpm run lint && pnpm run test && pnpm run build` is green (Next.js full gate).
 - [ ] `git diff --stat` shows only the planned paths.
 - [ ] `debrief.md` (per surgical-implementation) records evidence per objective.
@@ -167,3 +179,23 @@ derived from the structural signals above — they name concrete extractions
 
 **Gaps:**
 1. llm_unreachable
+
+
+---
+
+## RESOLUTION 2026-09-13T11:05:12+07:00
+
+**Verdict:** PARTIAL-IMPLEMENTED (4/12 objectives closed, 8 blocked)
+
+| OBJ | Result | Evidence |
+|-----|--------|----------|
+| OBJ-001 | DONE | commit `270ce6b`; `TARGET_LABEL` hoisted; literal count 2->0; lint=0, tsc=0, test=535/535, build=ok |
+| OBJ-002 | VERIFIED | Citizen canonical home = `src/entities/Citizen.ts`; no feature-local duplication |
+| OBJ-003 | VERIFIED | knip 6.35.1: zero dead imports in GameScene.ts |
+| OBJ-004 | VERIFIED | `find src -name index.ts` -> 0 barrels |
+| OBJ-005 | BLOCKED | GameScene.ts still 2,128 lines (target <=1064); multi-file extraction exceeds $2/30min |
+| OBJ-006-012 | BLOCKED | depend on OBJ-005 extraction landing |
+
+**Blocker:** budget=BUDGET_USD=2.0, wall=MAX_MINUTES=30. The 2,128->1064 line reduction requires splitting GameScene.ts into combat/vehicles/rendering/network modules with full re-verification - a dedicated refactor sprint, not a single surgical pass.
+
+**Next:** re-run this plan with a larger budget, or dispatch surgical-orchestration workers per sub-module (combat, vehicles, rendering, network) in parallel.
