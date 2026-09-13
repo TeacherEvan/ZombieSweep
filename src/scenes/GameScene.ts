@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import Phaser from 'phaser';
-import { GAME } from '../config/constants';
+import { GAME, TARGET_LABEL } from '../config/constants';
 import { VEHICLE_STATS, WeaponSlot } from '../config/vehicles';
 import type { Citizen } from '../entities/Citizen';
 import {
@@ -343,7 +343,7 @@ export class GameScene extends Phaser.Scene {
     if (this.isGunnerRole()) {
       this.gunnerReticle = this.add.graphics().setDepth(12);
       this.gunnerTargetText = this.add
-        .text(28, 86, this.isVersusMode() ? 'RIVAL TARGET: SCANNING' : 'TARGET: SCANNING', {
+        .text(28, 86, this.isVersusMode() ? TARGET_LABEL.RIVAL : TARGET_LABEL.DEFAULT, {
           fontFamily: BROADCAST_FONT,
           fontSize: '11px',
           fontStyle: '700',
@@ -1942,7 +1942,7 @@ export class GameScene extends Phaser.Scene {
 
     if (!targetSprite) {
       this.gunnerTargetText?.setText(
-        this.isVersusMode() ? 'RIVAL TARGET: SCANNING' : 'TARGET: SCANNING'
+        this.isVersusMode() ? TARGET_LABEL.RIVAL : TARGET_LABEL.DEFAULT
       );
       return;
     }

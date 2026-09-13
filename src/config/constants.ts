@@ -70,3 +70,7 @@ export const HOUSE_DAMAGE_POINTS = {
   VICTORIAN_TOMBSTONE: 2,
   VICTORIAN_PORCH_RAILING: 1,
 } as const;
+export const TARGET_LABEL = {
+  DEFAULT: 'TARGET: SCANNING' as const,
+  RIVAL: 'RIVAL TARGET: SCANNING' as const,
+} as const;
