@@ -253,3 +253,20 @@ export function fadeToScene(
 ## Handoff
 
 Execute with: **superpower-execute**
+
+
+---
+
+## RESOLUTION 2026-09-13T11:06:20+07:00
+
+**Verdict:** IMPLEMENTED — no open work
+
+**Evidence (verified against live tree, 2026-09-13):**
+- `src/utils/animations.ts:198` exports `fadeToScene()` with the Station Break wipe
+- Line 16: `STATION_ID: 'WZMB 13'` matches plan spec
+- Lines 198-220+: red accent bar slide-in + station ID hold + scene switch, all in one module
+- No call-site changes required (drop-in replacement), as the plan specified
+
+**Action:** archived. No re-implementation — the code is the source of truth and the
+plan doc is a post-hoc snapshot with zero ticked objectives. If the plan's scope
+needs extension, author a NEW plan referencing these modules by path.

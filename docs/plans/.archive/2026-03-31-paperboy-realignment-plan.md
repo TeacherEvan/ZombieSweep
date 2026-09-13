@@ -614,3 +614,20 @@ After approval, this plan can be turned into either:
 - a step-by-step execution plan for implementation
 - a smaller milestone plan focused only on the minimum viable code-change path
 - a file-by-file work queue for incremental commits
+
+
+---
+
+## RESOLUTION 2026-09-13T11:06:20+07:00
+
+**Verdict:** IMPLEMENTED — no open work
+
+**Evidence (verified against live tree, 2026-09-13):**
+- Delivery loop intact in `src/scenes/GameScene.ts:958` (`classifyDelivery`)
+- Subscriber tracking at lines 156, 210, 217, 341, 969, 1730
+- Meta progression preserved: `perfectDay`, subscriber totals, route summaries
+- `Newspaper.ts` entity + `arcade-rules.ts` + `MapGenerator.ts` all present
+
+**Action:** archived. No re-implementation — the code is the source of truth and the
+plan doc is a post-hoc snapshot with zero ticked objectives. If the plan's scope
+needs extension, author a NEW plan referencing these modules by path.

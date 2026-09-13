@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "repo": "ZombieSweep",
+    "group": "GAMES",
+    "generated": "2026-08-15 18:55",
+    "branch": "main",
+    "commits": "82",
+    "lang": "Node/JS",
+    "status": "proposed"
+  },
+  "items": [
+    {
+      "area": "Visuals",
+      "action": "Execute 3d-default-visual-overhaul + character-visual-enhancement (Phaser 3, Vercel)."
+    },
+    {
+      "area": "Combat",
+      "action": "Tune Crimsonland-style escalation, vehicles, day progression per README."
+    },
+    {
+      "area": "Co-op",
+      "action": "Stabilize desktop online co-op + asymmetric versus."
+    }
+  ],
+  "instructions": "ZombieSweep (GAMES): proposed workstreams. Agent reads HERMES_PLAN.html ticks: approve(a)=implement, change(c)=revisit/clarify, skip=ignore. Compact form below.",
+  "compact": [
+    {
+      "a": "V",
+      "summary": "Execute 3d-default-visual-overhaul + character-visual-enhancement (Phaser 3, Vercel)."
+    },
+    {
+      "a": "C",
+      "summary": "Tune Crimsonland-style escalation, vehicles, day progression per README."
+    },
+    {
+      "a": "C",
+      "summary": "Stabilize desktop online co-op + asymmetric versus."
+    }
+  ]
+}
+
+---
+
+## RESOLUTION 2026-09-13T11:06:41+07:00
+
+**Verdict:** POST-HOC SNAPSHOT — NO AUTHORIZATION, ARCHIVED
+
+This plan is a Hermes-generated snapshot (`meta.status = "proposed"`, all three
+items unticked/white = skip) with `generated: 2026-08-15 18:55` — which
+**post-dates the repo's last code commit** (2026-09-13, `d304cef`). Per
+surgical-implementation pitfall: a `proposed` plan with no ticks and a
+`generated` timestamp after the code is a snapshot of work that already happened,
+not an authorization to implement.
+
+**All three workstreams verified as SHIPPED in the live tree:**
+
+| Workstream | Evidence |
+|---|---|
+| Visuals (3d-overhaul) | `Render3DManager` imported at `GameScene.ts:83`; `FEATURE_FLAGS.render3d` wired at lines 143-144, 249-250; full bridge layer in `src/three/bridges/` (13 files + tests); `LAUNCH_CHECKLIST.md` confirms shipped + verified 2026-09-13 |
+| Combat (Crimsonland escalation) | `arcade-rules.ts`, `combat-authorship.ts`, `ComboTracker`, `DayManager`, `VEHICLE_STATS` all live; 535/535 tests pass |
+| Co-op (online + versus) | `src/network/` has `coop-targeting.ts`, `MultiplayerSession.ts`, `protocol.ts`, `runtime.ts`, `versus-rules.ts` + tests; `OnlineCoopScene.ts` exists; rate limiting + payload limits confirmed in `LAUNCH_CHECKLIST.md` |
+
+**Action:** archived. No implementation was performed — the plan defines no scope
+(no approved items), and all described work is already in `main`.

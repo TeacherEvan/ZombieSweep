@@ -179,3 +179,20 @@ Keep the old `Citizen` and `Zombie` APIs working while introducing the shared NP
 ## Milestone summary
 
 The first milestone is complete when the shared NPC contract exists, the archetype catalog is populated, and the pure logic layer can represent and validate NPCs without scene code.
+
+
+---
+
+## RESOLUTION 2026-09-13T11:06:20+07:00
+
+**Verdict:** IMPLEMENTED — no open work
+
+**Evidence (verified against live tree, 2026-09-13):**
+- `NpcFaction`, `NpcRole`, `NpcState` defined in `src/entities/Npc.ts` (67 refs)
+- `NpcCatalog.ts`, `NpcScheduler.ts` (335 lines), `NpcAssets.ts`, `NpcRules.ts` all exist
+- `Citizen.ts` and `Zombie.ts` remain as adapters over the shared NPC model, per plan
+- Tests: `NpcCatalog`, `NpcScheduler`, `NpcRules` all present and passing (535/535)
+
+**Action:** archived. No re-implementation — the code is the source of truth and the
+plan doc is a post-hoc snapshot with zero ticked objectives. If the plan's scope
+needs extension, author a NEW plan referencing these modules by path.
